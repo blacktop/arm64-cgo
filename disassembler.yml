@@ -6,13 +6,12 @@ GENERATOR:
   Includes: ["decode.h", "format.h"]
 
 PARSER:
-  Defines:
-    _POSIX_C_SOURCE: 1
   IncludePaths: [
     "/usr/include",
     "/usr/local/include",
-    # "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include",
-    # "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/",
+    "/usr/local/Cellar/gcc/11.1.0_1/include",
+    "/usr/local/Cellar/gcc/11.1.0_1/lib/gcc/11/gcc/x86_64-apple-darwin20/11.1.0/include",
+    "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include",
   ]
   SourcesPaths: ["disassembler/decode.h", "disassembler/format.h"]
 
