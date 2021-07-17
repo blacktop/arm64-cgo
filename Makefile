@@ -11,10 +11,12 @@ build-deps: ## Install the build dependencies
 	brew install go goreleaser
 	go get -u github.com/crazy-max/xgo
 
-build:
-	CGO_ENABLED=1 go build ./cmd/disass -o disass.${NEXT_VERSION}
+.PHONY: build
+build: ## Build disass locally
+	@echo " > Building locally"
+	CGO_ENABLED=1 go build -o disass.${NEXT_VERSION} ./cmd/disass
 
-all:
+gen:
 	CGO_ENABLED=1 c-for-go -debug disassembler.yml
 
 .PHONY: test
