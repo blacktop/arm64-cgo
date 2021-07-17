@@ -1,11 +1,18 @@
 REPO=blacktop
 NAME=arm64-cgo
+CLI=github.com/blacktop/arm64-cgo/cmd/disass
 CUR_VERSION=$(shell svu current)
 NEXT_VERSION=$(shell svu patch)
 
 
+.PHONY: build-deps
+build-deps: ## Install the build dependencies
+	@echo " > Installing build deps"
+	brew install go goreleaser
+	go get -u github.com/crazy-max/xgo
+
 build:
-	CGO_ENABLED=1 go build -o disass
+	CGO_ENABLED=1 go build ./cmd/disass -o disass.${NEXT_VERSION}
 
 all:
 	CGO_ENABLED=1 c-for-go -debug disassembler.yml
@@ -24,6 +31,11 @@ dry_release: ## Run goreleaser without releasing/pushing artifacts to github
 release: ## Create a new release from the NEXT_VERSION
 	@echo " > Creating Release ${NEXT_VERSION}"
 	@hack/make/release ${NEXT_VERSION}
+
+.PHONY: cross
+cross: ## Create xgo releases
+	@echo " > Creating xgo releases"
+	@xgo --targets=*/amd64 -go latest -ldflags='-s -w' -out disass-${NEXT_VERSION} ${CLI}
 
 clean: ## Clean up artifacts
 	@echo " > Cleaning"
