@@ -62,5 +62,5 @@ jobs:
         name: Upload assets
         uses: actions/upload-artifact@v2
         with:
-          name: disass
+          name: disass.exe
           path: dist/*
