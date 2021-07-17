@@ -12,7 +12,7 @@ builds:
     binary: disass
     env:
       - CGO_ENABLED=1
-      - SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
+      - SDKROOT=/Applications/Xcode_12.4.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk
     goos:
       - darwin
     goarch:
