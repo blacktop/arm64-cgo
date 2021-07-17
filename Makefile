@@ -25,7 +25,7 @@ test: ## Run disass on hello-mte
 .PHONY: dry_release
 dry_release: ## Run goreleaser without releasing/pushing artifacts to github
 	@echo " > Creating Pre-release Build ${NEXT_VERSION}"
-	@goreleaser build --rm-dist --skip-validate --snapshot
+	@goreleaser build --rm-dist --skip-validate --snapshot -f .goreleaser.mac.yml
 
 .PHONY: release
 release: ## Create a new release from the NEXT_VERSION
