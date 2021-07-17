@@ -21,9 +21,8 @@ builds:
 archives:
   - replacements:
       darwin: macOS
-      linux: linux
-      windows: windows
       amd64: x86_64
+    name_template: "disass_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
 checksum:
   name_template: 'checksums.darwin.txt'
