@@ -9,22 +9,31 @@ build:
 all:
 	CGO_ENABLED=1 c-for-go -debug disassembler.yml
 
-clean:
-	rm -f disassembler/cgo_helpers.go disassembler/cgo_helpers.h disassembler/cgo_helpers.c
-	rm -f disassembler/const.go disassembler/doc.go disassembler/types.go
-	rm -f disassembler/disassembler.go
 
-test:
-	cd disassembler && go build
+.PHONY: test
+test: ## Run disass on hello-mte
+	@echo " > disassembling hello-mte\n"
+	@dist/arm64-cgo_darwin_amd64/disass  ../../Proteas/hello-mte/hello-mte _test
 
 .PHONY: dry_release
 dry_release: ## Run goreleaser without releasing/pushing artifacts to github
 	@echo " > Creating Pre-release Build ${NEXT_VERSION}"
 	@goreleaser build --rm-dist --skip-validate --snapshot
 
-cross:
-	docker run --rm --privileged \
-		-v $PWD:/go/src/github.com/blacktop/arm64-cgo \
-		-v /var/run/docker.sock:/var/run/docker.sock \
-		-w /go/src/github.com/blacktop/arm64-cgo \
-		mailchain/goreleaser-xcgo --snapshot --rm-dist
+.PHONY: release
+release: ## Create a new release from the NEXT_VERSION
+	@echo " > Creating Release ${NEXT_VERSION}"
+	@hack/make/release ${NEXT_VERSION}
+
+clean: ## Clean up artifacts
+	@echo " > Cleaning"
+	rm *.tar || true
+	rm *.ipsw || true
+	rm kernelcache.release.* || true
+	rm -rf dist
+
+# Absolutely awesome: http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
+help:
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+.DEFAULT_GOAL := help
