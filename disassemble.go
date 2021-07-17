@@ -1,7 +1,7 @@
-package main
+package disassemble
 
 /*
-#cgo CFLAGS: -I${SRCDIR}
+#cgo CFLAGS: -I${SRCDIR}/src
 
 #include "decode.h"
 #include "format.h"
@@ -22,9 +22,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"io"
-
-	"github.com/blacktop/go-macho"
 )
 
 func getOpCodeByteString(opcode uint32) string {
@@ -36,52 +33,7 @@ func getOpCodeByteString(opcode uint32) string {
 	return fmt.Sprintf("% x", op.Bytes())
 }
 
-func main() {
-	m, err := macho.Open("../../Proteas/hello-mte/hello-mte")
-	if err != nil {
-		panic(err)
-	}
-
-	symAddr, err := m.FindSymbolAddress("_test")
-	if err != nil {
-		panic(err)
-	}
-
-	fn, err := m.GetFunctionForVMAddr(symAddr)
-	if err != nil {
-		panic(err)
-	}
-
-	data, err := m.GetFunctionData(fn)
-	if err != nil {
-		panic(err)
-	}
-
-	var instrValue uint32
-	r := bytes.NewReader(data)
-
-	fmt.Println("_test:")
-
-	for {
-		addr, _ := r.Seek(0, io.SeekCurrent)
-
-		err = binary.Read(r, binary.LittleEndian, &instrValue)
-
-		if err == io.EOF {
-			break
-		}
-
-		symAddr += uint64(addr)
-
-		instruction, err := Disassemble(symAddr, instrValue, true)
-		if err != nil {
-			panic(err)
-		}
-
-		fmt.Printf("%#08x:  %s\t%s\n", uint64(symAddr), getOpCodeByteString(instrValue), instruction)
-	}
-}
-
+// Disassemble disassembles an instruction
 func Disassemble(addr uint64, instruction uint32, verbose bool) (string, error) {
 
 	instrBytes := make([]byte, 4)
