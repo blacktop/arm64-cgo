@@ -3,12 +3,12 @@ NAME=arm64-cgo
 CUR_VERSION=$(shell svu current)
 NEXT_VERSION=$(shell svu patch)
 
+
 build:
 	CGO_ENABLED=1 go build -o disass
 
 all:
 	CGO_ENABLED=1 c-for-go -debug disassembler.yml
-
 
 .PHONY: test
 test: ## Run disass on hello-mte
