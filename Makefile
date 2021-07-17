@@ -38,7 +38,7 @@ release: ## Create a new release from the NEXT_VERSION
 cross: ## Create xgo releases
 	@echo " > Creating xgo releases"
 	@mkdir -p dist/xgo
-	@cd dist/xgo; xgo --targets=*/amd64 -go latest -ldflags='-s -w' -out disass-${NEXT_VERSION} ${CLI}
+	@cd dist/xgo; xgo --targets=*/amd64 -go 1.16.5 -ldflags='-s -w' -out disass-${NEXT_VERSION} ${CLI}
 
 clean: ## Clean up artifacts
 	@echo " > Cleaning"
