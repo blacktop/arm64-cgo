@@ -32,7 +32,6 @@ jobs:
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
         with:
-          # either 'goreleaser' (default) or 'goreleaser-pro'
           distribution: goreleaser
           version: latest
           args: release --rm-dist -f .goreleaser.linux.yml
@@ -45,27 +44,21 @@ jobs:
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
         with:
-          # either 'goreleaser' (default) or 'goreleaser-pro'
           distribution: goreleaser
           version: latest
-          args: release --rm-dist
+          args: release --rm-dist -f .goreleaser.mac.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Your GoReleaser Pro key, if you are using the 'goreleaser-pro' distribution
-          # GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
       -
         if: matrix.platform == 'windows-latest'
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
         with:
-          # either 'goreleaser' (default) or 'goreleaser-pro'
           distribution: goreleaser
           version: latest
           args: release --rm-dist -f .goreleaser.win.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Your GoReleaser Pro key, if you are using the 'goreleaser-pro' distribution
-          # GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
       -
         if: matrix.platform == 'ubuntu-latest'
         name: Upload assets

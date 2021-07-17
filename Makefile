@@ -35,13 +35,11 @@ release: ## Create a new release from the NEXT_VERSION
 .PHONY: cross
 cross: ## Create xgo releases
 	@echo " > Creating xgo releases"
-	@xgo --targets=*/amd64 -go latest -ldflags='-s -w' -out disass-${NEXT_VERSION} ${CLI}
+	@mkdir -p dist/xgo
+	@cd dist/xgo; xgo --targets=*/amd64 -go latest -ldflags='-s -w' -out disass-${NEXT_VERSION} ${CLI}
 
 clean: ## Clean up artifacts
 	@echo " > Cleaning"
-	rm *.tar || true
-	rm *.ipsw || true
-	rm kernelcache.release.* || true
 	rm -rf dist
 
 # Absolutely awesome: http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
