@@ -1,7 +1,7 @@
 package disassemble
 
 /*
-#cgo CFLAGS: -I${SRCDIR}/src
+#cgo CFLAGS: -I${SRCDIR}
 
 #include "decode.h"
 #include "format.h"
@@ -24,7 +24,7 @@ import (
 	"fmt"
 )
 
-func getOpCodeByteString(opcode uint32) string {
+func GetOpCodeByteString(opcode uint32) string {
 	op := new(bytes.Buffer)
 	err := binary.Write(op, binary.LittleEndian, opcode)
 	if err != nil {

@@ -1,3 +1,8 @@
+REPO=blacktop
+NAME=arm64-cgo
+CUR_VERSION=$(shell svu current)
+NEXT_VERSION=$(shell svu patch)
+
 build:
 	CGO_ENABLED=1 go build -o disass
 
@@ -11,3 +16,15 @@ clean:
 
 test:
 	cd disassembler && go build
+
+.PHONY: dry_release
+dry_release: ## Run goreleaser without releasing/pushing artifacts to github
+	@echo " > Creating Pre-release Build ${NEXT_VERSION}"
+	@goreleaser build --rm-dist --skip-validate --snapshot
+
+cross:
+	docker run --rm --privileged \
+		-v $PWD:/go/src/github.com/blacktop/arm64-cgo \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-w /go/src/github.com/blacktop/arm64-cgo \
+		mailchain/goreleaser-xcgo --snapshot --rm-dist
