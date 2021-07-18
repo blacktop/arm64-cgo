@@ -16,9 +16,6 @@ build: ## Build disass locally
 	@echo " > Building locally"
 	CGO_ENABLED=1 go build -o disass.${NEXT_VERSION} ./cmd/disass
 
-gen:
-	CGO_ENABLED=1 c-for-go -debug disassembler.yml
-
 .PHONY: test
 test: ## Run disass on hello-mte
 	@echo " > disassembling hello-mte\n"
