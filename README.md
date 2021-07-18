@@ -5,7 +5,7 @@
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/blacktop/arm64-cgo)](https://github.com/blacktop/arm64-cgo/releases/latest)
 ![GitHub](https://img.shields.io/github/license/blacktop/arm64-cgo?color=blue)
 
-> Golang bindings for the Binary Ninja [Arm64 Disassembler](https://github.com/Vector35/arch-arm64).
+> Golang bindings for the Binary Ninja [Arm64 Disassembler](https://github.com/Vector35/arch-arm64) with support for **ARMv9A (2021-03 spec)**
 
 ## Getting Started
 
