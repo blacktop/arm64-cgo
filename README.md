@@ -51,9 +51,10 @@ func main() {
 			log.Fatal(err)
 		}
 
-		fmt.Printf("%#08x:  %s\t%s\n", uint64(startAddr),
-									   disassemble.GetOpCodeByteString(instrValue),
-									   instruction)
+		fmt.Printf("%#08x:  %s\t%s\n",
+			uint64(startAddr),
+			disassemble.GetOpCodeByteString(instrValue),
+			instruction)
 
 		startAddr += uint64(binary.Size(uint32(0)))
 	}
@@ -127,7 +128,8 @@ brew install bat
 ```
 
 ```bash
-disass hello-mte --vaddr 0x100007f1c | bat -l s --tabs 0 -p --theme Nord --wrap=never --pager "less -S"
+disass hello-mte --vaddr 0x100007f1c \
+	| bat -l s --tabs 0 -p --theme Nord --wrap=never --pager "less -S"
 ```
 
 ## License
