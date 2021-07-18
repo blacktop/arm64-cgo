@@ -30,13 +30,14 @@ import (
 
 func main() {
 
+	var startAddr uint64
+	var instrValue uint32
+
 	data, err := ioutil.ReadFile(os.Args[1])
 	if err != nil {
 		panic(err)
 	}
 
-	var startAddr uint64
-	var instrValue uint32
 	r := bytes.NewReader(data)
 
 	for {
