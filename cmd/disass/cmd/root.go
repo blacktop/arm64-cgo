@@ -26,6 +26,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"log"
 	"os"
 
 	"github.com/blacktop/go-macho"
@@ -36,65 +37,6 @@ import (
 )
 
 var cfgFile string
-
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:   "disass",
-	Short: "A brief description of your application",
-	Args:  cobra.MinimumNArgs(2),
-	Run: func(cmd *cobra.Command, args []string) {
-
-		m, err := macho.Open(args[0])
-		if err != nil {
-			panic(err)
-		}
-
-		symAddr, err := m.FindSymbolAddress(args[1])
-		if err != nil {
-			panic(err)
-		}
-
-		fn, err := m.GetFunctionForVMAddr(symAddr)
-		if err != nil {
-			panic(err)
-		}
-
-		data, err := m.GetFunctionData(fn)
-		if err != nil {
-			panic(err)
-		}
-
-		var instrValue uint32
-		r := bytes.NewReader(data)
-
-		fmt.Println(args[1] + ":")
-
-		for {
-			addr, _ := r.Seek(0, io.SeekCurrent)
-
-			err = binary.Read(r, binary.LittleEndian, &instrValue)
-
-			if err == io.EOF {
-				break
-			}
-
-			symAddr += uint64(addr)
-
-			instruction, err := disassemble.Disassemble(symAddr, instrValue, true)
-			if err != nil {
-				panic(err)
-			}
-
-			fmt.Printf("%#08x:  %s\t%s\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue), instruction)
-		}
-	},
-}
-
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
-	cobra.CheckErr(rootCmd.Execute())
-}
 
 func init() {
 	cobra.OnInitialize(initConfig)
@@ -108,6 +50,110 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+
+	rootCmd.Flags().StringP("symbol", "s", "", "Function to disassemble")
+	rootCmd.Flags().Uint64P("vaddr", "a", 0, "Virtual address to disassemble")
+}
+
+// rootCmd represents the base command when called without any subcommands
+var rootCmd = &cobra.Command{
+	Use:   "disass",
+	Short: "MachO AARCH64 disassembler",
+	Args:  cobra.MinimumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+
+		startVMAddr, _ := cmd.Flags().GetUint64("vaddr")
+		symbolName, _ := cmd.Flags().GetString("symbol")
+
+		if len(symbolName) > 0 && startVMAddr != 0 {
+			log.Fatal("[ERROR] you can only use --symbol OR --vaddr (not both)")
+		} else if len(symbolName) == 0 && startVMAddr == 0 {
+			log.Fatal("[ERROR] you must supply a --symbol OR --vaddr to disassemble")
+		}
+
+		var isMiddle bool
+		var symAddr uint64
+		var data []byte
+
+		m, err := macho.Open(args[0])
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if len(symbolName) > 0 {
+			symAddr, err = m.FindSymbolAddress(symbolName)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			fn, err := m.GetFunctionForVMAddr(symAddr)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			data, err = m.GetFunctionData(fn)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+		} else if startVMAddr > 0 {
+			fn, err := m.GetFunctionForVMAddr(startVMAddr)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			data, err = m.GetFunctionData(fn)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			symAddr = fn.StartAddr
+
+			if startVMAddr != fn.StartAddr {
+				isMiddle = true
+			}
+
+			for _, sym := range m.Symtab.Syms {
+				if sym.Value == fn.StartAddr {
+					symbolName = sym.Name
+				}
+			}
+		}
+
+		var instrValue uint32
+		r := bytes.NewReader(data)
+
+		if len(symbolName) > 0 {
+			fmt.Println(symbolName + ":")
+		}
+
+		for {
+			err = binary.Read(r, binary.LittleEndian, &instrValue)
+
+			if err == io.EOF {
+				break
+			}
+
+			instruction, err := disassemble.Disassemble(symAddr, instrValue, true)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			if isMiddle && startVMAddr == symAddr {
+				fmt.Printf("👉%08x:  %s\t%s\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue), instruction)
+			} else {
+				fmt.Printf("%#08x:  %s\t%s\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue), instruction)
+			}
+
+			symAddr += uint64(binary.Size(uint32(0)))
+		}
+	},
+}
+
+// Execute adds all child commands to the root command and sets flags appropriately.
+// This is called by main.main(). It only needs to happen once to the rootCmd.
+func Execute() {
+	cobra.CheckErr(rootCmd.Execute())
 }
 
 // initConfig reads in config file and ENV variables if set.
