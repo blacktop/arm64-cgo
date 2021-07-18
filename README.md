@@ -118,6 +118,16 @@ _main:
 0x100007f90:  20 00 20 d4       brk     #0x1
 ```
 
+### Make it pretty 💄
+
+```
+brew install bat
+```
+
+```bash
+disass hello-mte --vaddr 0x100007f1c | bat -l s --tabs 0 -p --theme Nord --wrap=never --pager "less -S"
+```
+
 ## License
 
 MIT Copyright (c) 2021 blacktop
