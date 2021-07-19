@@ -24,6 +24,7 @@ package cmd
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -49,7 +50,7 @@ func init() {
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.Flags().BoolP("json", "j", false, "Output as JSON")
 
 	rootCmd.Flags().StringP("symbol", "s", "", "Function to disassemble")
 	rootCmd.Flags().Uint64P("vaddr", "a", 0, "Virtual address to disassemble")
@@ -64,6 +65,7 @@ var rootCmd = &cobra.Command{
 
 		startVMAddr, _ := cmd.Flags().GetUint64("vaddr")
 		symbolName, _ := cmd.Flags().GetString("symbol")
+		asJSON, _ := cmd.Flags().GetBool("json")
 
 		if len(symbolName) > 0 && startVMAddr != 0 {
 			log.Fatal("[ERROR] you can only use --symbol OR --vaddr (not both)")
@@ -134,15 +136,21 @@ var rootCmd = &cobra.Command{
 				break
 			}
 
-			instruction, err := disassemble.Disassemble(symAddr, instrValue, true)
+			instruction, err := disassemble.Decompose(symAddr, instrValue)
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			if isMiddle && startVMAddr == symAddr {
-				fmt.Printf("👉%08x:  %s\t%s\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue), instruction)
+			if asJSON {
+				if dat, err := json.MarshalIndent(instruction, "", "   "); err == nil {
+					fmt.Println(string(dat))
+				}
 			} else {
-				fmt.Printf("%#08x:  %s\t%s\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue), instruction)
+				if isMiddle && startVMAddr == symAddr {
+					fmt.Printf("👉%08x:  %s\t%s\n", uint64(symAddr), instruction.OpCodes(), instruction)
+				} else {
+					fmt.Printf("%#08x:  %s\t%s\n", uint64(symAddr), instruction.OpCodes(), instruction)
+				}
 			}
 
 			symAddr += uint64(binary.Size(uint32(0)))
