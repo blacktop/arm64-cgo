@@ -29,6 +29,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/blacktop/go-macho"
 
@@ -76,10 +77,15 @@ var rootCmd = &cobra.Command{
 		var isMiddle bool
 		var symAddr uint64
 		var data []byte
+		var instructions []disassemble.Instruction
 
 		m, err := macho.Open(args[0])
 		if err != nil {
 			log.Fatal(err)
+		}
+
+		if !strings.Contains(strings.ToLower(m.FileHeader.SubCPU.String(m.CPU)), "arm64") {
+			log.Fatal("[ERROR] can only disassemble arm64 binaries")
 		}
 
 		if len(symbolName) > 0 {
@@ -125,7 +131,7 @@ var rootCmd = &cobra.Command{
 		var instrValue uint32
 		r := bytes.NewReader(data)
 
-		if len(symbolName) > 0 {
+		if len(symbolName) > 0 && !asJSON {
 			fmt.Println(symbolName + ":")
 		}
 
@@ -142,9 +148,7 @@ var rootCmd = &cobra.Command{
 			}
 
 			if asJSON {
-				if dat, err := json.MarshalIndent(instruction, "", "   "); err == nil {
-					fmt.Println(string(dat))
-				}
+				instructions = append(instructions, *instruction)
 			} else {
 				if isMiddle && startVMAddr == symAddr {
 					fmt.Printf("👉%08x:  %s\t%s\n", uint64(symAddr), instruction.OpCodes(), instruction)
@@ -154,6 +158,12 @@ var rootCmd = &cobra.Command{
 			}
 
 			symAddr += uint64(binary.Size(uint32(0)))
+		}
+
+		if asJSON {
+			if dat, err := json.MarshalIndent(instructions, "", "   "); err == nil {
+				fmt.Println(string(dat))
+			}
 		}
 	},
 }

@@ -25,6 +25,7 @@ import "C"
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 )
 
@@ -69,7 +70,7 @@ const (
 type operandClass uint32
 
 const (
-	NONE operandClass = 0
+	NONE operandClass = iota
 	IMM32
 	IMM64
 	FIMM32
@@ -157,6 +158,7 @@ const (
 	END_GROUP
 )
 
+// Operand is an arm64 instruction operand object
 type Operand struct {
 	Class     operandClass    `json:"class,omitempty"`
 	ArrSpec   arrangementSpec `json:"arr_spec,omitempty"`
@@ -164,7 +166,7 @@ type Operand struct {
 
 	Condition condition `json:"condition,omitempty"` // for class CONDITION
 
-	ImplSpec [MAX_REGISTERS]byte `json:"impl_spec,omitempty"` // for class IMPLEMENTATION_SPECIFIC
+	ImplSpec []byte `json:"impl_spec,omitempty"` // for class IMPLEMENTATION_SPECIFIC
 
 	SysReg systemReg `json:"sys_reg,omitempty"` // for class SYS_REG
 
@@ -182,6 +184,52 @@ type Operand struct {
 	Name string `json:"name,omitempty"` // or class NAME
 }
 
+// MarshalJSON is the operand's custom JSON marshaler
+func (o *Operand) MarshalJSON() ([]byte, error) {
+	var regs []string
+	for _, r := range o.Registers {
+		regs = append(regs, r.String())
+	}
+	return json.Marshal(struct {
+		Class          string   `json:"class,omitempty"`
+		ArrSpec        string   `json:"arr_spec,omitempty"`
+		Registers      []string `json:"registers,omitempty"`
+		Condition      string   `json:"condition,omitempty"` // for class CONDITION
+		ImplSpec       []byte   `json:"impl_spec,omitempty"` // for class IMPLEMENTATION_SPECIFIC
+		SysReg         string   `json:"sys_reg,omitempty"`   // for class SYS_REG
+		LaneUsed       bool     `json:"lane_used,omitempty"`
+		Lane           uint32   `json:"lane,omitempty"`
+		Immediate      int64    `json:"immediate,omitempty"` // TODO: is it dangerous casting this as a int64 without checking SignedImm first
+		ShiftType      string   `json:"shift_type,omitempty"`
+		ShiftValueUsed bool     `json:"shift_value_used,omitempty"`
+		ShiftValue     uint32   `json:"shift_value,omitempty"`
+		Extend         string   `json:"extend,omitempty"`
+		SignedImm      bool     `json:"signed_imm,omitempty"`
+		PredQual       byte     `json:"pred_qual,omitempty"` // predicate register qualifier ('z' or 'm')
+		MulVl          bool     `json:"mul_vl,omitempty"`    // whether MEM_OFFSET has the offset "mul vl"
+		Name           string   `json:"name,omitempty"`      // or class NAME
+	}{
+		Class:          o.Class.String(),
+		ArrSpec:        o.ArrSpec.String(),
+		Registers:      regs,
+		Condition:      o.Condition.String(),
+		ImplSpec:       o.ImplSpec,
+		SysReg:         o.SysReg.String(),
+		LaneUsed:       o.LaneUsed,
+		Lane:           o.Lane,
+		Immediate:      int64(o.Immediate),
+		ShiftType:      o.ShiftType.String(),
+		ShiftValueUsed: o.ShiftValueUsed,
+		ShiftValue:     o.ShiftValue,
+		Extend:         o.Extend.String(),
+		SignedImm:      o.SignedImm,
+		PredQual:       o.PredQual,
+		MulVl:          o.MulVl,
+		Name:           o.Name,
+	})
+}
+
+// Instruction is an arm64 instruction object
 type Instruction struct {
 	Raw         uint32    `json:"raw,omitempty"`
 	Encoding    encoding  `json:"encoding,omitempty"`
@@ -191,12 +239,32 @@ type Instruction struct {
 	Disassembly string    `json:"disassembly,omitempty"`
 }
 
+// OpCodes returns the instruction's opcodes as a string of hex bytes
 func (i *Instruction) OpCodes() string {
 	return GetOpCodeByteString(i.Raw)
 }
 
 func (i *Instruction) String() string {
 	return i.Disassembly
+}
+
+// MarshalJSON is the instruction's custom JSON marshaler
+func (i *Instruction) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Raw         uint32    `json:"raw,omitempty"`
+		Encoding    string    `json:"encoding,omitempty"`
+		Operation   string    `json:"operation,omitempty"`
+		Operands    []Operand `json:"operands,omitempty"`
+		SetFlags    bool      `json:"set_flags,omitempty"`
+		Disassembly string    `json:"disassembly,omitempty"`
+	}{
+		Raw:         i.Raw,
+		Encoding:    i.Encoding.String(),
+		Operation:   i.Operation.String(),
+		Operands:    i.Operands,
+		SetFlags:    i.SetFlags,
+		Disassembly: i.Disassembly,
+	})
 }
 
 // GetOpCodeByteString returns the opcodes as a string of hex bytes
@@ -285,11 +353,22 @@ func goInstruction(instr *C.Instruction) *Instruction {
 					i.Operands[idx].Registers = append(i.Operands[idx].Registers, register(reg))
 				}
 			}
-			for k, ispec := range op.implspec {
-				i.Operands[idx].ImplSpec[k] = byte(ispec)
+			if !allZero(op.implspec) {
+				for k, ispec := range op.implspec {
+					i.Operands[idx].ImplSpec[k] = byte(ispec)
+				}
 			}
 		}
 	}
 
 	return i
+}
+
+func allZero(s [5]C.uchar) bool {
+	for _, v := range s {
+		if v != 0 {
+			return false
+		}
+	}
+	return true
 }

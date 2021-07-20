@@ -26,27 +26,27 @@ func _() {
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
 	_ = x[NONE-0]
-	_ = x[IMM32-0]
-	_ = x[IMM64-0]
-	_ = x[FIMM32-0]
-	_ = x[STR_IMM-0]
-	_ = x[REG-0]
-	_ = x[MULTI_REG-0]
-	_ = x[SYS_REG-0]
-	_ = x[MEM_REG-0]
-	_ = x[MEM_PRE_IDX-0]
-	_ = x[MEM_POST_IDX-0]
-	_ = x[MEM_OFFSET-0]
-	_ = x[MEM_EXTENDED-0]
-	_ = x[LABEL-0]
-	_ = x[CONDITION-0]
-	_ = x[NAME-0]
-	_ = x[IMPLEMENTATION_SPECIFIC-0]
+	_ = x[IMM32-1]
+	_ = x[IMM64-2]
+	_ = x[FIMM32-3]
+	_ = x[STR_IMM-4]
+	_ = x[REG-5]
+	_ = x[MULTI_REG-6]
+	_ = x[SYS_REG-7]
+	_ = x[MEM_REG-8]
+	_ = x[MEM_PRE_IDX-9]
+	_ = x[MEM_POST_IDX-10]
+	_ = x[MEM_OFFSET-11]
+	_ = x[MEM_EXTENDED-12]
+	_ = x[LABEL-13]
+	_ = x[CONDITION-14]
+	_ = x[NAME-15]
+	_ = x[IMPLEMENTATION_SPECIFIC-16]
 }
 
-const _operandClass_name = "NONE"
+const _operandClass_name = "NONEIMM32IMM64FIMM32STR_IMMREGMULTI_REGSYS_REGMEM_REGMEM_PRE_IDXMEM_POST_IDXMEM_OFFSETMEM_EXTENDEDLABELCONDITIONNAMEIMPLEMENTATION_SPECIFIC"
 
-var _operandClass_index = [...]uint8{0, 4}
+var _operandClass_index = [...]uint8{0, 4, 9, 14, 20, 27, 30, 39, 46, 53, 64, 76, 86, 98, 103, 112, 116, 139}
 
 func (i operandClass) String() string {
 	if i >= operandClass(len(_operandClass_index)-1) {
