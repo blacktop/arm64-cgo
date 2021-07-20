@@ -133,6 +133,116 @@ disass hello-mte --vaddr 0x100007f1c \
 	| bat -l s --tabs 0 -p --theme Nord --wrap=never --pager "less -S"
 ```
 
+### Output as JSON
+
+```bash
+disass hello-mte --symbol _main --json | jq .
+```
+
+```json
+[
+   {
+      "raw": 3573752703,
+      "encoding": "PACIBSP_HI_hints",
+      "operation": "pacibsp",
+      "disassembly": "pacibsp"
+   },
+   {
+      "raw": 3506521087,
+      "encoding": "SUB_64_addsub_imm",
+      "operation": "sub",
+      "operands": [
+         {
+            "class": "REG",
+            "arr_spec": "ARRSPEC_NONE",
+            "registers": [
+               "sp"
+            ],
+            "condition": "COND_EQ",
+            "shift_type": "SHIFT_TYPE_NONE",
+            "extend": "SHIFT_TYPE_NONE"
+         },
+         {
+            "class": "REG",
+            "arr_spec": "ARRSPEC_NONE",
+            "registers": [
+               "sp"
+            ],
+            "condition": "COND_EQ",
+            "shift_type": "SHIFT_TYPE_NONE",
+            "extend": "SHIFT_TYPE_NONE"
+         },
+         {
+            "class": "IMM64",
+            "arr_spec": "ARRSPEC_NONE",
+            "condition": "COND_EQ",
+            "immediate": 80,
+            "shift_type": "SHIFT_TYPE_NONE",
+            "extend": "SHIFT_TYPE_NONE"
+         }
+      ],
+      "disassembly": "sub\tsp, sp, #0x50"
+   },
+   {
+      "raw": 2835643389,
+      "encoding": "STP_64_ldstpair_off",
+      "operation": "stp",
+      "operands": [
+         {
+            "class": "REG",
+            "arr_spec": "ARRSPEC_NONE",
+            "registers": [
+               "x29"
+            ],
+            "condition": "COND_EQ",
+            "shift_type": "SHIFT_TYPE_NONE",
+            "extend": "SHIFT_TYPE_NONE"
+         },
+         {
+            "class": "REG",
+            "arr_spec": "ARRSPEC_NONE",
+            "registers": [
+               "x30"
+            ],
+            "condition": "COND_EQ",
+            "shift_type": "SHIFT_TYPE_NONE",
+            "extend": "SHIFT_TYPE_NONE"
+         },
+         {
+            "class": "MEM_OFFSET",
+            "arr_spec": "ARRSPEC_NONE",
+            "registers": [
+               "sp"
+            ],
+            "condition": "COND_EQ",
+            "immediate": 64,
+            "shift_type": "SHIFT_TYPE_NONE",
+            "extend": "SHIFT_TYPE_NONE",
+            "signed_imm": true
+         }
+      ],
+      "disassembly": "stp\tx29, x30, [sp, #0x40]"
+   },
+   <SNIP>
+   {
+      "raw": 3558866976,
+      "encoding": "BRK_EX_exception",
+      "operation": "brk",
+      "operands": [
+         {
+            "class": "IMM32",
+            "arr_spec": "ARRSPEC_NONE",
+            "condition": "COND_EQ",
+            "immediate": 1,
+            "shift_type": "SHIFT_TYPE_NONE",
+            "extend": "SHIFT_TYPE_NONE"
+         }
+      ],
+      "disassembly": "brk\t#0x1"
+   }
+]
+```
+
 ## License
 
 MIT Copyright (c) 2021 blacktop
