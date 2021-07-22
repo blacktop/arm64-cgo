@@ -29,6 +29,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/blacktop/go-macho"
@@ -77,11 +78,46 @@ var rootCmd = &cobra.Command{
 		var isMiddle bool
 		var symAddr uint64
 		var data []byte
+
+		var m *macho.File
 		var instructions []disassemble.Instruction
 
-		m, err := macho.Open(args[0])
+		machoPath := filepath.Clean(args[0])
+
+		fileInfo, err := os.Lstat(machoPath)
 		if err != nil {
+			log.Fatal(fmt.Sprintf("file %s does not exist: %v", machoPath, err))
+		}
+
+		// Check if file is a symlink
+		if fileInfo.Mode()&os.ModeSymlink != 0 {
+			symlinkPath, err := os.Readlink(machoPath)
+			if err != nil {
+				log.Fatal(fmt.Sprintf("failed to read symlink %s: %v", machoPath, err))
+			}
+			// TODO: this seems like it would break
+			linkParent := filepath.Dir(machoPath)
+			linkRoot := filepath.Dir(linkParent)
+
+			machoPath = filepath.Join(linkRoot, symlinkPath)
+		}
+
+		fat, err := macho.OpenFat(machoPath)
+		if err != nil && err != macho.ErrNotFat {
 			log.Fatal(err)
+		}
+		if err == macho.ErrNotFat {
+			m, err = macho.Open(machoPath)
+			if err != nil {
+				log.Fatal(err)
+			}
+		} else {
+			for _, arch := range fat.Arches {
+				if strings.Contains(strings.ToLower(arch.SubCPU.String(arch.CPU)), "arm64") {
+					m = arch.File
+					break
+				}
+			}
 		}
 
 		if !strings.Contains(strings.ToLower(m.FileHeader.SubCPU.String(m.CPU)), "arm64") {
@@ -142,18 +178,22 @@ var rootCmd = &cobra.Command{
 				break
 			}
 
-			instruction, err := disassemble.Decompose(symAddr, instrValue)
-			if err != nil {
-				log.Fatal(err)
-			}
-
 			if asJSON {
+				instruction, err := disassemble.Decompose(symAddr, instrValue)
+				if err != nil {
+					log.Fatal(err)
+				}
+
 				instructions = append(instructions, *instruction)
 			} else {
+				instruction, err := disassemble.Disassemble(symAddr, instrValue)
+				if err != nil {
+					log.Fatal(err)
+				}
 				if isMiddle && startVMAddr == symAddr {
-					fmt.Printf("👉%08x:  %s\t%s\n", uint64(symAddr), instruction.OpCodes(), instruction)
+					fmt.Printf("👉%08x:  %s\t%s\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue), instruction)
 				} else {
-					fmt.Printf("%#08x:  %s\t%s\n", uint64(symAddr), instruction.OpCodes(), instruction)
+					fmt.Printf("%#08x:  %s\t%s\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue), instruction)
 				}
 			}
 
