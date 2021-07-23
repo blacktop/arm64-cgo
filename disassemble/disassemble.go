@@ -1,6 +1,6 @@
 package disassemble
 
-//go:generate stringer -type=arrangementSpec,operandClass,condition,shiftType,failureCode,Group  -output disassemble_string.go
+//go:generate stringer -type=arrangementSpec,operandClass,condition,shiftType,returnCode,Group  -output disassemble_string.go
 
 /*
 #cgo CFLAGS: -I${SRCDIR}
@@ -10,14 +10,16 @@ package disassemble
 #include "decode.h"
 #include "format.h"
 
-void disassemble(uint64_t addr, uint32_t instrValue, int len, char *result)
+int disassemble(uint64_t addr, uint32_t instrValue, int len, char *result)
 {
 	Instruction instr;
 	memset(&instr, 0, sizeof(instr));
 
-	aarch64_decompose(instrValue, &instr, addr);
+	int rc = aarch64_decompose(instrValue, &instr, addr);
+	if(rc != DECODE_STATUS_OK)
+		return rc;
 
-	aarch64_disassemble(&instr, result, 1024);
+	return aarch64_disassemble(&instr, result, 1024);
 }
 
 int aarch64_decompose(uint32_t instructionValue, Instruction *instr, uint64_t address);
@@ -134,10 +136,24 @@ const (
 	SHIFT_TYPE_END
 )
 
-type failureCode uint32
+type returnCode int
 
+// decode return values
 const (
-	DISASM_SUCCESS failureCode = iota
+	DECODE_STATUS_ERROR_OPERANDS     returnCode = -9
+	DECODE_STATUS_ASSERT_FAILED      returnCode = -8 // failed an assert
+	DECODE_STATUS_UNREACHABLE        returnCode = -7 // ran into pcode Unreachable()
+	DECODE_STATUS_LOST               returnCode = -6 // descended past checks, ie: "SEE encoding_up_higher"
+	DECODE_STATUS_END_OF_INSTRUCTION returnCode = -5 // spec decode EndOfInstruction(), instruction executes as NOP
+	DECODE_STATUS_UNDEFINED          returnCode = -4 // spec says this encoding is undefined, often due to a disallowed field or a missing feature, eg: "if !HaveBF16Ext() then UNDEFINED;"
+	DECODE_STATUS_UNALLOCATED        returnCode = -3 // spec says this space is unallocated, eg: UNALLOCATED_10_branch_reg
+	DECODE_STATUS_UNMATCHED          returnCode = -2 // decoding logic fell through the spec's checks
+	DECODE_STATUS_RESERVED           returnCode = -1 // spec says this space is reserved, eg: RESERVED_36_asisdsame
+)
+
+// FailureCode - these get returned by the disassemble_instruction() function
+const (
+	SUCCESS_OK returnCode = iota
 	INVALID_ARGUMENTS
 	FAILED_TO_DISASSEMBLE_OPERAND
 	FAILED_TO_DISASSEMBLE_OPERATION
@@ -281,17 +297,15 @@ func GetOpCodeByteString(opcode uint32) string {
 }
 
 // Disassemble disassembles an instruction
-func Disassemble(addr uint64, instruction uint32, results *[1024]byte) (string, error) {
+func Disassemble(addr uint64, instructionValue uint32, results *[1024]byte) (string, error) {
 
-	C.disassemble(
+	if rc := C.disassemble(
 		C.uint64_t(addr),                   // uint64_t addr
-		C.uint32_t(instruction),            // uint32_t instrValue
+		C.uint32_t(instructionValue),       // uint32_t instrValue
 		C.int(4),                           // int len
 		(*C.char)(unsafe.Pointer(results)), // char *result
-	)
-
-	if results[1023] != 0 {
-		return "", fmt.Errorf("input results buffer was too small")
+	); returnCode(rc) != SUCCESS_OK {
+		return "", fmt.Errorf("failed to disassemble instruction %#x: %s", instructionValue, returnCode(rc).String())
 	}
 
 	return C.GoString((*C.char)(unsafe.Pointer(results))), nil
@@ -301,26 +315,22 @@ func Disassemble(addr uint64, instruction uint32, results *[1024]byte) (string, 
 func Decompose(addr uint64, instructionValue uint32, results *[1024]byte) (*Instruction, error) {
 
 	var err error
+	var instruction C.Instruction
 
-	var instr []byte
-	instruction := (*C.Instruction)(C.CBytes(instr))
-
-	C.aarch64_decompose(
+	if rc := C.aarch64_decompose(
 		C.uint32_t(instructionValue), // uint32_t instructionValue
-		instruction,                  // Instruction *instr,
+		&instruction,                 // Instruction *instr,
 		C.uint64_t(addr),             // uint64_t address
-	)
+	); returnCode(rc) != SUCCESS_OK {
+		return nil, fmt.Errorf("failed to decompose instruction %#x: %s", instructionValue, returnCode(rc).String())
+	}
 
-	i := goInstruction(instruction)
+	i := goInstruction(&instruction)
 
 	i.Disassembly, err = Disassemble(addr, instructionValue, results)
 	if err != nil {
 		return nil, err
 	}
-
-	// if ret := C.aarch64_disassemble(instruction, (*C.char)(unsafe.Pointer(results)), C.size_t(1024)); ret != 0 {
-	// 	return nil, fmt.Errorf("failed to disassemble instruction %#x: %s", instructionValue, failureCode(ret))
-	// }
 
 	return i, nil
 }
