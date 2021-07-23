@@ -5,15 +5,17 @@ package disassemble
 /*
 #cgo CFLAGS: -I${SRCDIR}
 
+#include <stdlib.h>
+
 #include "decode.h"
 #include "format.h"
 
-void disassemble(uint64_t addr, uint8_t *data, int len, char *result)
+void disassemble(uint64_t addr, uint32_t instrValue, int len, char *result)
 {
 	Instruction instr;
 	memset(&instr, 0, sizeof(instr));
 
-	aarch64_decompose(*(uint32_t *)data, &instr, addr);
+	aarch64_decompose(instrValue, &instr, addr);
 
 	aarch64_disassemble(&instr, result, 1024);
 }
@@ -27,6 +29,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"unsafe"
 )
 
 const (
@@ -278,44 +281,46 @@ func GetOpCodeByteString(opcode uint32) string {
 }
 
 // Disassemble disassembles an instruction
-func Disassemble(addr uint64, instruction uint32) (string, error) {
-
-	var results []byte
-	cResults := (*C.char)(C.CBytes(results))
-
-	instrBytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(instrBytes, instruction)
+func Disassemble(addr uint64, instruction uint32, results *[1024]byte) (string, error) {
 
 	C.disassemble(
 		C.uint64_t(addr),                   // uint64_t addr
-		(*C.uint8_t)(C.CBytes(instrBytes)), // uint8_t *data
+		C.uint32_t(instruction),            // uint32_t instrValue
 		C.int(4),                           // int len
-		cResults)                           // char *result
+		(*C.char)(unsafe.Pointer(results)), // char *result
+	)
 
-	return C.GoString(cResults), nil
+	if results[1023] != 0 {
+		return "", fmt.Errorf("input results buffer was too small")
+	}
+
+	return C.GoString((*C.char)(unsafe.Pointer(results))), nil
 }
 
 // Decompose decomposes an instruction
-func Decompose(addr uint64, instructionValue uint32) (*Instruction, error) {
+func Decompose(addr uint64, instructionValue uint32, results *[1024]byte) (*Instruction, error) {
+
+	var err error
 
 	var instr []byte
 	instruction := (*C.Instruction)(C.CBytes(instr))
 
-	var results []byte
-	cResults := (*C.char)(C.CBytes(results))
-
-	instrBytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(instrBytes, instructionValue)
-
-	C.aarch64_decompose(*(*C.uint32_t)(C.CBytes(instrBytes)), instruction, C.uint64_t(addr))
+	C.aarch64_decompose(
+		C.uint32_t(instructionValue), // uint32_t instructionValue
+		instruction,                  // Instruction *instr,
+		C.uint64_t(addr),             // uint64_t address
+	)
 
 	i := goInstruction(instruction)
 
-	if ret := C.aarch64_disassemble(instruction, cResults, C.size_t(1024)); ret != 0 {
-		return nil, fmt.Errorf("failed to disassemble instruction %#x: %s", instructionValue, failureCode(ret))
+	i.Disassembly, err = Disassemble(addr, instructionValue, results)
+	if err != nil {
+		return nil, err
 	}
 
-	i.Disassembly = C.GoString(cResults)
+	// if ret := C.aarch64_disassemble(instruction, (*C.char)(unsafe.Pointer(results)), C.size_t(1024)); ret != 0 {
+	// 	return nil, fmt.Errorf("failed to disassemble instruction %#x: %s", instructionValue, failureCode(ret))
+	// }
 
 	return i, nil
 }

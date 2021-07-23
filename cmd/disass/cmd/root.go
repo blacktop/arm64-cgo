@@ -171,6 +171,8 @@ var rootCmd = &cobra.Command{
 			fmt.Println(symbolName + ":")
 		}
 
+		var resutls [1024]byte
+
 		for {
 			err = binary.Read(r, binary.LittleEndian, &instrValue)
 
@@ -179,14 +181,14 @@ var rootCmd = &cobra.Command{
 			}
 
 			if asJSON {
-				instruction, err := disassemble.Decompose(symAddr, instrValue)
+				instruction, err := disassemble.Decompose(symAddr, instrValue, &resutls)
 				if err != nil {
 					log.Fatal(err)
 				}
 
 				instructions = append(instructions, *instruction)
 			} else {
-				instruction, err := disassemble.Disassemble(symAddr, instrValue)
+				instruction, err := disassemble.Disassemble(symAddr, instrValue, &resutls)
 				if err != nil {
 					log.Fatal(err)
 				}
