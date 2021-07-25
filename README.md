@@ -142,100 +142,76 @@ disass hello-mte --symbol _main --json | jq .
 ```json
 [
    {
+      "address": 4294999644,
       "raw": 3573752703,
       "encoding": "PACIBSP_HI_hints",
       "operation": "pacibsp",
       "disassembly": "pacibsp"
    },
    {
-      "raw": 3506521087,
+      "address": 4294999648,
+      "raw": 3506619391,
       "encoding": "SUB_64_addsub_imm",
       "operation": "sub",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "sp"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "sp"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "IMM64",
-            "arr_spec": "ARRSPEC_NONE",
-            "condition": "COND_EQ",
-            "immediate": 80,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            "immediate": 176
          }
       ],
-      "disassembly": "sub\tsp, sp, #0x50"
+      "disassembly": "sub\tsp, sp, #0xb0"
    },
    {
-      "raw": 2835643389,
+      "address": 4294999652,
+      "raw": 2836036605,
       "encoding": "STP_64_ldstpair_off",
       "operation": "stp",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x29"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x30"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "MEM_OFFSET",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "sp"
             ],
-            "condition": "COND_EQ",
-            "immediate": 64,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE",
+            "immediate": 160,
             "signed_imm": true
          }
       ],
-      "disassembly": "stp\tx29, x30, [sp, #0x40]"
+      "disassembly": "stp\tx29, x30, [sp, #0xa0]"
    },
    <SNIP>
-   {
+  {
+      "address": 4294999788,
       "raw": 3558866976,
       "encoding": "BRK_EX_exception",
       "operation": "brk",
       "operands": [
          {
             "class": "IMM32",
-            "arr_spec": "ARRSPEC_NONE",
-            "condition": "COND_EQ",
-            "immediate": 1,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            "immediate": 1
          }
       ],
       "disassembly": "brk\t#0x1"

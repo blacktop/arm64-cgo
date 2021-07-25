@@ -432,6 +432,7 @@ func (o *Operand) MarshalJSON() ([]byte, error) {
 
 // Instruction is an arm64 instruction object
 type Instruction struct {
+	Address     uint64    `json:"address,omitempty"`
 	Raw         uint32    `json:"raw,omitempty"`
 	Encoding    encoding  `json:"encoding,omitempty"`
 	Operation   operation `json:"operation,omitempty"`
@@ -452,6 +453,7 @@ func (i *Instruction) String() string {
 // MarshalJSON is the instruction's custom JSON marshaler
 func (i *Instruction) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
+		Address     uint64    `json:"address,omitempty"`
 		Raw         uint32    `json:"raw,omitempty"`
 		Encoding    string    `json:"encoding,omitempty"`
 		Operation   string    `json:"operation,omitempty"`
@@ -459,6 +461,7 @@ func (i *Instruction) MarshalJSON() ([]byte, error) {
 		SetFlags    bool      `json:"set_flags,omitempty"`
 		Disassembly string    `json:"disassembly,omitempty"`
 	}{
+		Address:     i.Address,
 		Raw:         i.Raw,
 		Encoding:    i.Encoding.String(),
 		Operation:   i.Operation.String(),
@@ -513,6 +516,7 @@ func Decompose(addr uint64, instructionValue uint32, results *[1024]byte) (*Inst
 	if err != nil {
 		return nil, err
 	}
+	i.Address = addr
 
 	return i, nil
 }
