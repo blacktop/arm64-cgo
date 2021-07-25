@@ -1,6 +1,6 @@
 package disassemble
 
-//go:generate stringer -type=arrangementSpec,operandClass,condition,shiftType,returnCode,Group  -output disassemble_string.go
+//go:generate stringer -type=returnCode -output return_string.go
 
 /*
 #cgo CFLAGS: -I${SRCDIR}
@@ -72,6 +72,43 @@ const (
 	ARRSPEC_1BYTE = 14 /* (.b) one 8-bit byte: REG_V0_B0 */
 )
 
+func (a arrangementSpec) String() string {
+	switch a {
+	case ARRSPEC_NONE:
+		return ""
+	case ARRSPEC_FULL:
+		return "FULL"
+	case ARRSPEC_2DOUBLES:
+		return "2DOUBLES"
+	case ARRSPEC_4SINGLES:
+		return "4SINGLES"
+	case ARRSPEC_8HALVES:
+		return "8HALVES"
+	case ARRSPEC_16BYTES:
+		return "16BYTES"
+	case ARRSPEC_1DOUBLE:
+		return "1DOUBLE"
+	case ARRSPEC_2SINGLES:
+		return "2SINGLES"
+	case ARRSPEC_4HALVES:
+		return "4HALVES"
+	case ARRSPEC_8BYTES:
+		return "8BYTES"
+	case ARRSPEC_1SINGLE:
+		return "1SINGLE"
+	case ARRSPEC_2HALVES:
+		return "2HALVES"
+	case ARRSPEC_4BYTES:
+		return "4BYTES"
+	case ARRSPEC_1HALF:
+		return "1HALF"
+	case ARRSPEC_1BYTE:
+		return "1BYTE"
+	default:
+		return fmt.Sprintf("arrangementSpec(%d)", a)
+	}
+}
+
 type operandClass uint32
 
 const (
@@ -93,6 +130,47 @@ const (
 	NAME
 	IMPLEMENTATION_SPECIFIC
 )
+
+func (o operandClass) String() string {
+	switch o {
+	case NONE:
+		return ""
+	case IMM32:
+		return "IMM32"
+	case IMM64:
+		return "IMM64"
+	case FIMM32:
+		return "FIMM32"
+	case STR_IMM:
+		return "STR_IMM"
+	case REG:
+		return "REG"
+	case MULTI_REG:
+		return "MULTI_REG"
+	case SYS_REG:
+		return "SYS_REG"
+	case MEM_REG:
+		return "MEM_REG"
+	case MEM_PRE_IDX:
+		return "MEM_PRE_IDX"
+	case MEM_POST_IDX:
+		return "MEM_POST_IDX"
+	case MEM_OFFSET:
+		return "MEM_OFFSET"
+	case MEM_EXTENDED:
+		return "MEM_EXTENDED"
+	case LABEL:
+		return "LABEL"
+	case CONDITION:
+		return "CONDITION"
+	case NAME:
+		return "NAME"
+	case IMPLEMENTATION_SPECIFIC:
+		return "IMPLEMENTATION_SPECIFIC"
+	default:
+		return fmt.Sprintf("operandClass(%d)", o)
+	}
+}
 
 type condition uint32
 
@@ -116,6 +194,50 @@ const (
 	END_CONDITION
 )
 
+func (c condition) String(o operandClass) string {
+	switch c {
+	case COND_EQ:
+		if o == CONDITION {
+			return "EQ"
+		}
+		return ""
+	case COND_NE:
+		return "NE"
+	case COND_CS:
+		return "CS"
+	case COND_CC:
+		return "CC"
+	case COND_MI:
+		return "MI"
+	case COND_PL:
+		return "PL"
+	case COND_VS:
+		return "VS"
+	case COND_VC:
+		return "VC"
+	case COND_HI:
+		return "HI"
+	case COND_LS:
+		return "LS"
+	case COND_GE:
+		return "GE"
+	case COND_LT:
+		return "LT"
+	case COND_GT:
+		return "GT"
+	case COND_LE:
+		return "LE"
+	case COND_AL:
+		return "AL"
+	case COND_NV:
+		return "NV"
+	case END_CONDITION:
+		return "END_CONDITION"
+	default:
+		return fmt.Sprintf("condition(%d)", c)
+	}
+}
+
 type shiftType uint32
 
 const (
@@ -135,6 +257,43 @@ const (
 	SHIFT_TYPE_MSL
 	SHIFT_TYPE_END
 )
+
+func (s shiftType) String() string {
+	switch s {
+	case SHIFT_TYPE_NONE:
+		return ""
+	case SHIFT_TYPE_LSL:
+		return "LSL"
+	case SHIFT_TYPE_LSR:
+		return "LSR"
+	case SHIFT_TYPE_ASR:
+		return "ASR"
+	case SHIFT_TYPE_ROR:
+		return "ROR"
+	case SHIFT_TYPE_UXTW:
+		return "UXTW"
+	case SHIFT_TYPE_SXTW:
+		return "SXTW"
+	case SHIFT_TYPE_SXTX:
+		return "SXTX"
+	case SHIFT_TYPE_UXTX:
+		return "UXTX"
+	case SHIFT_TYPE_SXTB:
+		return "SXTB"
+	case SHIFT_TYPE_SXTH:
+		return "SXTH"
+	case SHIFT_TYPE_UXTH:
+		return "UXTH"
+	case SHIFT_TYPE_UXTB:
+		return "UXTB"
+	case SHIFT_TYPE_MSL:
+		return "MSL"
+	case SHIFT_TYPE_END:
+		return "END"
+	default:
+		return fmt.Sprintf("shiftType(%d)", s)
+	}
+}
 
 type returnCode int
 
@@ -176,6 +335,29 @@ const (
 	GROUP_DATA_PROCESSING_SIMD2
 	END_GROUP
 )
+
+func (g Group) String() string {
+	switch g {
+	case GROUP_UNALLOCATED:
+		return ""
+	case GROUP_DATA_PROCESSING_IMM:
+		return "DATA_PROCESSING_IMM"
+	case GROUP_BRANCH_EXCEPTION_SYSTEM:
+		return "BRANCH_EXCEPTION_SYSTEM"
+	case GROUP_LOAD_STORE:
+		return "LOAD_STORE"
+	case GROUP_DATA_PROCESSING_REG:
+		return "DATA_PROCESSING_REG"
+	case GROUP_DATA_PROCESSING_SIMD:
+		return "DATA_PROCESSING_SIMD"
+	case GROUP_DATA_PROCESSING_SIMD2:
+		return "DATA_PROCESSING_SIMD2"
+	case END_GROUP:
+		return "END_GROUP"
+	default:
+		return fmt.Sprintf("Group(%d)", g)
+	}
+}
 
 // Operand is an arm64 instruction operand object
 type Operand struct {
@@ -231,7 +413,7 @@ func (o *Operand) MarshalJSON() ([]byte, error) {
 		Class:          o.Class.String(),
 		ArrSpec:        o.ArrSpec.String(),
 		Registers:      regs,
-		Condition:      o.Condition.String(),
+		Condition:      o.Condition.String(o.Class),
 		ImplSpec:       o.ImplSpec,
 		SysReg:         o.SysReg.String(),
 		LaneUsed:       o.LaneUsed,
