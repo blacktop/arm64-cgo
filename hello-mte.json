@@ -1,1147 +1,852 @@
 [
    {
+      "address": 4294999792,
       "raw": 3573752703,
       "encoding": "PACIBSP_HI_hints",
       "operation": "pacibsp",
       "disassembly": "pacibsp"
    },
    {
+      "address": 4294999796,
       "raw": 3506521087,
       "encoding": "SUB_64_addsub_imm",
       "operation": "sub",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "sp"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "sp"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "IMM64",
-            "arr_spec": "ARRSPEC_NONE",
-            "condition": "COND_EQ",
-            "immediate": 80,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            "immediate": 80
          }
       ],
       "disassembly": "sub\tsp, sp, #0x50"
    },
    {
+      "address": 4294999800,
       "raw": 2835643389,
       "encoding": "STP_64_ldstpair_off",
       "operation": "stp",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x29"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x30"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "MEM_OFFSET",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "sp"
             ],
-            "condition": "COND_EQ",
             "immediate": 64,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE",
             "signed_imm": true
          }
       ],
       "disassembly": "stp\tx29, x30, [sp, #0x40]"
    },
    {
+      "address": 4294999804,
       "raw": 2432762877,
       "encoding": "ADD_64_addsub_imm",
       "operation": "add",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x29"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "sp"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "IMM64",
-            "arr_spec": "ARRSPEC_NONE",
-            "condition": "COND_EQ",
-            "immediate": 64,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            "immediate": 64
          }
       ],
       "disassembly": "add\tx29, sp, #0x40"
    },
    {
+      "address": 4294999808,
       "raw": 2952790024,
       "encoding": "ADRP_only_pcreladdr",
       "operation": "adrp",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x8"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "LABEL",
-            "arr_spec": "ARRSPEC_NONE",
-            "condition": "COND_EQ",
-            "immediate": 4295000064,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            "immediate": 4295000064
          }
       ],
       "disassembly": "adrp\tx8, 0x100008000"
    },
    {
+      "address": 4294999812,
       "raw": 4181723400,
       "encoding": "LDR_64_ldst_pos",
       "operation": "ldr",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x8"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "MEM_OFFSET",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x8"
             ],
-            "condition": "COND_EQ",
             "immediate": 16,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE",
             "signed_imm": true
          }
       ],
       "disassembly": "ldr\tx8, [x8, #0x10]"
    },
    {
+      "address": 4294999816,
       "raw": 4181721352,
       "encoding": "LDR_64_ldst_pos",
       "operation": "ldr",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x8"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "MEM_OFFSET",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x8"
             ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE",
             "signed_imm": true
          }
       ],
       "disassembly": "ldr\tx8, [x8]"
    },
    {
+      "address": 4294999820,
       "raw": 4162814888,
       "encoding": "STUR_64_ldst_unscaled",
       "operation": "stur",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x8"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "MEM_OFFSET",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x29"
             ],
-            "condition": "COND_EQ",
             "immediate": -8,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE",
             "signed_imm": true
          }
       ],
       "disassembly": "stur\tx8, [x29, #-0x8]"
    },
    {
+      "address": 4294999824,
       "raw": 3531603976,
       "encoding": "MOV_MOVZ_64_movewide",
       "operation": "mov",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x8"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
-            "class": "IMM64",
-            "arr_spec": "ARRSPEC_NONE",
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            "class": "IMM64"
          }
       ],
       "disassembly": "mov\tx8, #0"
    },
    {
+      "address": 4294999828,
       "raw": 2596803560,
       "encoding": "IRG_64I_dp_2src",
       "operation": "irg",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x8"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "sp"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x8"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          }
       ],
       "disassembly": "irg\tx8, sp, x8"
    },
    {
+      "address": 4294999832,
       "raw": 2441216265,
       "encoding": "ADDG_64_addsub_immtags",
       "operation": "addg",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x9"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x8"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "IMM32",
-            "arr_spec": "ARRSPEC_NONE",
-            "condition": "COND_EQ",
-            "immediate": 32,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            "immediate": 32
          },
          {
-            "class": "IMM32",
-            "arr_spec": "ARRSPEC_NONE",
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            "class": "IMM32"
          }
       ],
       "disassembly": "addg\tx9, x8, #0x20, #0"
    },
    {
+      "address": 4294999836,
       "raw": 3642755369,
       "encoding": "STG_64Soffset_ldsttags",
       "operation": "stg",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x9"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "MEM_OFFSET",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x9"
             ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE",
             "signed_imm": true
          }
       ],
       "disassembly": "stg\tx9, [x9]"
    },
    {
+      "address": 4294999840,
       "raw": 2441151752,
       "encoding": "ADDG_64_addsub_immtags",
       "operation": "addg",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x8"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x8"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "IMM32",
-            "arr_spec": "ARRSPEC_NONE",
-            "condition": "COND_EQ",
-            "immediate": 16,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            "immediate": 16
          },
          {
             "class": "IMM32",
-            "arr_spec": "ARRSPEC_NONE",
-            "condition": "COND_EQ",
-            "immediate": 1,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            "immediate": 1
          }
       ],
       "disassembly": "addg\tx8, x8, #0x10, #0x1"
    },
    {
+      "address": 4294999844,
       "raw": 3642755336,
       "encoding": "STG_64Soffset_ldsttags",
       "operation": "stg",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x8"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "MEM_OFFSET",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x8"
             ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE",
             "signed_imm": true
          }
       ],
       "disassembly": "stg\tx8, [x8]"
    },
    {
+      "address": 4294999848,
       "raw": 1384120330,
       "encoding": "MOV_MOVZ_32_movewide",
       "operation": "mov",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "w10"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
-            "class": "IMM32",
-            "arr_spec": "ARRSPEC_NONE",
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            "class": "IMM32"
          }
       ],
       "disassembly": "mov\tw10, #0"
    },
    {
+      "address": 4294999852,
       "raw": 3103785258,
       "encoding": "STR_32_ldst_pos",
       "operation": "str",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "w10"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "MEM_OFFSET",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x9"
             ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE",
             "signed_imm": true
          }
       ],
       "disassembly": "str\tw10, [x9]"
    },
    {
+      "address": 4294999856,
       "raw": 4177528808,
       "encoding": "STR_64_ldst_pos",
       "operation": "str",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x8"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "MEM_OFFSET",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "sp"
             ],
-            "condition": "COND_EQ",
             "immediate": 8,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE",
             "signed_imm": true
          }
       ],
       "disassembly": "str\tx8, [sp, #0x8]"
    },
    {
+      "address": 4294999860,
       "raw": 2550136778,
       "encoding": "BL_only_branch_imm",
       "operation": "bl",
       "operands": [
          {
             "class": "LABEL",
-            "arr_spec": "ARRSPEC_NONE",
-            "condition": "COND_EQ",
-            "immediate": 4294999644,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            "immediate": 4294999644
          }
       ],
       "disassembly": "bl\t0x100007e5c"
    },
    {
+      "address": 4294999864,
       "raw": 4181723112,
       "encoding": "LDR_64_ldst_pos",
       "operation": "ldr",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x8"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "MEM_OFFSET",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "sp"
             ],
-            "condition": "COND_EQ",
             "immediate": 8,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE",
             "signed_imm": true
          }
       ],
       "disassembly": "ldr\tx8, [sp, #0x8]"
    },
    {
+      "address": 4294999868,
       "raw": 956301568,
       "encoding": "STRB_32_ldst_pos",
       "operation": "strb",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "w0"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "MEM_OFFSET",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x8"
             ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE",
             "signed_imm": true
          }
       ],
       "disassembly": "strb\tw0, [x8]"
    },
    {
+      "address": 4294999872,
       "raw": 960495882,
       "encoding": "LDRB_32_ldst_pos",
       "operation": "ldrb",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "w10"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "MEM_OFFSET",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x8"
             ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE",
             "signed_imm": true
          }
       ],
       "disassembly": "ldrb\tw10, [x8]"
    },
    {
+      "address": 4294999876,
       "raw": 2852783081,
       "encoding": "MOV_ORR_64_log_shift",
       "operation": "mov",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x9"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x10"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          }
       ],
       "disassembly": "mov\tx9, x10"
    },
    {
+      "address": 4294999880,
       "raw": 2432697323,
       "encoding": "MOV_ADD_64_addsub_imm",
       "operation": "mov",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x11"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "sp"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          }
       ],
       "disassembly": "mov\tx11, sp"
    },
    {
+      "address": 4294999884,
       "raw": 4177527145,
       "encoding": "STR_64_ldst_pos",
       "operation": "str",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x9"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "MEM_OFFSET",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x11"
             ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE",
             "signed_imm": true
          }
       ],
       "disassembly": "str\tx9, [x11]"
    },
    {
+      "address": 4294999888,
       "raw": 2415919104,
       "encoding": "ADRP_only_pcreladdr",
       "operation": "adrp",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x0"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "LABEL",
-            "arr_spec": "ARRSPEC_NONE",
-            "condition": "COND_EQ",
-            "immediate": 4294995968,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            "immediate": 4294995968
          }
       ],
       "disassembly": "adrp\tx0, 0x100007000"
    },
    {
+      "address": 4294999892,
       "raw": 2436812800,
       "encoding": "ADD_64_addsub_imm",
       "operation": "add",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x0"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x0"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "IMM64",
-            "arr_spec": "ARRSPEC_NONE",
-            "condition": "COND_EQ",
-            "immediate": 4020,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            "immediate": 4020
          }
       ],
       "disassembly": "add\tx0, x0, #0xfb4"
    },
    {
+      "address": 4294999896,
       "raw": 2483027987,
       "encoding": "BL_only_branch_imm",
       "operation": "bl",
       "operands": [
          {
             "class": "LABEL",
-            "arr_spec": "ARRSPEC_NONE",
-            "condition": "COND_EQ",
-            "immediate": 4294999972,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            "immediate": 4294999972
          }
       ],
       "disassembly": "bl\t0x100007fa4"
    },
    {
+      "address": 4294999900,
       "raw": 3651148799,
       "encoding": "ST2G_64Soffset_ldsttags",
       "operation": "st2g",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "sp"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "MEM_OFFSET",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "sp"
             ],
-            "condition": "COND_EQ",
             "immediate": 16,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE",
             "signed_imm": true
          }
       ],
       "disassembly": "st2g\tsp, [sp, #0x10]"
    },
    {
+      "address": 4294999904,
       "raw": 2952790024,
       "encoding": "ADRP_only_pcreladdr",
       "operation": "adrp",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x8"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "LABEL",
-            "arr_spec": "ARRSPEC_NONE",
-            "condition": "COND_EQ",
-            "immediate": 4295000064,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            "immediate": 4295000064
          }
       ],
       "disassembly": "adrp\tx8, 0x100008000"
    },
    {
+      "address": 4294999908,
       "raw": 4181723400,
       "encoding": "LDR_64_ldst_pos",
       "operation": "ldr",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x8"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "MEM_OFFSET",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x8"
             ],
-            "condition": "COND_EQ",
             "immediate": 16,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE",
             "signed_imm": true
          }
       ],
       "disassembly": "ldr\tx8, [x8, #0x10]"
    },
    {
+      "address": 4294999912,
       "raw": 4181721352,
       "encoding": "LDR_64_ldst_pos",
       "operation": "ldr",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x8"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "MEM_OFFSET",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x8"
             ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE",
             "signed_imm": true
          }
       ],
       "disassembly": "ldr\tx8, [x8]"
    },
    {
+      "address": 4294999916,
       "raw": 4167009193,
       "encoding": "LDUR_64_ldst_unscaled",
       "operation": "ldur",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x9"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "MEM_OFFSET",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x29"
             ],
-            "condition": "COND_EQ",
             "immediate": -8,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE",
             "signed_imm": true
          }
       ],
       "disassembly": "ldur\tx9, [x29, #-0x8]"
    },
    {
+      "address": 4294999920,
       "raw": 3943235848,
       "encoding": "SUBS_64_addsub_shift",
       "operation": "subs",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x8"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x8"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x9"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          }
       ],
       "set_flags": true,
       "disassembly": "subs\tx8, x8, x9"
    },
    {
+      "address": 4294999924,
       "raw": 1409286337,
       "encoding": "B_only_condbranch",
       "operation": "b.ne",
       "operands": [
          {
             "class": "LABEL",
-            "arr_spec": "ARRSPEC_NONE",
-            "condition": "COND_EQ",
-            "immediate": 4294999948,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            "immediate": 4294999948
          }
       ],
       "disassembly": "b.ne\t0x100007f8c"
    },
    {
+      "address": 4294999928,
       "raw": 335544321,
       "encoding": "B_only_branch_imm",
       "operation": "b",
       "operands": [
          {
             "class": "LABEL",
-            "arr_spec": "ARRSPEC_NONE",
-            "condition": "COND_EQ",
-            "immediate": 4294999932,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            "immediate": 4294999932
          }
       ],
       "disassembly": "b\t0x100007f7c"
    },
    {
+      "address": 4294999932,
       "raw": 1384120320,
       "encoding": "MOV_MOVZ_32_movewide",
       "operation": "mov",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "w0"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
-            "class": "IMM32",
-            "arr_spec": "ARRSPEC_NONE",
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            "class": "IMM32"
          }
       ],
       "disassembly": "mov\tw0, #0"
    },
    {
+      "address": 4294999936,
       "raw": 2839837693,
       "encoding": "LDP_64_ldstpair_off",
       "operation": "ldp",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x29"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "x30"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "MEM_OFFSET",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "sp"
             ],
-            "condition": "COND_EQ",
             "immediate": 64,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE",
             "signed_imm": true
          }
       ],
       "disassembly": "ldp\tx29, x30, [sp, #0x40]"
    },
    {
+      "address": 4294999940,
       "raw": 2432779263,
       "encoding": "ADD_64_addsub_imm",
       "operation": "add",
       "operands": [
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "sp"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "REG",
-            "arr_spec": "ARRSPEC_NONE",
             "registers": [
                "sp"
-            ],
-            "condition": "COND_EQ",
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            ]
          },
          {
             "class": "IMM64",
-            "arr_spec": "ARRSPEC_NONE",
-            "condition": "COND_EQ",
-            "immediate": 80,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            "immediate": 80
          }
       ],
       "disassembly": "add\tsp, sp, #0x50"
    },
    {
+      "address": 4294999944,
       "raw": 3596554239,
       "encoding": "RETAB_64E_branch_reg",
       "operation": "retab",
       "disassembly": "retab"
    },
    {
+      "address": 4294999948,
       "raw": 2483027970,
       "encoding": "BL_only_branch_imm",
       "operation": "bl",
       "operands": [
          {
             "class": "LABEL",
-            "arr_spec": "ARRSPEC_NONE",
-            "condition": "COND_EQ",
-            "immediate": 4294999956,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            "immediate": 4294999956
          }
       ],
       "disassembly": "bl\t0x100007f94"
    },
    {
+      "address": 4294999952,
       "raw": 3558866976,
       "encoding": "BRK_EX_exception",
       "operation": "brk",
       "operands": [
          {
             "class": "IMM32",
-            "arr_spec": "ARRSPEC_NONE",
-            "condition": "COND_EQ",
-            "immediate": 1,
-            "shift_type": "SHIFT_TYPE_NONE",
-            "extend": "SHIFT_TYPE_NONE"
+            "immediate": 1
          }
       ],
       "disassembly": "brk\t#0x1"
