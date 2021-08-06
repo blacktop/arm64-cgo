@@ -28,11 +28,6 @@ jobs:
         with:
           go-version: 1.16
       -
-        name: Run Gosec Security Scanner
-        uses: securego/gosec@master
-        with:
-          args: ./...
-      -
         name: Build Dependencies (Linux)
         if: matrix.platform == 'ubuntu-latest'
         run: |
