@@ -9,7 +9,7 @@
 
 ## Getting Started
 
-```
+```bash
 go get github.com/blacktop/arm64-cgo
 ```
 
@@ -66,7 +66,7 @@ func main() {
 
 ### Install
 
-```
+```bash
 go install github.com/blacktop/arm64-cgo/cmd/disass
 ```
 
@@ -77,6 +77,7 @@ go install github.com/blacktop/arm64-cgo/cmd/disass
 ```bash
 disass hello-mte --vaddr 0x100007f1c
 ```
+
 ```s
 _main:
 0x100007ef0:  7f 23 03 d5       pacibsp
@@ -124,7 +125,7 @@ _main:
 
 ### Make it pretty 💄
 
-```
+```bash
 brew install bat
 ```
 
