@@ -559,6 +559,7 @@ func (intrs Instructions) Blocks() []Instructions {
 	var blocks []Instructions
 
 	for _, i := range intrs {
+		// TODO: this ignores blocks with returning calls that shouldn't end at `bl`
 		if strings.Contains(i.Encoding.String(), "branch") {
 			block = append(block, i)
 			blocks = append(blocks, block)
