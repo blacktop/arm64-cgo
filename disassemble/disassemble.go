@@ -31,6 +31,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"io"
 	"unsafe"
 )
 
@@ -519,6 +520,34 @@ func Decompose(addr uint64, instructionValue uint32, results *[1024]byte) (*Inst
 	i.Address = addr
 
 	return i, nil
+}
+
+// GetInstructions returns an array of arm64 instruction pointers for a given start address and data blob
+func GetInstructions(startAddr uint64, data []byte) ([]*Instruction, error) {
+	var resutls [1024]byte
+	var instrValue uint32
+	var instructions []*Instruction
+
+	r := bytes.NewReader(data)
+
+	for {
+		err := binary.Read(r, binary.LittleEndian, &instrValue)
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return nil, fmt.Errorf("failed to read 32-bit instruction value: %v", err)
+		}
+
+		if instruction, err := Decompose(startAddr, instrValue, &resutls); err != nil {
+			return nil, err
+		} else {
+			instructions = append(instructions, instruction)
+		}
+
+		startAddr += uint64(binary.Size(uint32(0)))
+	}
+
+	return instructions, nil
 }
 
 // goInstruction converts the cgo version into Go vesrion
