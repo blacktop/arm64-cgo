@@ -17,9 +17,9 @@ build: ## Build disass locally
 	CGO_ENABLED=1 go build -o disass.${NEXT_VERSION} ./cmd/disass
 
 .PHONY: test
-test: ## Run disass on hello-mte
+test: build ## Test disass on hello-mte
 	@echo " > disassembling hello-mte\n"
-	@dist/arm64-cgo_darwin_amd64/disass  ../../Proteas/hello-mte/hello-mte _test
+	@./disass.${NEXT_VERSION} ../../Proteas/hello-mte/hello-mte --symbol _test
 
 .PHONY: dry_release
 dry_release: ## Run goreleaser without releasing/pushing artifacts to github

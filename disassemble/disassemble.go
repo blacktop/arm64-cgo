@@ -32,6 +32,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"unsafe"
 )
 
@@ -431,6 +432,8 @@ func (o *Operand) MarshalJSON() ([]byte, error) {
 	})
 }
 
+type Instructions []*Instruction
+
 // Instruction is an arm64 instruction object
 type Instruction struct {
 	Address     uint64    `json:"address,omitempty"`
@@ -523,10 +526,10 @@ func Decompose(addr uint64, instructionValue uint32, results *[1024]byte) (*Inst
 }
 
 // GetInstructions returns an array of arm64 instruction pointers for a given start address and data blob
-func GetInstructions(startAddr uint64, data []byte) ([]*Instruction, error) {
+func GetInstructions(startAddr uint64, data []byte) (Instructions, error) {
 	var resutls [1024]byte
 	var instrValue uint32
-	var instructions []*Instruction
+	var intrs Instructions
 
 	r := bytes.NewReader(data)
 
@@ -541,13 +544,55 @@ func GetInstructions(startAddr uint64, data []byte) ([]*Instruction, error) {
 		if instruction, err := Decompose(startAddr, instrValue, &resutls); err != nil {
 			return nil, err
 		} else {
-			instructions = append(instructions, instruction)
+			intrs = append(intrs, instruction)
 		}
 
 		startAddr += uint64(binary.Size(uint32(0)))
 	}
 
-	return instructions, nil
+	return intrs, nil
+}
+
+// Blocks returns an array of instruction blocks
+func (intrs Instructions) Blocks() []Instructions {
+	var block Instructions
+	var blocks []Instructions
+
+	for _, i := range intrs {
+		if strings.Contains(i.Encoding.String(), "branch") {
+			block = append(block, i)
+			blocks = append(blocks, block)
+			block = Instructions{} // zero out block
+		} else {
+			block = append(block, i)
+		}
+	}
+
+	return blocks
+}
+
+// GetInstructionBlock returns the block containing a given instruction
+func (intrs Instructions) GetInstructionBlock(i *Instruction) (Instructions, error) {
+	for _, block := range intrs.Blocks() {
+		for _, ii := range block {
+			if ii.Address == i.Address {
+				return block, nil
+			}
+		}
+	}
+	return nil, fmt.Errorf("failed to find block for instruction: %s", i.Disassembly)
+}
+
+// GetAddressBlock returns the block containing a given instruction address
+func (intrs Instructions) GetAddressBlock(addr uint64) (Instructions, error) {
+	for _, block := range intrs.Blocks() {
+		for _, i := range block {
+			if i.Address == addr {
+				return block, nil
+			}
+		}
+	}
+	return nil, fmt.Errorf("failed to find block for address: %#x", addr)
 }
 
 // goInstruction converts the cgo version into Go vesrion
