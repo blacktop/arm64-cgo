@@ -617,6 +617,7 @@ func goInstruction(instr *C.Instruction) *Instruction {
 				Immediate:      uint64(op.immediate),
 				ShiftType:      shiftType(op.shiftType),
 				ShiftValueUsed: bool(op.shiftValueUsed),
+				ShiftValue:     uint32(op.shiftValue),
 				Extend:         shiftType(op.extend),
 				SignedImm:      bool(op.signedImm),
 				PredQual:       byte(op.pred_qual),
