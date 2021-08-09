@@ -1,9 +1,9 @@
 package disassemble
 
-type register uint32
+type Register uint32
 
 const (
-	REG_NONE register = iota
+	REG_NONE Register = iota
 	REG_W0
 	REG_W1
 	REG_W2
@@ -1517,11 +1517,11 @@ var regString = []string{
 	"END",
 }
 
-func (r register) String() string {
+func (r Register) String() string {
 	return regString[r]
 }
 
-func (r register) Size() int {
+func (r Register) Size() int {
 	//Comparison done in order of likelyhood to occur
 	if (r >= REG_X0 && r <= REG_SP) || (r >= REG_D0 && r <= REG_D31) {
 		return 8

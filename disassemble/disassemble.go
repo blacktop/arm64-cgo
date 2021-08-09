@@ -365,7 +365,7 @@ func (g Group) String() string {
 type Operand struct {
 	Class     operandClass    `json:"class,omitempty"`
 	ArrSpec   arrangementSpec `json:"arr_spec,omitempty"`
-	Registers []register      `json:"registers,omitempty"`
+	Registers []Register      `json:"registers,omitempty"`
 
 	Condition condition `json:"condition,omitempty"` // for class CONDITION
 
@@ -628,7 +628,7 @@ func goInstruction(instr *C.Instruction) *Instruction {
 			})
 			for _, reg := range op.reg {
 				if reg != C.Register(REG_NONE) {
-					i.Operands[idx].Registers = append(i.Operands[idx].Registers, register(reg))
+					i.Operands[idx].Registers = append(i.Operands[idx].Registers, Register(reg))
 				}
 			}
 			if !allZero(op.implspec) {
