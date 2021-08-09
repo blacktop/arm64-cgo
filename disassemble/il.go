@@ -1,7 +1,66 @@
 package disassemble
 
+import "math"
+
 type LowLevelILFunction struct {
 }
+
+func ones32(i uint32) uint32 {
+	return math.MaxUint32 >> (32 - i)
+}
+
+func ones64(i uint64) uint64 {
+	return math.MaxUint64 >> (64 - i)
+}
+
+// func (o *Operand) ExtractImmediate(int sizeof_imm) {
+
+// 	if o.Class != IMM32 && o.Class != IMM64 {
+// 		return il.Unimplemented()
+// 	}
+
+// 	imm := o.Immediate
+
+// 	if o.ShiftValueUsed {
+// 		switch o.ShiftType {
+// 		case SHIFT_TYPE_LSL:
+// 			imm = imm << uint64(o.ShiftValue)
+// 			break
+// 		case SHIFT_TYPE_LSR:
+// 			imm = imm >> uint64(o.ShiftValue)
+// 			break
+// 		case SHIFT_TYPE_MSL:
+// 			imm = (imm << o.ShiftValue) | uint64(ones32(o.ShiftValue))
+// 			break
+// 		case SHIFT_TYPE_ASR:
+// 			fallthrough
+// 		case SHIFT_TYPE_ROR:
+// 			fallthrough
+// 		case SHIFT_TYPE_UXTW:
+// 			fallthrough
+// 		case SHIFT_TYPE_SXTW:
+// 			fallthrough
+// 		case SHIFT_TYPE_SXTX:
+// 			fallthrough
+// 		case SHIFT_TYPE_UXTX:
+// 			fallthrough
+// 		case SHIFT_TYPE_SXTB:
+// 			fallthrough
+// 		case SHIFT_TYPE_SXTH:
+// 			fallthrough
+// 		case SHIFT_TYPE_UXTH:
+// 			fallthrough
+// 		case SHIFT_TYPE_UXTB:
+// 			fallthrough
+// 		case SHIFT_TYPE_END:
+// 			fallthrough
+// 		default:
+// 			return il.Unimplemented()
+// 		}
+// 	}
+
+// 	return imm & ONES(sizeof_imm*8)
+// }
 
 // func (i *Instruction) GetLowLevelIL(Architecture* arch, uint64_t addr, LowLevelILFunction& il, Instruction& i, size_t addrSize) bool {
 func (i *Instruction) GetLowLevelIL(il *LowLevelILFunction) bool {

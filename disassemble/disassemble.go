@@ -558,9 +558,10 @@ func (intrs Instructions) Blocks() []Instructions {
 	var block Instructions
 	var blocks []Instructions
 
-	for _, i := range intrs {
+	for idx, i := range intrs {
 		// TODO: this ignores blocks with returning calls that shouldn't end at `bl`
-		if strings.Contains(i.Encoding.String(), "branch") {
+		// check if instruction is a branch type and if next instruction checks the result of a call
+		if strings.Contains(i.Encoding.String(), "branch") && (len(intrs)-1 >= idx+1 && intrs[idx+1].Operation != ARM64_CBNZ) {
 			block = append(block, i)
 			blocks = append(blocks, block)
 			block = Instructions{} // zero out block
