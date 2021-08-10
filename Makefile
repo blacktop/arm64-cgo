@@ -14,12 +14,12 @@ build-deps: ## Install the build dependencies
 .PHONY: build
 build: ## Build disass locally
 	@echo " > Building locally"
-	CGO_ENABLED=1 go build -o disass.${NEXT_VERSION} ./cmd/disass
+	CGO_ENABLED=1 go build -o disass.${CUR_VERSION} ./cmd/disass
 
 .PHONY: test
 test: build ## Test disass on hello-mte
 	@echo " > disassembling hello-mte\n"
-	@./disass.${NEXT_VERSION} ../../Proteas/hello-mte/hello-mte --symbol _test
+	@./disass.${CUR_VERSION} ../../Proteas/hello-mte/hello-mte --symbol _main | bat -l s --tabs 0 -p --theme Nord --wrap=never
 
 .PHONY: dry_release
 dry_release: ## Run goreleaser without releasing/pushing artifacts to github
@@ -40,6 +40,7 @@ cross: ## Create xgo releases
 clean: ## Clean up artifacts
 	@echo " > Cleaning"
 	rm -rf dist
+	rm disass.v* || true
 
 # Absolutely awesome: http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 help:
