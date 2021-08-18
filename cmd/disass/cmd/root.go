@@ -32,6 +32,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/AlecAivazis/survey/v2"
+	"github.com/AlecAivazis/survey/v2/terminal"
 	"github.com/blacktop/go-macho"
 
 	"github.com/blacktop/arm64-cgo/disassemble"
@@ -68,12 +70,6 @@ var rootCmd = &cobra.Command{
 		startVMAddr, _ := cmd.Flags().GetUint64("vaddr")
 		symbolName, _ := cmd.Flags().GetString("symbol")
 		asJSON, _ := cmd.Flags().GetBool("json")
-
-		if len(symbolName) > 0 && startVMAddr != 0 {
-			log.Fatal("[ERROR] you can only use --symbol OR --vaddr (not both)")
-		} else if len(symbolName) == 0 && startVMAddr == 0 {
-			log.Fatal("[ERROR] you must supply a --symbol OR --vaddr to disassemble")
-		}
 
 		var isMiddle bool
 		var symAddr uint64
@@ -122,6 +118,33 @@ var rootCmd = &cobra.Command{
 
 		if !strings.Contains(strings.ToLower(m.FileHeader.SubCPU.String(m.CPU)), "arm64") {
 			log.Fatal("[ERROR] can only disassemble arm64 binaries")
+		}
+
+		if len(symbolName) > 0 && startVMAddr != 0 {
+			log.Fatal("[ERROR] you can only use --symbol OR --vaddr (not both)")
+		} else if len(symbolName) == 0 && startVMAddr == 0 {
+			if m.Symtab != nil && len(m.Symtab.Syms) > 0 {
+				var syms []string
+				for _, sym := range m.Symtab.Syms {
+					if _, err := m.GetFunctionForVMAddr(sym.Value); err == nil {
+						syms = append(syms, sym.Name)
+					}
+				}
+				promptVer := &survey.Select{
+					Message:  "Choose a symbol to disassemble:",
+					Options:  syms,
+					PageSize: 20,
+				}
+				if err := survey.AskOne(promptVer, &symbolName); err != nil {
+					if err == terminal.InterruptErr {
+						fmt.Println("Exiting...")
+						os.Exit(0)
+					}
+					log.Fatal(err)
+				}
+			} else {
+				log.Fatal("[ERROR] you must supply a --symbol OR --vaddr to disassemble")
+			}
 		}
 
 		if len(symbolName) > 0 {
