@@ -632,6 +632,7 @@ func goInstruction(instr *C.Instruction) *Instruction {
 				}
 			}
 			if !allZero(op.implspec) {
+				i.Operands[idx].ImplSpec = make([]byte, 5)
 				for k, ispec := range op.implspec {
 					i.Operands[idx].ImplSpec[k] = byte(ispec)
 				}
