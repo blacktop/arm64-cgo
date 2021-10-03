@@ -10,6 +10,7 @@ build-deps: ## Install the build dependencies
 	@echo " > Installing build deps"
 	brew install go goreleaser
 	go get -u github.com/crazy-max/xgo
+	go install golang.org/x/tools/cmd/stringer
 
 .PHONY: build
 build: ## Build disass locally

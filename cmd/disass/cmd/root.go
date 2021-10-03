@@ -27,14 +27,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/AlecAivazis/survey/v2/terminal"
+	"github.com/apex/log"
+	clihander "github.com/apex/log/handlers/cli"
 	"github.com/blacktop/go-macho"
+	"github.com/blacktop/go-macho/types"
 
 	"github.com/blacktop/arm64-cgo/disassemble"
 	"github.com/spf13/cobra"
@@ -44,6 +46,7 @@ import (
 var cfgFile string
 
 func init() {
+	log.SetHandler(clihander.Default)
 	cobra.OnInitialize(initConfig)
 
 	// Here you will define your flags and configuration settings.
@@ -56,6 +59,7 @@ func init() {
 	// when this action is called directly.
 	rootCmd.Flags().BoolP("json", "j", false, "Output as JSON")
 
+	rootCmd.Flags().BoolP("all", "", false, "Disassemble all functions")
 	rootCmd.Flags().StringP("symbol", "s", "", "Function to disassemble")
 	rootCmd.Flags().Uint64P("vaddr", "a", 0, "Virtual address to disassemble")
 }
@@ -70,10 +74,14 @@ var rootCmd = &cobra.Command{
 		startVMAddr, _ := cmd.Flags().GetUint64("vaddr")
 		symbolName, _ := cmd.Flags().GetString("symbol")
 		asJSON, _ := cmd.Flags().GetBool("json")
+		allFuncs, _ := cmd.Flags().GetBool("all")
 
 		var isMiddle bool
 		var symAddr uint64
 		var data []byte
+		var funcs []types.Function
+
+		addr2SymMap := make(map[uint64]string)
 
 		var m *macho.File
 		var instructions []disassemble.Instruction
@@ -100,12 +108,12 @@ var rootCmd = &cobra.Command{
 
 		fat, err := macho.OpenFat(machoPath)
 		if err != nil && err != macho.ErrNotFat {
-			log.Fatal(err)
+			log.Fatal(err.Error())
 		}
 		if err == macho.ErrNotFat {
 			m, err = macho.Open(machoPath)
 			if err != nil {
-				log.Fatal(err)
+				log.Fatal(err.Error())
 			}
 		} else {
 			for _, arch := range fat.Arches {
@@ -120,114 +128,164 @@ var rootCmd = &cobra.Command{
 			log.Fatal("[ERROR] can only disassemble arm64 binaries")
 		}
 
-		if len(symbolName) > 0 && startVMAddr != 0 {
-			log.Fatal("[ERROR] you can only use --symbol OR --vaddr (not both)")
-		} else if len(symbolName) == 0 && startVMAddr == 0 {
-			if m.Symtab != nil && len(m.Symtab.Syms) > 0 {
-				var syms []string
-				for _, sym := range m.Symtab.Syms {
-					if _, err := m.GetFunctionForVMAddr(sym.Value); err == nil {
-						syms = append(syms, sym.Name)
-					}
-				}
-				promptVer := &survey.Select{
-					Message:  "Choose a symbol to disassemble:",
-					Options:  syms,
-					PageSize: 20,
-				}
-				if err := survey.AskOne(promptVer, &symbolName); err != nil {
-					if err == terminal.InterruptErr {
-						fmt.Println("Exiting...")
-						os.Exit(0)
-					}
-					log.Fatal(err)
-				}
-			} else {
-				log.Fatal("[ERROR] you must supply a --symbol OR --vaddr to disassemble")
-			}
+		for _, sym := range m.Symtab.Syms {
+			addr2SymMap[sym.Value] = sym.Name
 		}
 
-		if len(symbolName) > 0 {
-			symAddr, err = m.FindSymbolAddress(symbolName)
-			if err != nil {
-				log.Fatal(err)
+		if !allFuncs {
+			if len(symbolName) > 0 && startVMAddr != 0 {
+				log.Fatal("[ERROR] you can only use --all OR --symbol OR --vaddr (not a combination)")
+			} else if len(symbolName) == 0 && startVMAddr == 0 {
+				if m.Symtab != nil && len(m.Symtab.Syms) > 0 {
+					var syms []string
+					for _, sym := range m.Symtab.Syms {
+						if _, err := m.GetFunctionForVMAddr(sym.Value); err == nil {
+							syms = append(syms, sym.Name)
+						}
+					}
+					promptVer := &survey.Select{
+						Message:  "Choose a symbol to disassemble:",
+						Options:  syms,
+						PageSize: 20,
+					}
+					if err := survey.AskOne(promptVer, &symbolName); err != nil {
+						if err == terminal.InterruptErr {
+							fmt.Println("Exiting...")
+							os.Exit(0)
+						}
+						log.Fatal(err.Error())
+					}
+				} else {
+					log.Fatal("[ERROR] you must supply a --symbol OR --vaddr to disassemble")
+				}
 			}
 
-			fn, err := m.GetFunctionForVMAddr(symAddr)
-			if err != nil {
-				log.Fatal(err)
+			if len(symbolName) > 0 {
+				symAddr, err = m.FindSymbolAddress(symbolName)
+				if err != nil {
+					log.Fatal(err.Error())
+				}
+
+				fn, err := m.GetFunctionForVMAddr(symAddr)
+				if err != nil {
+					log.Fatal(err.Error())
+				}
+
+				funcs = append(funcs, fn)
+
+			} else if startVMAddr > 0 {
+				fn, err := m.GetFunctionForVMAddr(startVMAddr)
+				if err != nil {
+					log.Fatal(err.Error())
+				}
+
+				funcs = append(funcs, fn)
+
+				if startVMAddr != fn.StartAddr {
+					isMiddle = true
+				}
 			}
+		} else {
+			funcs = m.GetFunctions()
+		}
+
+		var instrStr string
+		var instrValue uint32
+		var resutls [1024]byte
+		var prevInstr *disassemble.Instruction
+
+		for idx, fn := range funcs {
 
 			data, err = m.GetFunctionData(fn)
 			if err != nil {
-				log.Fatal(err)
+				log.Fatalf("failed to get data for function %v: %v", fn, err)
 			}
 
-		} else if startVMAddr > 0 {
-			fn, err := m.GetFunctionForVMAddr(startVMAddr)
-			if err != nil {
-				log.Fatal(err)
-			}
+			r := bytes.NewReader(data)
 
-			data, err = m.GetFunctionData(fn)
-			if err != nil {
-				log.Fatal(err)
+			if name, ok := addr2SymMap[fn.StartAddr]; ok && !asJSON {
+				if idx == 0 {
+					fmt.Printf("%s:\n", name)
+				} else {
+					fmt.Printf("\n%s:\n", name)
+				}
+			} else {
+				if idx == 0 {
+					fmt.Printf("sub_%x:\n", fn.StartAddr)
+				} else {
+					fmt.Printf("\nsub_%x:\n", fn.StartAddr)
+				}
 			}
 
 			symAddr = fn.StartAddr
 
-			if startVMAddr != fn.StartAddr {
-				isMiddle = true
-			}
+			for {
+				err = binary.Read(r, binary.LittleEndian, &instrValue)
 
-			for _, sym := range m.Symtab.Syms {
-				if sym.Value == fn.StartAddr {
-					symbolName = sym.Name
+				if err == io.EOF {
+					break
 				}
-			}
-		}
 
-		var instrValue uint32
-		r := bytes.NewReader(data)
+				if asJSON {
+					instruction, err := disassemble.Decompose(symAddr, instrValue, &resutls)
+					if err != nil {
+						log.Fatal(err.Error())
+					}
 
-		if len(symbolName) > 0 && !asJSON {
-			fmt.Println(symbolName + ":")
-		}
+					instructions = append(instructions, *instruction)
+				} else {
+					// instruction, err := disassemble.Disassemble(symAddr, instrValue, &resutls)
+					instruction, err := disassemble.Decompose(symAddr, instrValue, &resutls)
+					if err != nil {
+						if instrValue == 0xfeedfacf {
+							log.Infof("Found possible embedded MachO @ address %#08x (opcodes: %s)", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue))
+							break
+						} else if instrValue == 0x201420 {
+							fmt.Printf("%#08x:  %s\tgenter\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue))
+							continue
+						} else if instrValue == 0x00201400 {
+							fmt.Printf("%#08x:  %s\tgexit\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue))
+							continue
+						} else if instrValue == 0xe7ffdeff {
+							fmt.Printf("%#08x:  %s\tkgdb_breakpoint\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue))
+							continue
+						} else if instrValue > 0xffff0000 {
+							log.Warnf("%s (probably a jump-table)", err.Error())
+							break
+						} else if strings.Contains(prevInstr.Operation.String(), "braa") {
+							break
+						} else if instrValue>>21 == 1 {
+							log.Warnf("MARCAN!!!!!! 🙀: %s @ address %#08x (opcodes: %s)", err.Error(), uint64(symAddr), disassemble.GetOpCodeByteString(instrValue))
+							continue
+						}
+						log.Error(fmt.Sprintf("%s @ address %#08x (opcodes: %s)", err.Error(), uint64(symAddr), disassemble.GetOpCodeByteString(instrValue)))
+						break
+					}
 
-		var resutls [1024]byte
+					instrStr = instruction.String()
 
-		for {
-			err = binary.Read(r, binary.LittleEndian, &instrValue)
+					if instruction.Encoding == disassemble.ENC_BL_ONLY_BRANCH_IMM || instruction.Encoding == disassemble.ENC_B_ONLY_BRANCH_IMM {
+						if name, ok := addr2SymMap[uint64(instruction.Operands[0].Immediate)]; ok {
+							instrStr = fmt.Sprintf("%s\t%s", instruction.Operation, name)
+						}
+					}
 
-			if err == io.EOF {
-				break
+					if isMiddle && startVMAddr == symAddr {
+						fmt.Printf("👉%08x:  %s\t%s\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue), instrStr)
+					} else {
+						fmt.Printf("%#08x:  %s\t%s\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue), instrStr)
+					}
+
+					prevInstr = instruction
+				}
+
+				symAddr += uint64(binary.Size(uint32(0)))
 			}
 
 			if asJSON {
-				instruction, err := disassemble.Decompose(symAddr, instrValue, &resutls)
-				if err != nil {
-					log.Fatal(err)
+				if dat, err := json.MarshalIndent(instructions, "", "   "); err == nil {
+					fmt.Println(string(dat))
 				}
-
-				instructions = append(instructions, *instruction)
-			} else {
-				instruction, err := disassemble.Disassemble(symAddr, instrValue, &resutls)
-				if err != nil {
-					log.Fatal(err)
-				}
-				if isMiddle && startVMAddr == symAddr {
-					fmt.Printf("👉%08x:  %s\t%s\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue), instruction)
-				} else {
-					fmt.Printf("%#08x:  %s\t%s\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue), instruction)
-				}
-			}
-
-			symAddr += uint64(binary.Size(uint32(0)))
-		}
-
-		if asJSON {
-			if dat, err := json.MarshalIndent(instructions, "", "   "); err == nil {
-				fmt.Println(string(dat))
 			}
 		}
 	},
