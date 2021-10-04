@@ -358,9 +358,49 @@ var rootCmd = &cobra.Command{
 
 					instrStr = instruction.String()
 
+					if instruction.Operation == disassemble.ARM64_MRS {
+						var ops []string
+						replaced := false
+						for _, op := range instruction.Operands {
+							if op.Class == disassemble.REG {
+								ops = append(ops, op.Registers[0].String())
+							} else if op.Class == disassemble.IMPLEMENTATION_SPECIFIC {
+								sysRegFix := op.ImplSpec.GetSysReg().String()
+								if len(sysRegFix) > 0 {
+									ops = append(ops, sysRegFix)
+									replaced = true
+								}
+							} else if op.Class != disassemble.SYS_REG {
+								fmt.Println("WHAT?")
+							}
+							if replaced {
+								instrStr = fmt.Sprintf("%s\t%s", instruction.Operation, strings.Join(ops, ", "))
+							}
+						}
+					}
+
 					if instruction.Encoding == disassemble.ENC_BL_ONLY_BRANCH_IMM || instruction.Encoding == disassemble.ENC_B_ONLY_BRANCH_IMM {
 						if name, ok := addr2SymMap[uint64(instruction.Operands[0].Immediate)]; ok {
 							instrStr = fmt.Sprintf("%s\t%s", instruction.Operation, name)
+						}
+					}
+
+					if instruction.Encoding == disassemble.ENC_CBZ_64_COMPBRANCH {
+						if name, ok := addr2SymMap[uint64(instruction.Operands[1].Immediate)]; ok {
+							instrStr += fmt.Sprintf(" ; %s", name)
+						}
+					}
+
+					if (prevInstr != nil && prevInstr.Operation == disassemble.ARM64_ADRP) && (instruction.Operation == disassemble.ARM64_ADD || instruction.Operation == disassemble.ARM64_LDR) {
+						adrpRegister := prevInstr.Operands[0].Registers[0]
+						adrpImm := prevInstr.Operands[1].Immediate
+						if instruction.Operation == disassemble.ARM64_LDR && adrpRegister == instruction.Operands[1].Registers[0] {
+							adrpImm += instruction.Operands[1].Immediate
+						} else if instruction.Operation == disassemble.ARM64_ADD && adrpRegister == instruction.Operands[1].Registers[0] {
+							adrpImm += instruction.Operands[2].Immediate
+						}
+						if name, ok := addr2SymMap[uint64(adrpImm)]; ok {
+							instrStr += fmt.Sprintf(" ; %s", name)
 						}
 					}
 

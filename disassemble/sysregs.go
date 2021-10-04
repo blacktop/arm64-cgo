@@ -654,6 +654,355 @@ const (
 	REG_CNTPS_TVAL_EL1   systemReg = 65296
 	REG_CNTPS_CTL_EL1    systemReg = 65297
 	REG_CNTPS_CVAL_EL1   systemReg = 65298
+
+	/* From https://github.com/AsahiLinux/m1n1 */
+
+	REG_MDRAR_EL1         systemReg = 32896
+	REG_OSLSR_EL1         systemReg = 32908
+	REG_DBGAUTHSTATUS_EL1 systemReg = 33782
+	REG_MDCCSR_EL0        systemReg = 38920
+	// REG_DBGDTRRX_EL0               systemReg = 38952 TODO: how to wire these up
+	REG_MIDR_EL1         systemReg = 49152
+	REG_MPIDR_EL1        systemReg = 49157
+	REG_REVIDR_EL1       systemReg = 49158
+	REG_ID_PFR0_EL1      systemReg = 49160
+	REG_ID_PFR1_EL1      systemReg = 49161
+	REG_ID_DFR0_EL1      systemReg = 49162
+	REG_ID_AFR0_EL1      systemReg = 49163
+	REG_ID_MMFR0_EL1     systemReg = 49164
+	REG_ID_MMFR1_EL1     systemReg = 49165
+	REG_ID_MMFR2_EL1     systemReg = 49166
+	REG_ID_MMFR3_EL1     systemReg = 49167
+	REG_ID_ISAR0_EL1     systemReg = 49168
+	REG_ID_ISAR1_EL1     systemReg = 49169
+	REG_ID_ISAR2_EL1     systemReg = 49170
+	REG_ID_ISAR3_EL1     systemReg = 49171
+	REG_ID_ISAR4_EL1     systemReg = 49172
+	REG_ID_ISAR5_EL1     systemReg = 49173
+	REG_ID_MMFR4_EL1     systemReg = 49174
+	REG_ID_ISAR6_EL1     systemReg = 49175
+	REG_MVFR0_EL1        systemReg = 49176
+	REG_MVFR1_EL1        systemReg = 49177
+	REG_MVFR2_EL1        systemReg = 49178
+	REG_ID_PFR2_EL1      systemReg = 49180
+	REG_ID_DFR1_EL1      systemReg = 49181
+	REG_ID_MMFR5_EL1     systemReg = 49182
+	REG_ID_AA64PFR0_EL1  systemReg = 49184
+	REG_ID_AA64PFR1_EL1  systemReg = 49185
+	REG_ID_AA64ZFR0_EL1  systemReg = 49188
+	REG_ID_AA64DFR0_EL1  systemReg = 49192
+	REG_ID_AA64DFR1_EL1  systemReg = 49193
+	REG_ID_AA64AFR0_EL1  systemReg = 49196
+	REG_ID_AA64AFR1_EL1  systemReg = 49197
+	REG_ID_AA64ISAR0_EL1 systemReg = 49200
+	REG_ID_AA64ISAR1_EL1 systemReg = 49201
+	REG_ID_AA64ISAR2_EL1 systemReg = 49202
+	REG_ID_AA64MMFR0_EL1 systemReg = 49208
+	REG_ID_AA64MMFR1_EL1 systemReg = 49209
+	REG_ID_AA64MMFR2_EL1 systemReg = 49210
+	REG_ZCR_EL1          systemReg = 49296
+	REG_ERRIDR_EL1       systemReg = 49816
+	REG_ERXFR_EL1        systemReg = 49824
+	REG_ERXPFGF_EL1      systemReg = 49828
+	REG_PMSNEVFR_EL1     systemReg = 50377
+	REG_MPAMIDR_EL1      systemReg = 50468
+	REG_LORID_EL1        systemReg = 50471
+	REG_RVBAR_EL1        systemReg = 50689
+	REG_ISR_EL1          systemReg = 50696
+	REG_ICC_IAR0_EL1     systemReg = 50752
+	REG_ICC_HPPIR0_EL1   systemReg = 50754
+	REG_ICC_RPR_EL1      systemReg = 50779
+	REG_ICC_IAR1_EL1     systemReg = 50784
+	REG_ICC_HPPIR1_EL1   systemReg = 50786
+	REG_ACCDATA_EL1      systemReg = 50821
+	REG_HID0_EL1         systemReg = 51072
+	REG_EHID0_EL1        systemReg = 51073
+	REG_HID1_EL1         systemReg = 51080
+	REG_EHID1_EL1        systemReg = 51081
+	REG_EHID20_EL1       systemReg = 51082
+	REG_HID21_EL1        systemReg = 51083
+	REG_HID2_EL1         systemReg = 51088
+	REG_EHID2_EL1        systemReg = 51089
+	REG_HID3_EL1         systemReg = 51096
+	REG_EHID3_EL1        systemReg = 51097
+	REG_HID4_EL1         systemReg = 51104
+	REG_EHID4_EL1        systemReg = 51105
+	REG_HID5_EL1         systemReg = 51112
+	REG_EHID5_EL1        systemReg = 51113
+	REG_HID6_EL1         systemReg = 51120
+	REG_HID7_EL1         systemReg = 51128
+	REG_EHID7_EL1        systemReg = 51129
+	REG_HID8_EL1         systemReg = 51136
+	REG_HID9_EL1         systemReg = 51144
+	REG_EHID9_EL1        systemReg = 51145
+	REG_HID10_EL1        systemReg = 51152
+	REG_EHID10_EL1       systemReg = 51153
+	REG_HID11_EL1        systemReg = 51160
+	REG_EHID11_EL1       systemReg = 51161
+	REG_HID18_EL1        systemReg = 51162
+	REG_HID13_EL1        systemReg = 51184
+	REG_HID14_EL1        systemReg = 51192
+	REG_HID16_EL1        systemReg = 51194
+	REG_HID17_EL1        systemReg = 51197
+	REG_CCSIDR_EL1       systemReg = 51200
+	REG_CLIDR_EL1        systemReg = 51201
+	REG_CCSIDR2_EL1      systemReg = 51202
+	REG_GMID_EL1         systemReg = 51204
+	REG_AIDR_EL1         systemReg = 51207
+	REG_PMCR0_EL1        systemReg = 53120
+	REG_PMCR1_EL1        systemReg = 53128
+	REG_PMCR2_EL1        systemReg = 53136
+	REG_PMCR3_EL1        systemReg = 53144
+	REG_PMCR4_EL1        systemReg = 53152
+	REG_PMESR0_EL1       systemReg = 53160
+	REG_PMESR1_EL1       systemReg = 53168
+	REG_PMSR_EL1         systemReg = 53224
+	REG_PMC0_EL1         systemReg = 55168
+	REG_PMC1_EL1         systemReg = 55176
+	REG_PMC2_EL1         systemReg = 55184
+	REG_PMC3_EL1         systemReg = 55192
+	REG_PMC4_EL1         systemReg = 55200
+	REG_PMC5_EL1         systemReg = 55208
+	REG_PMC6_EL1         systemReg = 55216
+	REG_PMC7_EL1         systemReg = 55224
+	REG_PMC8_EL1         systemReg = 55240
+	REG_PMC9_EL1         systemReg = 55248
+	REG_CTR_EL0          systemReg = 55297
+	REG_DCZID_EL0        systemReg = 55303
+	REG_RNDR             systemReg = 55584
+	REG_RNDRRS           systemReg = 55585
+	REG_PMCEID0_EL0      systemReg = 56550
+	REG_PMCEID1_EL0      systemReg = 56551
+	REG_AMCFGR_EL0       systemReg = 56977
+	REG_AMCGCR_EL0       systemReg = 56978
+	REG_AMCG1IDR_EL0     systemReg = 56982
+	REG_AMEVTYPER00_EL0  systemReg = 57008
+	// REG_AMEVTYPER010_EL0 systemReg = 57008 TODO: how to wire these up
+	// REG_AMEVTYPER011_EL0 systemReg = 57008
+	// REG_AMEVTYPER012_EL0 systemReg = 57008
+	// REG_AMEVTYPER013_EL0 systemReg = 57008
+	// REG_AMEVTYPER014_EL0 systemReg = 57008
+	// REG_AMEVTYPER015_EL0 systemReg = 57008
+	// REG_AMEVTYPER01_EL0  systemReg = 57008
+	// REG_AMEVTYPER02_EL0  systemReg = 57008
+	// REG_AMEVTYPER03_EL0  systemReg = 57008
+	// REG_AMEVTYPER04_EL0  systemReg = 57008
+	// REG_AMEVTYPER05_EL0  systemReg = 57008
+	// REG_AMEVTYPER06_EL0  systemReg = 57008
+	// REG_AMEVTYPER07_EL0  systemReg = 57008
+	// REG_AMEVTYPER08_EL0  systemReg = 57008
+	// REG_AMEVTYPER09_EL0  systemReg = 57008
+	REG_CNTPCT_EL0        systemReg = 57089
+	REG_CNTVCT_EL0        systemReg = 57090
+	REG_CNTPCTSS_EL0      systemReg = 57093
+	REG_CNTVCTSS_EL0      systemReg = 57094
+	REG_LSU_ERR_STS_EL1   systemReg = 57216
+	REG_LSU_ERR_CTL_EL1   systemReg = 57224
+	REG_E_LSU_ERR_STS_EL1 systemReg = 57232
+	REG_L2C_ERR_STS_EL1   systemReg = 57280
+	REG_L2C_ERR_ADR_EL1   systemReg = 57288
+	REG_L2C_ERR_INF_EL1   systemReg = 57296
+	REG_HFGRTR_EL2        systemReg = 57484
+	REG_HFGWTR_EL2        systemReg = 57485
+	REG_HFGITR_EL2        systemReg = 57486
+	REG_ZCR_EL2           systemReg = 57488
+	REG_HCRX_EL2          systemReg = 57490
+	REG_HDFGRTR_EL2       systemReg = 57740
+	REG_HDFGWTR_EL2       systemReg = 57741
+	REG_HAFGRTR_EL2       systemReg = 57742
+	REG_RVBAR_EL2         systemReg = 58881
+	REG_ICH_VTR_EL2       systemReg = 58969
+	REG_ICH_EISR_EL2      systemReg = 58971
+	REG_ICH_ELRSR_EL2     systemReg = 58973
+	REG_AMEVCNTVOFF00_EL2 systemReg = 59072
+	// REG_AMEVCNTVOFF010_EL2         systemReg = 59072 TODO: how to wire these up
+	// REG_AMEVCNTVOFF011_EL2         systemReg = 59072
+	// REG_AMEVCNTVOFF012_EL2         systemReg = 59072
+	// REG_AMEVCNTVOFF013_EL2         systemReg = 59072
+	// REG_AMEVCNTVOFF014_EL2         systemReg = 59072
+	// REG_AMEVCNTVOFF015_EL2         systemReg = 59072
+	// REG_AMEVCNTVOFF01_EL2          systemReg = 59072
+	// REG_AMEVCNTVOFF02_EL2          systemReg = 59072
+	// REG_AMEVCNTVOFF03_EL2          systemReg = 59072
+	// REG_AMEVCNTVOFF04_EL2          systemReg = 59072
+	// REG_AMEVCNTVOFF05_EL2          systemReg = 59072
+	// REG_AMEVCNTVOFF06_EL2          systemReg = 59072
+	// REG_AMEVCNTVOFF07_EL2          systemReg = 59072
+	// REG_AMEVCNTVOFF08_EL2          systemReg = 59072
+	// REG_AMEVCNTVOFF09_EL2          systemReg = 59072
+	REG_AMEVCNTVOFF10_EL2 systemReg = 59088
+	// REG_AMEVCNTVOFF110_EL2         systemReg = 59088 TODO: how to wire these up
+	// REG_AMEVCNTVOFF111_EL2         systemReg = 59088
+	// REG_AMEVCNTVOFF112_EL2         systemReg = 59088
+	// REG_AMEVCNTVOFF113_EL2         systemReg = 59088
+	// REG_AMEVCNTVOFF114_EL2         systemReg = 59088
+	// REG_AMEVCNTVOFF115_EL2         systemReg = 59088
+	// REG_AMEVCNTVOFF11_EL2          systemReg = 59088
+	// REG_AMEVCNTVOFF12_EL2          systemReg = 59088
+	// REG_AMEVCNTVOFF13_EL2          systemReg = 59088
+	// REG_AMEVCNTVOFF14_EL2          systemReg = 59088
+	// REG_AMEVCNTVOFF15_EL2          systemReg = 59088
+	// REG_AMEVCNTVOFF16_EL2          systemReg = 59088
+	// REG_AMEVCNTVOFF17_EL2          systemReg = 59088
+	// REG_AMEVCNTVOFF18_EL2          systemReg = 59088
+	// REG_AMEVCNTVOFF19_EL2          systemReg = 59088
+	REG_CNTPOFF_EL2                systemReg = 59142
+	REG_FED_ERR_STS_EL1            systemReg = 59264
+	REG_E_FED_ERR_STS_EL1          systemReg = 59266
+	REG_APCTL_EL1                  systemReg = 59268
+	REG_KERNELKEYLO_EL1            systemReg = 59272
+	REG_KERNELKEYHI_EL1            systemReg = 59273
+	REG_VMSA_LOCK_EL1              systemReg = 59274
+	REG_AMX_CTL_EL1                systemReg = 59276
+	REG_APRR_EL0                   systemReg = 59280
+	REG_APRR_EL1                   systemReg = 59281
+	REG_CTRR_LOCK_EL1              systemReg = 59282
+	REG_CTRR_A_LWR_EL1             systemReg = 59283
+	REG_CTRR_A_UPR_EL1             systemReg = 59284
+	REG_CTRR_CTL_EL1               systemReg = 59285
+	REG_APRR_JIT_ENABLE_EL2        systemReg = 59286
+	REG_APRR_JIT_MASK_EL2          systemReg = 59287
+	REG_AMX_CTL_EL12               systemReg = 59302
+	REG_AMX_CTL_EL2                systemReg = 59303
+	REG_SPRR_PERM_EL20_SILLY_THING systemReg = 59305
+	REG_SPRR_PERM_EL02             systemReg = 59306
+	REG_SPRR_UMASK0_EL2            systemReg = 59320
+	REG_SPRR_UMASK1_EL2            systemReg = 59321
+	REG_SPRR_UMASK2_EL2            systemReg = 59322
+	REG_SPRR_UMASK3_EL2            systemReg = 59323
+	REG_SPRR_UMASK0_EL12           systemReg = 59328
+	REG_SPRR_UMASK1_EL12           systemReg = 59329
+	REG_SPRR_UMASK2_EL12           systemReg = 59330
+	REG_SPRR_UMASK3_EL12           systemReg = 59331
+	REG_CNTPCT_ALIAS_EL0           systemReg = 59349
+	REG_CNTVCT_ALIAS_EL0           systemReg = 59350
+	REG_CTRR_A_LWR_EL2             systemReg = 59352
+	REG_CTRR_A_UPR_EL2             systemReg = 59353
+	REG_CTRR_CTL_EL2               systemReg = 59356
+	REG_CTRR_LOCK_EL2              systemReg = 59357
+	REG_ZCR_EL12                   systemReg = 59536
+	REG_IPI_RR_LOCAL_EL1           systemReg = 61312
+	REG_IPI_RR_GLOBAL_EL1          systemReg = 61313
+	REG_DPC_ERR_STS_EL1            systemReg = 61317
+	REG_IPI_SR_EL1                 systemReg = 61321
+	REG_VM_TMR_LR_EL2              systemReg = 61322
+	REG_VM_TMR_FIQ_ENA_EL2         systemReg = 61323
+	REG_IPI_CR_EL1                 systemReg = 61337
+	REG_ACC_CFG_EL1                systemReg = 61344
+	REG_CYC_OVRD_EL1               systemReg = 61352
+	REG_ACC_OVRD_EL1               systemReg = 61360
+	REG_ACC_EBLK_OVRD_EL1          systemReg = 61361
+	REG_ZCR_EL3                    systemReg = 61584
+	REG_RVBAR_EL3                  systemReg = 62977
+	REG_MMU_ERR_STS_EL1            systemReg = 63360
+	REG_AFSR1_GL1                  systemReg = 63361
+	REG_AFSR1_GL2                  systemReg = 63362
+	REG_AFSR1_GL12                 systemReg = 63363
+	REG_SPRR_CONFIG_EL1            systemReg = 63368
+	REG_GXF_CONFIG_EL1             systemReg = 63370
+	REG_SPRR_UNK1_EL1              systemReg = 63371
+	REG_GXF_CONFIG_EL2             systemReg = 63372
+	REG_SPRR_PERM_EL0              systemReg = 63373
+	REG_SPRR_PERM_EL1              systemReg = 63374
+	REG_SPRR_PERM_EL2              systemReg = 63375
+	REG_E_MMU_ERR_STS_EL1          systemReg = 63376
+	REG_APGAKeyLo_EL12             systemReg = 63377
+	REG_APGAKeyHi_EL12             systemReg = 63378
+	REG_KERNELKEYLO_EL12           systemReg = 63379
+	REG_KERNELKEYHI_EL12           systemReg = 63380
+	REG_AFPCR_EL0                  systemReg = 63381
+	REG_AIDR2_EL1                  systemReg = 63383
+	REG_SPRR_UMASK0_EL1            systemReg = 63384
+	REG_SPRR_KMASK0_EL1            systemReg = 63385
+	REG_SPRR_KMASK0_EL2            systemReg = 63386
+	REG_SPRR_UMASK1_EL1            systemReg = 63387
+	REG_SPRR_UMASK2_EL1            systemReg = 63388
+	REG_SPRR_UMASK3_EL1            systemReg = 63389
+	REG_SPRR_KMASK1_EL1            systemReg = 63394
+	REG_SPRR_KMASK2_EL1            systemReg = 63395
+	REG_SPRR_KMASK3_EL1            systemReg = 63396
+	REG_SPRR_KMASK1_EL2            systemReg = 63401
+	REG_SPRR_KMASK2_EL2            systemReg = 63402
+	REG_SPRR_KMASK3_EL2            systemReg = 63403
+	REG_SPRR_KMASK0_EL12           systemReg = 63408
+	REG_SPRR_KMASK1_EL12           systemReg = 63409
+	REG_SPRR_KMASK2_EL12           systemReg = 63410
+	REG_SPRR_KMASK3_EL12           systemReg = 63411
+	REG_APIAKeyLo_EL12             systemReg = 63416
+	REG_APIAKeyHi_EL12             systemReg = 63417
+	REG_APIBKeyLo_EL12             systemReg = 63418
+	REG_APIBKeyHi_EL12             systemReg = 63419
+	REG_APDAKeyLo_EL12             systemReg = 63420
+	REG_APDAKeyHi_EL12             systemReg = 63421
+	REG_APDBKeyLo_EL12             systemReg = 63422
+	REG_APDBKeyHi_EL12             systemReg = 63423
+	REG_GXF_STATUS_EL1             systemReg = 63424
+	REG_GXF_ENTER_EL1              systemReg = 63425
+	REG_GXF_ABORT_EL1              systemReg = 63426
+	REG_VBAR_GL12                  systemReg = 63434
+	REG_SPSR_GL12                  systemReg = 63435
+	REG_ASPSR_GL12                 systemReg = 63436
+	REG_ESR_GL12                   systemReg = 63437
+	REG_ELR_GL12                   systemReg = 63438
+	REG_SP_GL12                    systemReg = 63440
+	REG_TPIDR_GL1                  systemReg = 63441
+	REG_VBAR_GL1                   systemReg = 63442
+	REG_SPSR_GL1                   systemReg = 63443
+	REG_ASPSR_GL1                  systemReg = 63444
+	REG_ESR_GL1                    systemReg = 63445
+	REG_ELR_GL1                    systemReg = 63446
+	REG_FAR_GL1                    systemReg = 63447
+	REG_TPIDR_GL2                  systemReg = 63449
+	REG_VBAR_GL2                   systemReg = 63450
+	REG_SPSR_GL2                   systemReg = 63451
+	REG_ASPSR_GL2                  systemReg = 63452
+	REG_ESR_GL2                    systemReg = 63453
+	REG_ELR_GL2                    systemReg = 63454
+	REG_FAR_GL2                    systemReg = 63455
+	REG_GXF_ENTER_EL2              systemReg = 63456
+	REG_GXF_ABORT_EL2              systemReg = 63457
+	REG_APCTL_EL2                  systemReg = 63458
+	REG_APSTS_EL2_MAYBE            systemReg = 63459
+	REG_APSTS_EL1                  systemReg = 63460
+	REG_SPRR_CONFIG_EL2            systemReg = 63474
+	REG_SPRR_UNK1_EL2              systemReg = 63475
+	REG_APVMKEYLO_EL2              systemReg = 63476
+	REG_APVMKEYHI_EL2              systemReg = 63477
+	REG_ACTLR_EL12                 systemReg = 63478
+	REG_APSTS_EL12                 systemReg = 63479
+	REG_APCTL_EL12                 systemReg = 63480
+	REG_GXF_CONFIG_EL12            systemReg = 63481
+	REG_GXF_ENTER_EL12             systemReg = 63482
+	REG_GXF_ABORT_EL12             systemReg = 63483
+	REG_SPRR_CONFIG_EL12           systemReg = 63484
+	REG_SPRR_UNK1_EL12             systemReg = 63485
+	REG_SPRR_PERM_EL12             systemReg = 63487
+	REG_UPMCR0_EL1                 systemReg = 65412
+	REG_UPMC8_EL1                  systemReg = 65413
+	REG_UPMESR0_EL1                systemReg = 65420
+	REG_UPMC9_EL1                  systemReg = 65421
+	REG_UPMC10_EL1                 systemReg = 65429
+	REG_UPMECM0_EL1                systemReg = 65436
+	REG_UPMC11_EL1                 systemReg = 65437
+	REG_UPMECM1_EL1                systemReg = 65444
+	REG_UPMC12_EL1                 systemReg = 65445
+	REG_UPMPCM_EL1                 systemReg = 65452
+	REG_UPMC13_EL1                 systemReg = 65453
+	REG_UPMSR_EL1                  systemReg = 65460
+	REG_UPMC14_EL1                 systemReg = 65461
+	REG_UPMC0_EL1                  systemReg = 65468
+	REG_UPMC15_EL1                 systemReg = 65469
+	REG_UPMC1_EL1                  systemReg = 65476
+	REG_UPMECM2_EL1                systemReg = 65477
+	REG_UPMC2_EL1                  systemReg = 65484
+	REG_UPMECM3_EL1                systemReg = 65485
+	REG_UPMC3_EL1                  systemReg = 65492
+	REG_UPMC4_EL1                  systemReg = 65500
+	REG_UPMESR1_EL1                systemReg = 65501
+	REG_UPMC5_EL1                  systemReg = 65508
+	REG_UPMC6_EL1                  systemReg = 65516
+	REG_UPMC7_EL1                  systemReg = 65524
+
 	/* exceptional system registers */
 	REG_PSTATE_SPSEL systemReg = 65299 // (op0op1crncrmop2)=(00495) doesn't map to [SYSREG_NONE+1 SYSREG_END)
 	/* end marker needed for other reg defines */
@@ -1963,6 +2312,605 @@ func (s systemReg) String() string {
 		return "cntps_ctl_el1"
 	case 65298:
 		return "cntps_cval_el1"
+	case 32896: /* From https://github.com/AsahiLinux/m1n1 */
+		return "mdrar_el1"
+	case 32908:
+		return "oslsr_el1"
+	case 33782:
+		return "dbgauthstatus_el1"
+	case 38920:
+		return "mdccsr_el0"
+	case 49152:
+		return "midr_el1"
+	case 49157:
+		return "mpidr_el1"
+	case 49158:
+		return "revidr_el1"
+	case 49160:
+		return "id_pfr0_el1"
+	case 49161:
+		return "id_pfr1_el1"
+	case 49162:
+		return "id_dfr0_el1"
+	case 49163:
+		return "id_afr0_el1"
+	case 49164:
+		return "id_mmfr0_el1"
+	case 49165:
+		return "id_mmfr1_el1"
+	case 49166:
+		return "id_mmfr2_el1"
+	case 49167:
+		return "id_mmfr3_el1"
+	case 49168:
+		return "id_isar0_el1"
+	case 49169:
+		return "id_isar1_el1"
+	case 49170:
+		return "id_isar2_el1"
+	case 49171:
+		return "id_isar3_el1"
+	case 49172:
+		return "id_isar4_el1"
+	case 49173:
+		return "id_isar5_el1"
+	case 49174:
+		return "id_mmfr4_el1"
+	case 49175:
+		return "id_isar6_el1"
+	case 49176:
+		return "mvfr0_el1"
+	case 49177:
+		return "mvfr1_el1"
+	case 49178:
+		return "mvfr2_el1"
+	case 49180:
+		return "id_pfr2_el1"
+	case 49181:
+		return "id_dfr1_el1"
+	case 49182:
+		return "id_mmfr5_el1"
+	case 49184:
+		return "id_aa64pfr0_el1"
+	case 49185:
+		return "id_aa64pfr1_el1"
+	case 49188:
+		return "id_aa64zfr0_el1"
+	case 49192:
+		return "id_aa64dfr0_el1"
+	case 49193:
+		return "id_aa64dfr1_el1"
+	case 49196:
+		return "id_aa64afr0_el1"
+	case 49197:
+		return "id_aa64afr1_el1"
+	case 49200:
+		return "id_aa64isar0_el1"
+	case 49201:
+		return "id_aa64isar1_el1"
+	case 49202:
+		return "id_aa64isar2_el1"
+	case 49208:
+		return "id_aa64mmfr0_el1"
+	case 49209:
+		return "id_aa64mmfr1_el1"
+	case 49210:
+		return "id_aa64mmfr2_el1"
+	case 49296:
+		return "zcr_el1"
+	case 49816:
+		return "erridr_el1"
+	case 49824:
+		return "erxfr_el1"
+	case 49828:
+		return "erxpfgf_el1"
+	case 50377:
+		return "pmsnevfr_el1"
+	case 50468:
+		return "mpamidr_el1"
+	case 50471:
+		return "lorid_el1"
+	case 50689:
+		return "rvbar_el1"
+	case 50696:
+		return "isr_el1"
+	case 50752:
+		return "icc_iar0_el1"
+	case 50754:
+		return "icc_hppir0_el1"
+	case 50779:
+		return "icc_rpr_el1"
+	case 50784:
+		return "icc_iar1_el1"
+	case 50786:
+		return "icc_hppir1_el1"
+	case 50821:
+		return "accdata_el1"
+	case 51072:
+		return "hid0_el1"
+	case 51073:
+		return "ehid0_el1"
+	case 51080:
+		return "hid1_el1"
+	case 51081:
+		return "ehid1_el1"
+	case 51082:
+		return "ehid20_el1"
+	case 51083:
+		return "hid21_el1"
+	case 51088:
+		return "hid2_el1"
+	case 51089:
+		return "ehid2_el1"
+	case 51096:
+		return "hid3_el1"
+	case 51097:
+		return "ehid3_el1"
+	case 51104:
+		return "hid4_el1"
+	case 51105:
+		return "ehid4_el1"
+	case 51112:
+		return "hid5_el1"
+	case 51113:
+		return "ehid5_el1"
+	case 51120:
+		return "hid6_el1"
+	case 51128:
+		return "hid7_el1"
+	case 51129:
+		return "ehid7_el1"
+	case 51136:
+		return "hid8_el1"
+	case 51144:
+		return "hid9_el1"
+	case 51145:
+		return "ehid9_el1"
+	case 51152:
+		return "hid10_el1"
+	case 51153:
+		return "ehid10_el1"
+	case 51160:
+		return "hid11_el1"
+	case 51161:
+		return "ehid11_el1"
+	case 51162:
+		return "hid18_el1"
+	case 51184:
+		return "hid13_el1"
+	case 51192:
+		return "hid14_el1"
+	case 51194:
+		return "hid16_el1"
+	case 51197:
+		return "hid17_el1"
+	case 51200:
+		return "ccsidr_el1"
+	case 51201:
+		return "clidr_el1"
+	case 51202:
+		return "ccsidr2_el1"
+	case 51204:
+		return "gmid_el1"
+	case 51207:
+		return "aidr_el1"
+	case 53120:
+		return "pmcr0_el1"
+	case 53128:
+		return "pmcr1_el1"
+	case 53136:
+		return "pmcr2_el1"
+	case 53144:
+		return "pmcr3_el1"
+	case 53152:
+		return "pmcr4_el1"
+	case 53160:
+		return "pmesr0_el1"
+	case 53168:
+		return "pmesr1_el1"
+	case 53224:
+		return "pmsr_el1"
+	case 55168:
+		return "pmc0_el1"
+	case 55176:
+		return "pmc1_el1"
+	case 55184:
+		return "pmc2_el1"
+	case 55192:
+		return "pmc3_el1"
+	case 55200:
+		return "pmc4_el1"
+	case 55208:
+		return "pmc5_el1"
+	case 55216:
+		return "pmc6_el1"
+	case 55224:
+		return "pmc7_el1"
+	case 55240:
+		return "pmc8_el1"
+	case 55248:
+		return "pmc9_el1"
+	case 55297:
+		return "ctr_el0"
+	case 55303:
+		return "dczid_el0"
+	case 55584:
+		return "rndr"
+	case 55585:
+		return "rndrrs"
+	case 56550:
+		return "pmceid0_el0"
+	case 56551:
+		return "pmceid1_el0"
+	case 56977:
+		return "amcfgr_el0"
+	case 56978:
+		return "amcgcr_el0"
+	case 56982:
+		return "amcg1idr_el0"
+	case 57008:
+		return "amevtyper00_el0"
+	case 57089:
+		return "cntpct_el0"
+	case 57090:
+		return "cntvct_el0"
+	case 57093:
+		return "cntpctss_el0"
+	case 57094:
+		return "cntvctss_el0"
+	case 57216:
+		return "lsu_err_sts_el1"
+	case 57224:
+		return "lsu_err_ctl_el1"
+	case 57232:
+		return "e_lsu_err_sts_el1"
+	case 57280:
+		return "l2c_err_sts_el1"
+	case 57288:
+		return "l2c_err_adr_el1"
+	case 57296:
+		return "l2c_err_inf_el1"
+	case 57484:
+		return "hfgrtr_el2"
+	case 57485:
+		return "hfgwtr_el2"
+	case 57486:
+		return "hfgitr_el2"
+	case 57488:
+		return "zcr_el2"
+	case 57490:
+		return "hcrx_el2"
+	case 57740:
+		return "hdfgrtr_el2"
+	case 57741:
+		return "hdfgwtr_el2"
+	case 57742:
+		return "hafgrtr_el2"
+	case 58881:
+		return "rvbar_el2"
+	case 58969:
+		return "ich_vtr_el2"
+	case 58971:
+		return "ich_eisr_el2"
+	case 58973:
+		return "ich_elrsr_el2"
+	case 59072:
+		return "amevcntvoff00_el2"
+	case 59088:
+		return "amevcntvoff10_el2"
+	case 59142:
+		return "cntpoff_el2"
+	case 59264:
+		return "fed_err_sts_el1"
+	case 59266:
+		return "e_fed_err_sts_el1"
+	case 59268:
+		return "apctl_el1"
+	case 59272:
+		return "kernelkeylo_el1"
+	case 59273:
+		return "kernelkeyhi_el1"
+	case 59274:
+		return "vmsa_lock_el1"
+	case 59276:
+		return "amx_ctl_el1"
+	case 59280:
+		return "aprr_el0"
+	case 59281:
+		return "aprr_el1"
+	case 59282:
+		return "ctrr_lock_el1"
+	case 59283:
+		return "ctrr_a_lwr_el1"
+	case 59284:
+		return "ctrr_a_upr_el1"
+	case 59285:
+		return "ctrr_ctl_el1"
+	case 59286:
+		return "aprr_jit_enable_el2"
+	case 59287:
+		return "aprr_jit_mask_el2"
+	case 59302:
+		return "amx_ctl_el12"
+	case 59303:
+		return "amx_ctl_el2"
+	case 59305:
+		return "sprr_perm_el20_silly_thing"
+	case 59306:
+		return "sprr_perm_el02"
+	case 59320:
+		return "sprr_umask0_el2"
+	case 59321:
+		return "sprr_umask1_el2"
+	case 59322:
+		return "sprr_umask2_el2"
+	case 59323:
+		return "sprr_umask3_el2"
+	case 59328:
+		return "sprr_umask0_el12"
+	case 59329:
+		return "sprr_umask1_el12"
+	case 59330:
+		return "sprr_umask2_el12"
+	case 59331:
+		return "sprr_umask3_el12"
+	case 59349:
+		return "cntpct_alias_el0"
+	case 59350:
+		return "cntvct_alias_el0"
+	case 59352:
+		return "ctrr_a_lwr_el2"
+	case 59353:
+		return "ctrr_a_upr_el2"
+	case 59356:
+		return "ctrr_ctl_el2"
+	case 59357:
+		return "ctrr_lock_el2"
+	case 59536:
+		return "zcr_el12"
+	case 61312:
+		return "ipi_rr_local_el1"
+	case 61313:
+		return "ipi_rr_global_el1"
+	case 61317:
+		return "dpc_err_sts_el1"
+	case 61321:
+		return "ipi_sr_el1"
+	case 61322:
+		return "vm_tmr_lr_el2"
+	case 61323:
+		return "vm_tmr_fiq_ena_el2"
+	case 61337:
+		return "ipi_cr_el1"
+	case 61344:
+		return "acc_cfg_el1"
+	case 61352:
+		return "cyc_ovrd_el1"
+	case 61360:
+		return "acc_ovrd_el1"
+	case 61361:
+		return "acc_eblk_ovrd_el1"
+	case 61584:
+		return "zcr_el3"
+	case 62977:
+		return "rvbar_el3"
+	case 63360:
+		return "mmu_err_sts_el1"
+	case 63361:
+		return "afsr1_gl1"
+	case 63362:
+		return "afsr1_gl2"
+	case 63363:
+		return "afsr1_gl12"
+	case 63368:
+		return "sprr_config_el1"
+	case 63370:
+		return "gxf_config_el1"
+	case 63371:
+		return "sprr_unk1_el1"
+	case 63372:
+		return "gxf_config_el2"
+	case 63373:
+		return "sprr_perm_el0"
+	case 63374:
+		return "sprr_perm_el1"
+	case 63375:
+		return "sprr_perm_el2"
+	case 63376:
+		return "e_mmu_err_sts_el1"
+	case 63377:
+		return "apgakeylo_el12"
+	case 63378:
+		return "apgakeyhi_el12"
+	case 63379:
+		return "kernelkeylo_el12"
+	case 63380:
+		return "kernelkeyhi_el12"
+	case 63381:
+		return "afpcr_el0"
+	case 63383:
+		return "aidr2_el1"
+	case 63384:
+		return "sprr_umask0_el1"
+	case 63385:
+		return "sprr_kmask0_el1"
+	case 63386:
+		return "sprr_kmask0_el2"
+	case 63387:
+		return "sprr_umask1_el1"
+	case 63388:
+		return "sprr_umask2_el1"
+	case 63389:
+		return "sprr_umask3_el1"
+	case 63394:
+		return "sprr_kmask1_el1"
+	case 63395:
+		return "sprr_kmask2_el1"
+	case 63396:
+		return "sprr_kmask3_el1"
+	case 63401:
+		return "sprr_kmask1_el2"
+	case 63402:
+		return "sprr_kmask2_el2"
+	case 63403:
+		return "sprr_kmask3_el2"
+	case 63408:
+		return "sprr_kmask0_el12"
+	case 63409:
+		return "sprr_kmask1_el12"
+	case 63410:
+		return "sprr_kmask2_el12"
+	case 63411:
+		return "sprr_kmask3_el12"
+	case 63416:
+		return "apiakeylo_el12"
+	case 63417:
+		return "apiakeyhi_el12"
+	case 63418:
+		return "apibkeylo_el12"
+	case 63419:
+		return "apibkeyhi_el12"
+	case 63420:
+		return "apdakeylo_el12"
+	case 63421:
+		return "apdakeyhi_el12"
+	case 63422:
+		return "apdbkeylo_el12"
+	case 63423:
+		return "apdbkeyhi_el12"
+	case 63424:
+		return "gxf_status_el1"
+	case 63425:
+		return "gxf_enter_el1"
+	case 63426:
+		return "gxf_abort_el1"
+	case 63434:
+		return "vbar_gl12"
+	case 63435:
+		return "spsr_gl12"
+	case 63436:
+		return "aspsr_gl12"
+	case 63437:
+		return "esr_gl12"
+	case 63438:
+		return "elr_gl12"
+	case 63440:
+		return "sp_gl12"
+	case 63441:
+		return "tpidr_gl1"
+	case 63442:
+		return "vbar_gl1"
+	case 63443:
+		return "spsr_gl1"
+	case 63444:
+		return "aspsr_gl1"
+	case 63445:
+		return "esr_gl1"
+	case 63446:
+		return "elr_gl1"
+	case 63447:
+		return "far_gl1"
+	case 63449:
+		return "tpidr_gl2"
+	case 63450:
+		return "vbar_gl2"
+	case 63451:
+		return "spsr_gl2"
+	case 63452:
+		return "aspsr_gl2"
+	case 63453:
+		return "esr_gl2"
+	case 63454:
+		return "elr_gl2"
+	case 63455:
+		return "far_gl2"
+	case 63456:
+		return "gxf_enter_el2"
+	case 63457:
+		return "gxf_abort_el2"
+	case 63458:
+		return "apctl_el2"
+	case 63459:
+		return "apsts_el2_maybe"
+	case 63460:
+		return "apsts_el1"
+	case 63474:
+		return "sprr_config_el2"
+	case 63475:
+		return "sprr_unk1_el2"
+	case 63476:
+		return "apvmkeylo_el2"
+	case 63477:
+		return "apvmkeyhi_el2"
+	case 63478:
+		return "actlr_el12"
+	case 63479:
+		return "apsts_el12"
+	case 63480:
+		return "apctl_el12"
+	case 63481:
+		return "gxf_config_el12"
+	case 63482:
+		return "gxf_enter_el12"
+	case 63483:
+		return "gxf_abort_el12"
+	case 63484:
+		return "sprr_config_el12"
+	case 63485:
+		return "sprr_unk1_el12"
+	case 63487:
+		return "sprr_perm_el12"
+	case 65412:
+		return "upmcr0_el1"
+	case 65413:
+		return "upmc8_el1"
+	case 65420:
+		return "upmesr0_el1"
+	case 65421:
+		return "upmc9_el1"
+	case 65429:
+		return "upmc10_el1"
+	case 65436:
+		return "upmecm0_el1"
+	case 65437:
+		return "upmc11_el1"
+	case 65444:
+		return "upmecm1_el1"
+	case 65445:
+		return "upmc12_el1"
+	case 65452:
+		return "upmpcm_el1"
+	case 65453:
+		return "upmc13_el1"
+	case 65460:
+		return "upmsr_el1"
+	case 65461:
+		return "upmc14_el1"
+	case 65468:
+		return "upmc0_el1"
+	case 65469:
+		return "upmc15_el1"
+	case 65476:
+		return "upmc1_el1"
+	case 65477:
+		return "upmecm2_el1"
+	case 65484:
+		return "upmc2_el1"
+	case 65485:
+		return "upmecm3_el1"
+	case 65492:
+		return "upmc3_el1"
+	case 65500:
+		return "upmc4_el1"
+	case 65501:
+		return "upmesr1_el1"
+	case 65508:
+		return "upmc5_el1"
+	case 65516:
+		return "upmc6_el1"
+	case 65524:
+		return "upmc7_el1"
+
 	case 65299:
 		return "spsel"
 	case 65300:

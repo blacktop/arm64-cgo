@@ -361,6 +361,15 @@ func (g Group) String() string {
 	}
 }
 
+type implSpec []byte
+
+func (i implSpec) GetSysReg() systemReg {
+	if len(i) != 5 {
+		return SYSREG_UNKNOWN
+	}
+	return systemReg(i[0])<<14 | systemReg(i[1])<<11 | systemReg(i[2])<<7 | systemReg(i[3])<<3 | systemReg(i[4])
+}
+
 // Operand is an arm64 instruction operand object
 type Operand struct {
 	Class     operandClass    `json:"class,omitempty"`
@@ -369,7 +378,7 @@ type Operand struct {
 
 	Condition condition `json:"condition,omitempty"` // for class CONDITION
 
-	ImplSpec []byte `json:"impl_spec,omitempty"` // for class IMPLEMENTATION_SPECIFIC
+	ImplSpec implSpec `json:"impl_spec,omitempty"` // for class IMPLEMENTATION_SPECIFIC
 
 	SysReg systemReg `json:"sys_reg,omitempty"` // for class SYS_REG
 
