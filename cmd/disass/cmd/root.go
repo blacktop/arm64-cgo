@@ -327,13 +327,13 @@ var rootCmd = &cobra.Command{
 						} else if instrValue == 0x00201400 {
 							fmt.Printf("%#08x:  %s\tgexit\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue))
 							continue
-						} else if instrValue == 0xe7ffdeff {
-							fmt.Printf("%#08x:  %s\tkgdb_breakpoint\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue))
+						} else if instrValue == 0xe7ffdefe || instrValue == 0xe7ffdeff {
+							fmt.Printf("%#08x:  %s\ttrap\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue))
 							continue
 						} else if instrValue > 0xffff0000 {
 							fmt.Printf("%#08x:  %s\t.long\t%#x ; (probably a jump-table)\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue), instrValue)
 							break
-						} else if strings.Contains(prevInstr.Operation.String(), "braa") {
+						} else if prevInstr != nil && strings.Contains(prevInstr.Operation.String(), "braa") {
 							break
 						} else if (instrValue & 0xfffffC00) == 0x00201000 {
 							Xr := disassemble.Register((instrValue & 0x1F) + 34)
@@ -401,6 +401,12 @@ var rootCmd = &cobra.Command{
 						}
 						if name, ok := addr2SymMap[uint64(adrpImm)]; ok {
 							instrStr += fmt.Sprintf(" ; %s", name)
+						} else if cstr, err := m.GetCString(adrpImm); err == nil {
+							if len(cstr) > 200 {
+								instrStr += fmt.Sprintf(" ; %#v...", cstr[:200])
+							} else if len(cstr) > 1 {
+								instrStr += fmt.Sprintf(" ; %#v", cstr)
+							}
 						}
 					}
 

@@ -20,7 +20,7 @@ build: ## Build disass locally
 .PHONY: test
 test: build ## Test disass on hello-mte
 	@echo " > disassembling hello-mte\n"
-	@./disass.${CUR_VERSION} ../../Proteas/hello-mte/hello-mte --symbol _main | bat -l s --tabs 0 -p --theme Nord --wrap=never
+	@./disass.${CUR_VERSION} ../../Proteas/hello-mte/hello-mte --all | bat -l s --tabs 0 -p --theme Nord --wrap=never
 
 .PHONY: dry_release
 dry_release: ## Run goreleaser without releasing/pushing artifacts to github
