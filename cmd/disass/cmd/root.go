@@ -358,7 +358,7 @@ var rootCmd = &cobra.Command{
 
 					instrStr = instruction.String()
 
-					if instruction.Operation == disassemble.ARM64_MRS {
+					if instruction.Operation == disassemble.ARM64_MRS || instruction.Operation == disassemble.ARM64_MSR {
 						var ops []string
 						replaced := false
 						for _, op := range instruction.Operands {
@@ -370,8 +370,6 @@ var rootCmd = &cobra.Command{
 									ops = append(ops, sysRegFix)
 									replaced = true
 								}
-							} else if op.Class != disassemble.SYS_REG {
-								fmt.Println("WHAT?")
 							}
 							if replaced {
 								instrStr = fmt.Sprintf("%s\t%s", instruction.Operation, strings.Join(ops, ", "))
