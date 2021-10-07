@@ -30,6 +30,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/AlecAivazis/survey/v2/terminal"
@@ -143,6 +144,15 @@ func init() {
 	rootCmd.Flags().BoolP("all", "", false, "Disassemble all functions")
 	rootCmd.Flags().StringP("symbol", "s", "", "Function to disassemble")
 	rootCmd.Flags().Uint64P("vaddr", "a", 0, "Virtual address to disassemble")
+}
+
+func isASCII(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] > 0x1f && s[i] > unicode.MaxASCII {
+			return false
+		}
+	}
+	return true
 }
 
 // rootCmd represents the base command when called without any subcommands
@@ -351,6 +361,16 @@ var rootCmd = &cobra.Command{
 						} else if instrValue>>21 == 1 {
 							fmt.Printf("%#08x:  %s\t.long\t%#x ; (possible unknown Apple instruction)\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue), instrValue)
 							continue
+						} else if cstr, err := m.GetCString(symAddr); err == nil {
+							if isASCII(cstr) {
+								if len(cstr) > 200 {
+									fmt.Printf("%#08x:  %s\tDCB\t%#v\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue), cstr[:200])
+									break
+								} else if len(cstr) > 1 {
+									fmt.Printf("%#08x:  %s\tDCB\t%#v\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue), cstr)
+									break
+								}
+							}
 						}
 						fmt.Printf("%#08x:  %s\t.long\t%#x ; (%s)\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue), instrValue, err.Error())
 						break
@@ -389,6 +409,21 @@ var rootCmd = &cobra.Command{
 						}
 					}
 
+					if instruction.Operation == disassemble.ARM64_ADR {
+						adrImm := instruction.Operands[1].Immediate
+						if name, ok := addr2SymMap[uint64(adrImm)]; ok {
+							instrStr += fmt.Sprintf(" ; %s", name)
+						} else if cstr, err := m.GetCString(adrImm); err == nil {
+							if isASCII(cstr) {
+								if len(cstr) > 200 {
+									instrStr += fmt.Sprintf(" ; %#v...", cstr[:200])
+								} else if len(cstr) > 1 {
+									instrStr += fmt.Sprintf(" ; %#v", cstr)
+								}
+							}
+						}
+					}
+
 					if (prevInstr != nil && prevInstr.Operation == disassemble.ARM64_ADRP) && (instruction.Operation == disassemble.ARM64_ADD || instruction.Operation == disassemble.ARM64_LDR) {
 						adrpRegister := prevInstr.Operands[0].Registers[0]
 						adrpImm := prevInstr.Operands[1].Immediate
@@ -400,10 +435,12 @@ var rootCmd = &cobra.Command{
 						if name, ok := addr2SymMap[uint64(adrpImm)]; ok {
 							instrStr += fmt.Sprintf(" ; %s", name)
 						} else if cstr, err := m.GetCString(adrpImm); err == nil {
-							if len(cstr) > 200 {
-								instrStr += fmt.Sprintf(" ; %#v...", cstr[:200])
-							} else if len(cstr) > 1 {
-								instrStr += fmt.Sprintf(" ; %#v", cstr)
+							if isASCII(cstr) {
+								if len(cstr) > 200 {
+									instrStr += fmt.Sprintf(" ; %#v...", cstr[:200])
+								} else if len(cstr) > 1 {
+									instrStr += fmt.Sprintf(" ; %#v", cstr)
+								}
 							}
 						}
 					}
