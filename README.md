@@ -72,6 +72,12 @@ func main() {
 go install github.com/blacktop/arm64-cgo/cmd/disass@latest
 ```
 
+With [Homebrew](https://brew.sh)
+
+```bash
+brew install blacktop/tap/disass
+```
+
 > OR download from [Releases](https://github.com/blacktop/arm64-cgo/releases/latest)
 
 ### Usage
