@@ -1,6 +1,6 @@
 # This is an example .goreleaser.yml file with some sensible defaults.
 # Make sure to check the documentation at https://goreleaser.com
-before:
+# before:
   # hooks:
   #   # You may remove this if you don't use go modules.
   #   - go mod tidy
@@ -45,8 +45,8 @@ before:
 #       darwin: macOS
 #       amd64: x86_64
 #     name_template: "disass_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-checksum:
-  name_template: "checksums.txt"
+# checksum:
+#   name_template: "checksums.txt"
   # disable: true
 # signs:
 #   - artifacts: checksum
