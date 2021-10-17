@@ -18,3 +18,4 @@
 dist/
 disass.*
 cmd/disass/__debug_bin
+completions/

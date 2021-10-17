@@ -1,11 +1,12 @@
 # This is an example .goreleaser.yml file with some sensible defaults.
 # Make sure to check the documentation at https://goreleaser.com
-# before:
-  # hooks:
-  #   # You may remove this if you don't use go modules.
-  #   - go mod tidy
-  #   # you may remove this if you don't need go generate
-  #   - go generate ./...
+before:
+  hooks:
+    # You may remove this if you don't use go modules.
+    - go mod tidy
+    # you may remove this if you don't need go generate
+    - go generate ./...
+    - ./hack/make/completions
 builds:
   - id: darwin
     main: ./cmd/disass
@@ -36,22 +37,28 @@ builds:
   #     - windows
   #   goarch:
   #     - amd64
-# universal_binaries:
-#   - id: darwin
-#     replace: true
-#     name_template: "disass"
-# archives:
-#   - replacements:
-#       darwin: macOS
-#       amd64: x86_64
-#     name_template: "disass_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-# checksum:
-#   name_template: "checksums.txt"
-  # disable: true
-# signs:
-#   - artifacts: checksum
-# snapshot:
-#   name_template: "{{ incpatch .Version }}-next"
+universal_binaries:
+  - id: darwin
+    replace: false
+    name_template: "disass"
+archives:
+  - replacements:
+      darwin: macOS
+      amd64: x86_64
+      all: universal
+    name_template: "disass_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - completions/*
+checksum:
+  name_template: "checksums.txt"
+  disable: true
+signs:
+  - artifacts: checksum
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
 brews:
   - name: disass
     tap:
@@ -65,17 +72,33 @@ brews:
         type: optional
     install: |
       bin.install "disass"
+      bash_completion.install "completions/_bash" => "disass"
+      zsh_completion.install "completions/_zsh" => "_disass"
+      fish_completion.install "completions/_fish" => "disass.fish"
     test: |
       system "#{bin}/disass --version"
-# changelog:
-#   sort: asc
-#   filters:
-#     exclude:
-#       - "^docs:"
-#       - "^test:"
-#       - "^bumping"
-#       - "^Update"
-#       - "reorg"
-#       - "updates"
-#       - Merge pull request
-#       - Merge branch
+rigs:
+  - name: ipsw
+    rig:
+      owner: blacktop
+      name: fish-food
+    homepage: https://github.com/blacktop/ipsw
+    description: Download and parse IPSWs
+    license: MIT
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^bumping"
+      - "^Update"
+      - "reorg"
+      - "updates"
+      - Merge pull request
+      - Merge branch
+release:
+  footer: |
+    ## What to do next?
+    - Follow us on [Twitter](https://twitter.com/blacktop__);

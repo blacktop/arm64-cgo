@@ -140,10 +140,12 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	rootCmd.Flags().BoolP("json", "j", false, "Output as JSON")
-
 	rootCmd.Flags().BoolP("all", "", false, "Disassemble all functions")
 	rootCmd.Flags().StringP("symbol", "s", "", "Function to disassemble")
 	rootCmd.Flags().Uint64P("vaddr", "a", 0, "Virtual address to disassemble")
+
+	rootCmd.Flags().BoolP("completion", "", false, "Generate shell completions")
+	rootCmd.Flags().MarkHidden("completion")
 }
 
 func isASCII(s string) bool {
@@ -166,6 +168,21 @@ var rootCmd = &cobra.Command{
 		symbolName, _ := cmd.Flags().GetString("symbol")
 		asJSON, _ := cmd.Flags().GetBool("json")
 		allFuncs, _ := cmd.Flags().GetBool("all")
+
+		doCompletion, _ := cmd.Flags().GetBool("completion")
+		if doCompletion {
+			switch args[0] {
+			case "bash":
+				cmd.Root().GenBashCompletion(os.Stdout)
+			case "zsh":
+				cmd.Root().GenZshCompletion(os.Stdout)
+			case "fish":
+				cmd.Root().GenFishCompletion(os.Stdout, true)
+			case "powershell":
+				cmd.Root().GenPowerShellCompletionWithDesc(os.Stdout)
+			}
+			return
+		}
 
 		var isMiddle bool
 		var symAddr uint64
