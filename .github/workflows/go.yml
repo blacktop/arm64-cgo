@@ -39,11 +39,9 @@ jobs:
         with:
           distribution: goreleaser
           version: latest
-          args: release --rm-dist -f .goreleaser.linux.yml
+          args: release --rm-dist -f hack/goreleaser/linux.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Your GoReleaser Pro key, if you are using the 'goreleaser-pro' distribution
-          # GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
       - name: What is SDK (macOS)
         if: matrix.platform == 'macos-latest'
         run: |
@@ -55,7 +53,7 @@ jobs:
         with:
           distribution: goreleaser
           version: latest
-          args: release --rm-dist -f .goreleaser.mac.yml
+          args: release --rm-dist -f hack/goreleaser/darwin.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       -
@@ -65,7 +63,7 @@ jobs:
         with:
           distribution: goreleaser
           version: latest
-          args: release --rm-dist -f .goreleaser.win.yml
+          args: release --rm-dist -f hack/goreleaser/windows.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       -
@@ -87,5 +85,5 @@ jobs:
         name: Upload assets
         uses: actions/upload-artifact@v2
         with:
-          name: disass.exe
+          name: disass_windows
           path: dist/*

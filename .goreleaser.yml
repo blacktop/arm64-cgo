@@ -1,0 +1,81 @@
+# This is an example .goreleaser.yml file with some sensible defaults.
+# Make sure to check the documentation at https://goreleaser.com
+before:
+  # hooks:
+  #   # You may remove this if you don't use go modules.
+  #   - go mod tidy
+  #   # you may remove this if you don't need go generate
+  #   - go generate ./...
+# builds:
+#   - id: darwin
+#     main: ./cmd/disass
+#     binary: disass
+#     env:
+#       - CGO_ENABLED=1
+#       # - SDKROOT=/Applications/Xcode_12.4.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk # needed for Github Action CI/CD
+#     goos:
+#       - darwin
+#     goarch:
+#       - amd64
+#       - arm64
+  # - id: linux
+  #   main: ./cmd/disass
+  #   binary: disass
+  #   env:
+  #     - CGO_ENABLED=1
+  #   goos:
+  #     - linux
+  #   goarch:
+  #     - amd64
+  # - id: windows
+  #   main: ./cmd/disass
+  #   binary: disass
+  #   env:
+  #     - CGO_ENABLED=1
+  #   goos:
+  #     - windows
+  #   goarch:
+  #     - amd64
+# universal_binaries:
+#   - id: darwin
+#     replace: true
+#     name_template: "disass"
+# archives:
+#   - replacements:
+#       darwin: macOS
+#       amd64: x86_64
+#     name_template: "disass_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+checksum:
+  name_template: "checksums.txt"
+  # disable: true
+# signs:
+#   - artifacts: checksum
+# snapshot:
+#   name_template: "{{ incpatch .Version }}-next"
+brews:
+  - name: disass
+    tap:
+      owner: blacktop
+      name: homebrew-tap
+    folder: Formula
+    homepage: "https://github.com/blacktop/arm64-cgo"
+    description: "MachO ARMv9-a Disassembler"
+    dependencies:
+      - name: bat
+        type: optional
+    install: |
+      bin.install "disass"
+    test: |
+      system "#{bin}/disass --version"
+# changelog:
+#   sort: asc
+#   filters:
+#     exclude:
+#       - "^docs:"
+#       - "^test:"
+#       - "^bumping"
+#       - "^Update"
+#       - "reorg"
+#       - "updates"
+#       - Merge pull request
+#       - Merge branch
