@@ -34,6 +34,12 @@ release: ## Create a new release from the NEXT_VERSION
 	@hack/make/release ${NEXT_VERSION}
 	@goreleaser #--rm-dist
 
+.PHONY: destroy
+destroy: ## Remove release from the CUR_VERSION
+	@echo " > Deleting Release ${CUR_VERSION}"
+	git tag -d ${CUR_VERSION}
+	git push origin :refs/tags/${CUR_VERSION}
+
 .PHONY: cross
 cross: ## Create xgo releases
 	@echo " > Creating xgo releases"
