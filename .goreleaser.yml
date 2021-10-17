@@ -75,12 +75,12 @@ brews:
     test: |
       system "#{bin}/disass --version"
 rigs:
-  - name: ipsw
+  - name: disass
     rig:
       owner: blacktop
       name: fish-food
-    homepage: https://github.com/blacktop/ipsw
-    description: Download and parse IPSWs
+    homepage: https://github.com/blacktop/arm64-cgo
+    description: MachO ARMv9-a Disassembler
     license: MIT
 changelog:
   sort: asc
