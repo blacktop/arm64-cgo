@@ -71,14 +71,14 @@ jobs:
         name: Upload assets
         uses: actions/upload-artifact@v2
         with:
-          name: disass_macos
+          name: disass_linux
           path: dist/*
       # -
       #   if: matrix.platform == 'macos-latest'
       #   name: Upload assets
       #   uses: actions/upload-artifact@v2
       #   with:
-      #     name: disass_linux
+      #     name: disass_macos
       #     path: dist/*
       -
         if: matrix.platform == 'windows-latest'
