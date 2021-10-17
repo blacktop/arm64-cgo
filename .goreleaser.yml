@@ -2,9 +2,7 @@
 # Make sure to check the documentation at https://goreleaser.com
 before:
   hooks:
-    # You may remove this if you don't use go modules.
     - go mod tidy
-    # you may remove this if you don't need go generate
     - go generate ./...
     - ./hack/make/completions
 builds:
@@ -13,7 +11,6 @@ builds:
     binary: disass
     env:
       - CGO_ENABLED=1
-      # - SDKROOT=/Applications/Xcode_12.4.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk # needed for Github Action CI/CD
     goos:
       - darwin
     goarch:
@@ -39,7 +36,7 @@ builds:
   #     - amd64
 universal_binaries:
   - id: darwin
-    replace: false
+    replace: true
     name_template: "disass"
 archives:
   - replacements:
@@ -53,8 +50,8 @@ archives:
     files:
       - completions/*
 checksum:
-  name_template: "checksums.txt"
-  disable: true
+  name_template: "checksums.darwin.txt"
+  disable: false
 signs:
   - artifacts: checksum
 snapshot:

@@ -15,21 +15,23 @@ builds:
       - linux
     goarch:
       - amd64
-  # - main: ./cmd/disass
-  #   id: arm64
-  #   binary: disass
-  #   env:
-  #     - CGO_ENABLED=1
-  #     - CC=aarch64-linux-gnu-gcc
-  #   goos:
-  #     - linux
-  #   goarch:
-  #     - arm64
+  - main: ./cmd/disass
+    id: arm64
+    binary: disass
+    env:
+      - CGO_ENABLED=1
+      - CC=aarch64-linux-gnu-gcc
+    goos:
+      - linux
+    goarch:
+      - arm64
 
 archives:
   - replacements:
       amd64: x86_64
     name_template: "disass_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - completions/*
 
 checksum:
   name_template: 'checksums.linux.txt'

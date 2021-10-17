@@ -14,11 +14,16 @@ builds:
       - windows
     goarch:
       - amd64
-
+      - arm64
 archives:
   - replacements:
       amd64: x86_64
     name_template: "disass_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - completions/*
 
 checksum:
   name_template: 'checksums.win.txt'
