@@ -32,6 +32,7 @@ dry_release: ## Run goreleaser without releasing/pushing artifacts to github
 release: ## Create a new release from the NEXT_VERSION
 	@echo " > Creating Release ${NEXT_VERSION}"
 	@hack/make/release ${NEXT_VERSION}
+	@goreleaser #--rm-dist
 
 .PHONY: cross
 cross: ## Create xgo releases
