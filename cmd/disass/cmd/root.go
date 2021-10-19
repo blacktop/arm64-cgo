@@ -141,6 +141,7 @@ func init() {
 	// when this action is called directly.
 	rootCmd.Flags().BoolP("json", "j", false, "Output as JSON")
 	rootCmd.Flags().BoolP("all", "", false, "Disassemble all functions")
+	rootCmd.Flags().BoolP("quiet", "q", false, "Do NOT markup analysis (Faster)")
 	rootCmd.Flags().StringP("symbol", "s", "", "Function to disassemble")
 	rootCmd.Flags().Uint64P("vaddr", "a", 0, "Virtual address to disassemble")
 
@@ -168,6 +169,7 @@ var rootCmd = &cobra.Command{
 		symbolName, _ := cmd.Flags().GetString("symbol")
 		asJSON, _ := cmd.Flags().GetBool("json")
 		allFuncs, _ := cmd.Flags().GetBool("all")
+		plain, _ := cmd.Flags().GetBool("plain")
 
 		doCompletion, _ := cmd.Flags().GetBool("completion")
 		if doCompletion {
@@ -306,7 +308,8 @@ var rootCmd = &cobra.Command{
 
 			data, err = m.GetFunctionData(fn)
 			if err != nil {
-				log.Fatalf("failed to get data for function %v: %v", fn, err)
+				log.Errorf("failed to get data for function: %v", err)
+				continue
 			}
 
 			r := bytes.NewReader(data)
@@ -395,68 +398,70 @@ var rootCmd = &cobra.Command{
 
 					instrStr = instruction.String()
 
-					if instruction.Operation == disassemble.ARM64_MRS || instruction.Operation == disassemble.ARM64_MSR {
-						var ops []string
-						replaced := false
-						for _, op := range instruction.Operands {
-							if op.Class == disassemble.REG {
-								ops = append(ops, op.Registers[0].String())
-							} else if op.Class == disassemble.IMPLEMENTATION_SPECIFIC {
-								sysRegFix := op.ImplSpec.GetSysReg().String()
-								if len(sysRegFix) > 0 {
-									ops = append(ops, sysRegFix)
-									replaced = true
+					if !plain {
+						if instruction.Operation == disassemble.ARM64_MRS || instruction.Operation == disassemble.ARM64_MSR {
+							var ops []string
+							replaced := false
+							for _, op := range instruction.Operands {
+								if op.Class == disassemble.REG {
+									ops = append(ops, op.Registers[0].String())
+								} else if op.Class == disassemble.IMPLEMENTATION_SPECIFIC {
+									sysRegFix := op.ImplSpec.GetSysReg().String()
+									if len(sysRegFix) > 0 {
+										ops = append(ops, sysRegFix)
+										replaced = true
+									}
 								}
-							}
-							if replaced {
-								instrStr = fmt.Sprintf("%s\t%s", instruction.Operation, strings.Join(ops, ", "))
-							}
-						}
-					}
-
-					if instruction.Encoding == disassemble.ENC_BL_ONLY_BRANCH_IMM || instruction.Encoding == disassemble.ENC_B_ONLY_BRANCH_IMM {
-						if name, ok := addr2SymMap[uint64(instruction.Operands[0].Immediate)]; ok {
-							instrStr = fmt.Sprintf("%s\t%s", instruction.Operation, name)
-						}
-					}
-
-					if instruction.Encoding == disassemble.ENC_CBZ_64_COMPBRANCH {
-						if name, ok := addr2SymMap[uint64(instruction.Operands[1].Immediate)]; ok {
-							instrStr += fmt.Sprintf(" ; %s", name)
-						}
-					}
-
-					if instruction.Operation == disassemble.ARM64_ADR {
-						adrImm := instruction.Operands[1].Immediate
-						if name, ok := addr2SymMap[uint64(adrImm)]; ok {
-							instrStr += fmt.Sprintf(" ; %s", name)
-						} else if cstr, err := m.GetCString(adrImm); err == nil {
-							if isASCII(cstr) {
-								if len(cstr) > 200 {
-									instrStr += fmt.Sprintf(" ; %#v...", cstr[:200])
-								} else if len(cstr) > 1 {
-									instrStr += fmt.Sprintf(" ; %#v", cstr)
+								if replaced {
+									instrStr = fmt.Sprintf("%s\t%s", instruction.Operation, strings.Join(ops, ", "))
 								}
 							}
 						}
-					}
 
-					if (prevInstr != nil && prevInstr.Operation == disassemble.ARM64_ADRP) && (instruction.Operation == disassemble.ARM64_ADD || instruction.Operation == disassemble.ARM64_LDR) {
-						adrpRegister := prevInstr.Operands[0].Registers[0]
-						adrpImm := prevInstr.Operands[1].Immediate
-						if instruction.Operation == disassemble.ARM64_LDR && adrpRegister == instruction.Operands[1].Registers[0] {
-							adrpImm += instruction.Operands[1].Immediate
-						} else if instruction.Operation == disassemble.ARM64_ADD && adrpRegister == instruction.Operands[1].Registers[0] {
-							adrpImm += instruction.Operands[2].Immediate
+						if instruction.Encoding == disassemble.ENC_BL_ONLY_BRANCH_IMM || instruction.Encoding == disassemble.ENC_B_ONLY_BRANCH_IMM {
+							if name, ok := addr2SymMap[uint64(instruction.Operands[0].Immediate)]; ok {
+								instrStr = fmt.Sprintf("%s\t%s", instruction.Operation, name)
+							}
 						}
-						if name, ok := addr2SymMap[uint64(adrpImm)]; ok {
-							instrStr += fmt.Sprintf(" ; %s", name)
-						} else if cstr, err := m.GetCString(adrpImm); err == nil {
-							if isASCII(cstr) {
-								if len(cstr) > 200 {
-									instrStr += fmt.Sprintf(" ; %#v...", cstr[:200])
-								} else if len(cstr) > 1 {
-									instrStr += fmt.Sprintf(" ; %#v", cstr)
+
+						if instruction.Encoding == disassemble.ENC_CBZ_64_COMPBRANCH {
+							if name, ok := addr2SymMap[uint64(instruction.Operands[1].Immediate)]; ok {
+								instrStr += fmt.Sprintf(" ; %s", name)
+							}
+						}
+
+						if instruction.Operation == disassemble.ARM64_ADR {
+							adrImm := instruction.Operands[1].Immediate
+							if name, ok := addr2SymMap[uint64(adrImm)]; ok {
+								instrStr += fmt.Sprintf(" ; %s", name)
+							} else if cstr, err := m.GetCString(adrImm); err == nil {
+								if isASCII(cstr) {
+									if len(cstr) > 200 {
+										instrStr += fmt.Sprintf(" ; %#v...", cstr[:200])
+									} else if len(cstr) > 1 {
+										instrStr += fmt.Sprintf(" ; %#v", cstr)
+									}
+								}
+							}
+						}
+
+						if (prevInstr != nil && prevInstr.Operation == disassemble.ARM64_ADRP) && (instruction.Operation == disassemble.ARM64_ADD || instruction.Operation == disassemble.ARM64_LDR) {
+							adrpRegister := prevInstr.Operands[0].Registers[0]
+							adrpImm := prevInstr.Operands[1].Immediate
+							if instruction.Operation == disassemble.ARM64_LDR && adrpRegister == instruction.Operands[1].Registers[0] {
+								adrpImm += instruction.Operands[1].Immediate
+							} else if instruction.Operation == disassemble.ARM64_ADD && adrpRegister == instruction.Operands[1].Registers[0] {
+								adrpImm += instruction.Operands[2].Immediate
+							}
+							if name, ok := addr2SymMap[uint64(adrpImm)]; ok {
+								instrStr += fmt.Sprintf(" ; %s", name)
+							} else if cstr, err := m.GetCString(adrpImm); err == nil {
+								if isASCII(cstr) {
+									if len(cstr) > 200 {
+										instrStr += fmt.Sprintf(" ; %#v...", cstr[:200])
+									} else if len(cstr) > 1 {
+										instrStr += fmt.Sprintf(" ; %#v", cstr)
+									}
 								}
 							}
 						}
