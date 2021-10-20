@@ -169,7 +169,7 @@ var rootCmd = &cobra.Command{
 		symbolName, _ := cmd.Flags().GetString("symbol")
 		asJSON, _ := cmd.Flags().GetBool("json")
 		allFuncs, _ := cmd.Flags().GetBool("all")
-		plain, _ := cmd.Flags().GetBool("plain")
+		quiet, _ := cmd.Flags().GetBool("quiet")
 
 		doCompletion, _ := cmd.Flags().GetBool("completion")
 		if doCompletion {
@@ -398,7 +398,7 @@ var rootCmd = &cobra.Command{
 
 					instrStr = instruction.String()
 
-					if !plain {
+					if !quiet {
 						if instruction.Operation == disassemble.ARM64_MRS || instruction.Operation == disassemble.ARM64_MSR {
 							var ops []string
 							replaced := false
