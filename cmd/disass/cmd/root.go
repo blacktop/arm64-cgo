@@ -301,7 +301,7 @@ var rootCmd = &cobra.Command{
 
 		var instrStr string
 		var instrValue uint32
-		var resutls [1024]byte
+		var results [1024]byte
 		var prevInstr *disassemble.Instruction
 
 		for idx, fn := range funcs {
@@ -338,15 +338,15 @@ var rootCmd = &cobra.Command{
 				}
 
 				if asJSON {
-					instruction, err := disassemble.Decompose(symAddr, instrValue, &resutls)
+					instruction, err := disassemble.Decompose(symAddr, instrValue, &results)
 					if err != nil {
 						log.Fatal(err.Error())
 					}
 
 					instructions = append(instructions, *instruction)
 				} else {
-					// instruction, err := disassemble.Disassemble(symAddr, instrValue, &resutls)
-					instruction, err := disassemble.Decompose(symAddr, instrValue, &resutls)
+					// instruction, err := disassemble.Disassemble(symAddr, instrValue, &results)
+					instruction, err := disassemble.Decompose(symAddr, instrValue, &results)
 					if err != nil {
 						if instrValue == 0xfeedfacf {
 							fmt.Printf("%#08x:  %s\t.long\t%#x ; (possible embedded MachO)\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue), instrValue)

@@ -536,7 +536,7 @@ func Decompose(addr uint64, instructionValue uint32, results *[1024]byte) (*Inst
 
 // GetInstructions returns an array of arm64 instruction pointers for a given start address and data blob
 func GetInstructions(startAddr uint64, data []byte) (Instructions, error) {
-	var resutls [1024]byte
+	var results [1024]byte
 	var instrValue uint32
 	var intrs Instructions
 
@@ -550,7 +550,7 @@ func GetInstructions(startAddr uint64, data []byte) (Instructions, error) {
 			return nil, fmt.Errorf("failed to read 32-bit instruction value: %v", err)
 		}
 
-		if instruction, err := Decompose(startAddr, instrValue, &resutls); err != nil {
+		if instruction, err := Decompose(startAddr, instrValue, &results); err != nil {
 			return nil, err
 		} else {
 			intrs = append(intrs, instruction)

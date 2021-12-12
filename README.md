@@ -33,7 +33,7 @@ func main() {
 
 	var startAddr uint64
 	var instrValue uint32
-	var resutls [1024]byte
+	var results [1024]byte
 
 	data, err := ioutil.ReadFile(os.Args[1])
 	if err != nil {
@@ -49,7 +49,7 @@ func main() {
 			break
 		}
 
-		instruction, err := disassemble.Disassemble(startAddr, instrValue, &resutls)
+		instruction, err := disassemble.Disassemble(startAddr, instrValue, &results)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -129,7 +129,6 @@ _main:
 0x100007f88:  ff 0f 5f d6	retab
 0x100007f8c:  02 00 00 94	bl	0x100007f94
 0x100007f90:  20 00 20 d4	brk	#0x1
-
 ```
 
 ### Make it pretty 💄

@@ -8,7 +8,7 @@ import (
 )
 
 func Test_decompose_single_instr(t *testing.T) {
-	var resutls [1024]byte
+	var results [1024]byte
 	type args struct {
 		instructionValue uint32
 		address          uint64
@@ -31,7 +31,7 @@ func Test_decompose_single_instr(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Decompose(tt.args.address, tt.args.instructionValue, &resutls)
+			got, err := Decompose(tt.args.address, tt.args.instructionValue, &results)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Decompose() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -44,7 +44,7 @@ func Test_decompose_single_instr(t *testing.T) {
 }
 
 func Test_decompose_v8_1a(t *testing.T) {
-	var resutls [1024]byte
+	var results [1024]byte
 	type args struct {
 		instructionValue uint32
 		address          uint64
@@ -901,7 +901,7 @@ func Test_decompose_v8_1a(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Decompose(tt.args.address, tt.args.instructionValue, &resutls)
+			got, err := Decompose(tt.args.address, tt.args.instructionValue, &results)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Decompose() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -914,7 +914,7 @@ func Test_decompose_v8_1a(t *testing.T) {
 }
 
 func Test_decompose_v8_1a_LSE(t *testing.T) {
-	var resutls [1024]byte
+	var results [1024]byte
 	type args struct {
 		instructionValue uint32
 		address          uint64
@@ -5035,7 +5035,7 @@ func Test_decompose_v8_1a_LSE(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Decompose(tt.args.address, tt.args.instructionValue, &resutls)
+			got, err := Decompose(tt.args.address, tt.args.instructionValue, &results)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Decompose() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -5048,7 +5048,7 @@ func Test_decompose_v8_1a_LSE(t *testing.T) {
 }
 
 func Test_decompose_v8_2a(t *testing.T) {
-	var resutls [1024]byte
+	var results [1024]byte
 	type args struct {
 		instructionValue uint32
 		address          uint64
@@ -5972,7 +5972,7 @@ func Test_decompose_v8_2a(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Decompose(tt.args.address, tt.args.instructionValue, &resutls)
+			got, err := Decompose(tt.args.address, tt.args.instructionValue, &results)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Decompose() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -5985,7 +5985,7 @@ func Test_decompose_v8_2a(t *testing.T) {
 }
 
 func Test_decompose_v8_3a(t *testing.T) {
-	var resutls [1024]byte
+	var results [1024]byte
 	type args struct {
 		instructionValue uint32
 		address          uint64
@@ -7170,7 +7170,7 @@ func Test_decompose_v8_3a(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Decompose(tt.args.address, tt.args.instructionValue, &resutls)
+			got, err := Decompose(tt.args.address, tt.args.instructionValue, &results)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Decompose() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -7183,7 +7183,7 @@ func Test_decompose_v8_3a(t *testing.T) {
 }
 
 func Test_decompose_v8_4a(t *testing.T) {
-	var resutls [1024]byte
+	var results [1024]byte
 	type args struct {
 		instructionValue uint32
 		address          uint64
@@ -7684,7 +7684,7 @@ func Test_decompose_v8_4a(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Decompose(tt.args.address, tt.args.instructionValue, &resutls)
+			got, err := Decompose(tt.args.address, tt.args.instructionValue, &results)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Decompose() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -7697,7 +7697,7 @@ func Test_decompose_v8_4a(t *testing.T) {
 }
 
 func Test_decompose_v8_5a(t *testing.T) {
-	var resutls [1024]byte
+	var results [1024]byte
 	type args struct {
 		instructionValue uint32
 		address          uint64
@@ -8143,7 +8143,7 @@ func Test_decompose_v8_5a(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Decompose(tt.args.address, tt.args.instructionValue, &resutls)
+			got, err := Decompose(tt.args.address, tt.args.instructionValue, &results)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Decompose() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -8156,7 +8156,7 @@ func Test_decompose_v8_5a(t *testing.T) {
 }
 
 func Test_decompose_MTE(t *testing.T) {
-	var resutls [1024]byte
+	var results [1024]byte
 	type args struct {
 		instructionValue uint32
 		address          uint64
@@ -9439,7 +9439,7 @@ func Test_decompose_MTE(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Decompose(tt.args.address, tt.args.instructionValue, &resutls)
+			got, err := Decompose(tt.args.address, tt.args.instructionValue, &results)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Decompose() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -9452,7 +9452,7 @@ func Test_decompose_MTE(t *testing.T) {
 }
 
 func Test_decompose_v8_6a(t *testing.T) {
-	var resutls [1024]byte
+	var results [1024]byte
 	type args struct {
 		instructionValue uint32
 		address          uint64
@@ -10536,7 +10536,7 @@ func Test_decompose_v8_6a(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Decompose(tt.args.address, tt.args.instructionValue, &resutls)
+			got, err := Decompose(tt.args.address, tt.args.instructionValue, &results)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Decompose() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -10549,7 +10549,7 @@ func Test_decompose_v8_6a(t *testing.T) {
 }
 
 func Test_decompose_basic(t *testing.T) {
-	var resutls [1024]byte
+	var results [1024]byte
 	type args struct {
 		instructionValue uint32
 		address          uint64
@@ -28762,7 +28762,7 @@ func Test_decompose_basic(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Decompose(tt.args.address, tt.args.instructionValue, &resutls)
+			got, err := Decompose(tt.args.address, tt.args.instructionValue, &results)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Decompose() error = %v, wantErr %v", err, tt.wantErr)
 				return
