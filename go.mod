@@ -5,10 +5,10 @@ go 1.17
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.2
 	github.com/apex/log v1.9.0
-	github.com/blacktop/go-macho v1.1.79
-	github.com/spf13/cobra v1.2.1
-	github.com/spf13/viper v1.10.0
-	golang.org/x/sys v0.0.0-20211210111614-af8b64212486 // indirect
+	github.com/blacktop/go-macho v1.1.81
+	github.com/spf13/cobra v1.3.0
+	github.com/spf13/viper v1.10.1
+	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
 	golang.org/x/text v0.3.7 // indirect
 )
 
