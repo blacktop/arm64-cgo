@@ -111,6 +111,27 @@ func (a arrangementSpec) String() string {
 	}
 }
 
+type sliceType int32
+
+const (
+	SLICE_NONE       sliceType = -1
+	SLICE_HORIZONTAL sliceType = 0 /* same values as read from fields32 */
+	SLICE_VERTICAL   sliceType = 1
+)
+
+func (s sliceType) String() string {
+	switch s {
+	case SLICE_NONE:
+		return ""
+	case SLICE_HORIZONTAL:
+		return "HORIZONTAL"
+	case SLICE_VERTICAL:
+		return "VERTICAL"
+	default:
+		return fmt.Sprintf("sliceType(%d)", s)
+	}
+}
+
 type operandClass uint32
 
 const (
@@ -127,6 +148,9 @@ const (
 	MEM_POST_IDX
 	MEM_OFFSET
 	MEM_EXTENDED
+	SME_TILE
+	INDEXED_ELEMENT // <Pn>.<T>[<Wm>{, #<imm>}]    p12.d[w15, #15]
+	ACCUM_ARRAY     // ZA[<Wv>, #<imm>]            ZA[w13, #8]
 	LABEL
 	CONDITION
 	NAME
@@ -161,6 +185,12 @@ func (o operandClass) String() string {
 		return "MEM_OFFSET"
 	case MEM_EXTENDED:
 		return "MEM_EXTENDED"
+	case SME_TILE:
+		return "SME_TILE"
+	case INDEXED_ELEMENT:
+		return "INDEXED_ELEMENT"
+	case ACCUM_ARRAY:
+		return "ACCUM_ARRAY"
 	case LABEL:
 		return "LABEL"
 	case CONDITION:
@@ -392,8 +422,10 @@ type Operand struct {
 	SignedImm      bool      `json:"signed_imm,omitempty"`
 	PredQual       byte      `json:"pred_qual,omitempty"` // predicate register qualifier ('z' or 'm')
 	MulVl          bool      `json:"mul_vl,omitempty"`    // whether MEM_OFFSET has the offset "mul vl"
-
-	Name string `json:"name,omitempty"` // or class NAME
+	/* for class SME_TILE */
+	Tile  uint16    `json:"tile,omitempty"`
+	Slice sliceType `json:"slice,omitempty"`
+	Name  string    `json:"name,omitempty"` // or class NAME
 }
 
 // MarshalJSON is the operand's custom JSON marshaler
@@ -419,7 +451,9 @@ func (o *Operand) MarshalJSON() ([]byte, error) {
 		SignedImm      bool     `json:"signed_imm,omitempty"`
 		PredQual       byte     `json:"pred_qual,omitempty"` // predicate register qualifier ('z' or 'm')
 		MulVl          bool     `json:"mul_vl,omitempty"`    // whether MEM_OFFSET has the offset "mul vl"
-		Name           string   `json:"name,omitempty"`      // or class NAME
+		Tile           uint16   `json:"tile,omitempty"`
+		Slice          string   `json:"slice,omitempty"`
+		Name           string   `json:"name,omitempty"` // or class NAME
 	}{
 		Class:          o.Class.String(),
 		ArrSpec:        o.ArrSpec.String(),
@@ -437,6 +471,8 @@ func (o *Operand) MarshalJSON() ([]byte, error) {
 		SignedImm:      o.SignedImm,
 		PredQual:       o.PredQual,
 		MulVl:          o.MulVl,
+		Tile:           o.Tile,
+		Slice:          o.Slice.String(),
 		Name:           o.Name,
 	})
 }
@@ -633,6 +669,8 @@ func goInstruction(instr *C.Instruction) *Instruction {
 				SignedImm:      bool(op.signedImm),
 				PredQual:       byte(op.pred_qual),
 				MulVl:          bool(op.mul_vl),
+				Tile:           uint16(op.tile),
+				Slice:          sliceType(op.slice),
 				Name:           C.GoString(&op.name[0]),
 			})
 			for _, reg := range op.reg {
