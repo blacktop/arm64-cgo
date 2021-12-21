@@ -669,10 +669,12 @@ func goInstruction(instr *C.Instruction) *Instruction {
 				SignedImm:      bool(op.signedImm),
 				PredQual:       byte(op.pred_qual),
 				MulVl:          bool(op.mul_vl),
-				Tile:           uint16(op.tile),
-				Slice:          sliceType(op.slice),
 				Name:           C.GoString(&op.name[0]),
 			})
+			if i.Operands[idx].Class == SME_TILE {
+				i.Operands[idx].Tile = uint16(op.tile)
+				i.Operands[idx].Slice = sliceType(op.slice)
+			}
 			for _, reg := range op.reg {
 				if reg != C.Register(REG_NONE) {
 					i.Operands[idx].Registers = append(i.Operands[idx].Registers, Register(reg))
