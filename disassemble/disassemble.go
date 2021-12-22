@@ -477,6 +477,21 @@ func (o *Operand) MarshalJSON() ([]byte, error) {
 	})
 }
 
+func (o *Operand) GetImmediate() uint64 {
+	imm := o.Immediate
+	if o.ShiftValueUsed {
+		switch o.ShiftType {
+		case SHIFT_TYPE_LSL:
+			imm = imm << uint64(o.ShiftValue)
+		case SHIFT_TYPE_LSR:
+			imm = imm >> uint64(o.ShiftValue)
+		case SHIFT_TYPE_MSL:
+			imm = imm<<uint64(o.ShiftValue) | ^uint64(1)>>(64-o.ShiftValue)
+		}
+	}
+	return imm
+}
+
 type Instructions []*Instruction
 
 // Instruction is an arm64 instruction object
@@ -614,7 +629,9 @@ func (intrs Instructions) Blocks() []Instructions {
 			block = append(block, i)
 		}
 	}
-
+	if len(block) > 0 {
+		blocks = append(blocks, block)
+	}
 	return blocks
 }
 
