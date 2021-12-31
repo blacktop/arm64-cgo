@@ -691,6 +691,8 @@ func goInstruction(instr *C.Instruction) *Instruction {
 			if i.Operands[idx].Class == SME_TILE {
 				i.Operands[idx].Tile = uint16(op.tile)
 				i.Operands[idx].Slice = sliceType(op.slice)
+			} else {
+				i.Operands[idx].Slice = -1 // NOTE: this prevents the Slice from showing up in the JSON output
 			}
 			for _, reg := range op.reg {
 				if reg != C.Register(REG_NONE) {
