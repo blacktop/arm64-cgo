@@ -404,9 +404,9 @@ func (i implSpec) GetSysReg() systemReg {
 type Operand struct {
 	Class     operandClass    `json:"class,omitempty"`
 	ArrSpec   arrangementSpec `json:"arr_spec,omitempty"`
-	Registers []Register      `json:"registers,omitempty"`
+	Registers []Register      `json:"regs,omitempty"`
 
-	Condition condition `json:"condition,omitempty"` // for class CONDITION
+	Condition condition `json:"cond,omitempty"` // for class CONDITION
 
 	ImplSpec implSpec `json:"impl_spec,omitempty"` // for class IMPLEMENTATION_SPECIFIC
 
@@ -414,12 +414,12 @@ type Operand struct {
 
 	LaneUsed       bool      `json:"lane_used,omitempty"`
 	Lane           uint32    `json:"lane,omitempty"`
-	Immediate      uint64    `json:"immediate,omitempty"`
-	ShiftType      shiftType `json:"shift_type,omitempty"`
-	ShiftValueUsed bool      `json:"shift_value_used,omitempty"`
-	ShiftValue     uint32    `json:"shift_value,omitempty"`
+	Immediate      uint64    `json:"imm,omitempty"`
+	ShiftType      shiftType `json:"type,omitempty"`
+	ShiftValueUsed bool      `json:"used,omitempty"`
+	ShiftValue     uint32    `json:"shift,omitempty"`
 	Extend         shiftType `json:"extend,omitempty"`
-	SignedImm      bool      `json:"signed_imm,omitempty"`
+	SignedImm      bool      `json:"signed,omitempty"`
 	PredQual       byte      `json:"pred_qual,omitempty"` // predicate register qualifier ('z' or 'm')
 	MulVl          bool      `json:"mul_vl,omitempty"`    // whether MEM_OFFSET has the offset "mul vl"
 	/* for class SME_TILE */
@@ -437,18 +437,18 @@ func (o *Operand) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Class          string   `json:"class,omitempty"`
 		ArrSpec        string   `json:"arr_spec,omitempty"`
-		Registers      []string `json:"registers,omitempty"`
-		Condition      string   `json:"condition,omitempty"` // for class CONDITION
+		Registers      []string `json:"regs,omitempty"`
+		Condition      string   `json:"cond,omitempty"`      // for class CONDITION
 		ImplSpec       []byte   `json:"impl_spec,omitempty"` // for class IMPLEMENTATION_SPECIFIC
 		SysReg         string   `json:"sys_reg,omitempty"`   // for class SYS_REG
 		LaneUsed       bool     `json:"lane_used,omitempty"`
 		Lane           uint32   `json:"lane,omitempty"`
-		Immediate      int64    `json:"immediate,omitempty"` // TODO: is it dangerous casting this as a int64 without checking SignedImm first
-		ShiftType      string   `json:"shift_type,omitempty"`
-		ShiftValueUsed bool     `json:"shift_value_used,omitempty"`
-		ShiftValue     uint32   `json:"shift_value,omitempty"`
+		Immediate      int64    `json:"imm,omitempty"` // TODO: is it dangerous casting this as a int64 without checking SignedImm first
+		ShiftType      string   `json:"type,omitempty"`
+		ShiftValueUsed bool     `json:"used,omitempty"`
+		ShiftValue     uint32   `json:"shift,omitempty"`
 		Extend         string   `json:"extend,omitempty"`
-		SignedImm      bool     `json:"signed_imm,omitempty"`
+		SignedImm      bool     `json:"signed,omitempty"`
 		PredQual       byte     `json:"pred_qual,omitempty"` // predicate register qualifier ('z' or 'm')
 		MulVl          bool     `json:"mul_vl,omitempty"`    // whether MEM_OFFSET has the offset "mul vl"
 		Tile           uint16   `json:"tile,omitempty"`
@@ -496,13 +496,13 @@ type Instructions []*Instruction
 
 // Instruction is an arm64 instruction object
 type Instruction struct {
-	Address     uint64    `json:"address,omitempty"`
+	Address     uint64    `json:"addr,omitempty"`
 	Raw         uint32    `json:"raw,omitempty"`
-	Encoding    encoding  `json:"encoding,omitempty"`
-	Operation   operation `json:"operation,omitempty"`
-	Operands    []Operand `json:"operands,omitempty"`
+	Encoding    encoding  `json:"enc,omitempty"`
+	Operation   operation `json:"op,omitempty"`
+	Operands    []Operand `json:"oprnds,omitempty"`
 	SetFlags    bool      `json:"set_flags,omitempty"`
-	Disassembly string    `json:"disassembly,omitempty"`
+	Disassembly string    `json:"disass,omitempty"`
 }
 
 // OpCodes returns the instruction's opcodes as a string of hex bytes
@@ -517,13 +517,13 @@ func (i *Instruction) String() string {
 // MarshalJSON is the instruction's custom JSON marshaler
 func (i *Instruction) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Address     uint64    `json:"address,omitempty"`
+		Address     uint64    `json:"addr,omitempty"`
 		Raw         uint32    `json:"raw,omitempty"`
-		Encoding    string    `json:"encoding,omitempty"`
-		Operation   string    `json:"operation,omitempty"`
-		Operands    []Operand `json:"operands,omitempty"`
+		Encoding    string    `json:"enc,omitempty"`
+		Operation   string    `json:"op,omitempty"`
+		Operands    []Operand `json:"oprnds,omitempty"`
 		SetFlags    bool      `json:"set_flags,omitempty"`
-		Disassembly string    `json:"disassembly,omitempty"`
+		Disassembly string    `json:"disass,omitempty"`
 	}{
 		Address:     i.Address,
 		Raw:         i.Raw,
