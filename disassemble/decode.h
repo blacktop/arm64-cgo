@@ -416,25 +416,25 @@ typedef struct context_
 enum OperandClass
 {                          // syntax                      example
 	NONE = 0,              // --------------------------- ---------------------
-	IMM32,
-	IMM64,
-	FIMM32,
-	STR_IMM,
-	REG,
-	MULTI_REG,
-	SYS_REG,
-	MEM_REG,
-	MEM_PRE_IDX,
-	MEM_POST_IDX,
-	MEM_OFFSET,
-	MEM_EXTENDED,
-	SME_TILE,
-	INDEXED_ELEMENT,        // <Pn>.<T>[<Wm>{, #<imm>}]    p12.d[w15, #15]
-	ACCUM_ARRAY,			// ZA[<Wv>, #<imm>]            ZA[w13, #8]
-	LABEL,
-	CONDITION,
-	NAME,
-	IMPLEMENTATION_SPECIFIC
+	IMM32 = 1,
+	IMM64 = 2,
+	FIMM32 = 3,
+	STR_IMM = 4,
+	REG = 5,
+	MULTI_REG = 6,
+	SYS_REG = 7,
+	MEM_REG = 8,
+	MEM_PRE_IDX = 9,
+	MEM_POST_IDX = 10,
+	MEM_OFFSET = 11,
+	MEM_EXTENDED = 12,
+	SME_TILE = 13,
+	INDEXED_ELEMENT = 14,        // <Pn>.<T>[<Wm>{, #<imm>}]    p12.d[w15, #15]
+	ACCUM_ARRAY = 15,			// ZA[<Wv>, #<imm>]            ZA[w13, #8]
+	LABEL = 16,
+	CONDITION = 17,
+	NAME = 18,
+	IMPLEMENTATION_SPECIFIC = 19
 };
 
 enum Condition
@@ -487,6 +487,14 @@ enum Group
 	GROUP_DATA_PROCESSING_SIMD,
 	GROUP_DATA_PROCESSING_SIMD2,
 	END_GROUP
+};
+
+enum FlagEffect
+{
+	FLAGEFFECT_NONE=0, // doesn't set flags
+	FLAGEFFECT_SETS=1, // sets flags, but unknown which type
+	FLAGEFFECT_SETS_NORMAL=2, // sets flags after normal comparison
+	FLAGEFFECT_SETS_FLOAT=3 // sets flags after float comparison
 };
 
 #ifndef __cplusplus
@@ -552,7 +560,7 @@ struct Instruction
 	enum Operation operation;
 	InstructionOperand operands[MAX_OPERANDS];
 
-	bool setflags;
+	enum FlagEffect setflags;
 };
 
 #ifndef __cplusplus

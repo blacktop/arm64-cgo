@@ -391,6 +391,30 @@ func (g Group) String() string {
 	}
 }
 
+type FlagEffect uint32
+
+const (
+	FLAGEFFECT_NONE        FlagEffect = 0 // doesn't set flags
+	FLAGEFFECT_SETS        FlagEffect = 1 // sets flags, but unknown which type
+	FLAGEFFECT_SETS_NORMAL FlagEffect = 2 // sets flags after normal comparison
+	FLAGEFFECT_SETS_FLOAT  FlagEffect = 3 // sets flags after float comparison
+)
+
+func (f FlagEffect) String() string {
+	switch f {
+	case FLAGEFFECT_NONE:
+		return ""
+	case FLAGEFFECT_SETS:
+		return "SETS"
+	case FLAGEFFECT_SETS_NORMAL:
+		return "SETS_NORMAL"
+	case FLAGEFFECT_SETS_FLOAT:
+		return "SETS_FLOAT"
+	default:
+		return fmt.Sprintf("FlagEffect(%d)", f)
+	}
+}
+
 type implSpec []byte
 
 func (i implSpec) GetSysReg() systemReg {
@@ -496,13 +520,13 @@ type Instructions []*Instruction
 
 // Instruction is an arm64 instruction object
 type Instruction struct {
-	Address     uint64    `json:"addr,omitempty"`
-	Raw         uint32    `json:"raw,omitempty"`
-	Encoding    encoding  `json:"enc,omitempty"`
-	Operation   operation `json:"op,omitempty"`
-	Operands    []Operand `json:"oprnds,omitempty"`
-	SetFlags    bool      `json:"set_flags,omitempty"`
-	Disassembly string    `json:"disass,omitempty"`
+	Address     uint64     `json:"addr,omitempty"`
+	Raw         uint32     `json:"raw,omitempty"`
+	Encoding    encoding   `json:"enc,omitempty"`
+	Operation   operation  `json:"op,omitempty"`
+	Operands    []Operand  `json:"oprnds,omitempty"`
+	SetFlags    FlagEffect `json:"set_flags,omitempty"`
+	Disassembly string     `json:"disass,omitempty"`
 }
 
 // OpCodes returns the instruction's opcodes as a string of hex bytes
@@ -522,7 +546,7 @@ func (i *Instruction) MarshalJSON() ([]byte, error) {
 		Encoding    string    `json:"enc,omitempty"`
 		Operation   string    `json:"op,omitempty"`
 		Operands    []Operand `json:"oprnds,omitempty"`
-		SetFlags    bool      `json:"set_flags,omitempty"`
+		SetFlags    string    `json:"set_flags,omitempty"`
 		Disassembly string    `json:"disass,omitempty"`
 	}{
 		Address:     i.Address,
@@ -530,7 +554,7 @@ func (i *Instruction) MarshalJSON() ([]byte, error) {
 		Encoding:    i.Encoding.String(),
 		Operation:   i.Operation.String(),
 		Operands:    i.Operands,
-		SetFlags:    i.SetFlags,
+		SetFlags:    i.SetFlags.String(),
 		Disassembly: i.Disassembly,
 	})
 }
@@ -665,7 +689,7 @@ func goInstruction(instr *C.Instruction) *Instruction {
 	i := &Instruction{
 		Raw:       uint32(instr.insword),
 		Encoding:  encoding(instr.encoding),
-		SetFlags:  bool(instr.setflags),
+		SetFlags:  FlagEffect(instr.setflags),
 		Operation: operation(instr.operation),
 	}
 

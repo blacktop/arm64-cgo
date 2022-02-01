@@ -183,7 +183,7 @@ static const Register regMap[2][10][32] = {
             REG_V28,
             REG_V29,
             REG_V30,
-            REG_VZR,
+            REG_V31,
         },
         {
             REG_B0,
@@ -217,7 +217,7 @@ static const Register regMap[2][10][32] = {
             REG_B28,
             REG_B29,
             REG_B30,
-            REG_BZR,
+            REG_B31,
         },
         {
             REG_H0,
@@ -251,7 +251,7 @@ static const Register regMap[2][10][32] = {
             REG_H28,
             REG_H29,
             REG_H30,
-            REG_HZR,
+            REG_H31,
         },
         {
             REG_S0,
@@ -285,7 +285,7 @@ static const Register regMap[2][10][32] = {
             REG_S28,
             REG_S29,
             REG_S30,
-            REG_SZR,
+            REG_S31,
         },
         {
             REG_D0,
@@ -319,12 +319,12 @@ static const Register regMap[2][10][32] = {
             REG_D28,
             REG_D29,
             REG_D30,
-            REG_DZR,
+            REG_D31,
         },
         {REG_Q0, REG_Q1, REG_Q2, REG_Q3, REG_Q4, REG_Q5, REG_Q6, REG_Q7, REG_Q8, REG_Q9, REG_Q10,
             REG_Q11, REG_Q12, REG_Q13, REG_Q14, REG_Q15, REG_Q16, REG_Q17, REG_Q18, REG_Q19,
             REG_Q20, REG_Q21, REG_Q22, REG_Q23, REG_Q24, REG_Q25, REG_Q26, REG_Q27, REG_Q28,
-            REG_Q29, REG_Q30, REG_QZR},
+            REG_Q29, REG_Q30, REG_Q31},
         {REG_Z0, REG_Z1, REG_Z2, REG_Z3, REG_Z4, REG_Z5, REG_Z6, REG_Z7, REG_Z8, REG_Z9, REG_Z10,
             REG_Z11, REG_Z12, REG_Z13, REG_Z14, REG_Z15, REG_Z16, REG_Z17, REG_Z18, REG_Z19,
             REG_Z20, REG_Z21, REG_Z22, REG_Z23, REG_Z24, REG_Z25, REG_Z26, REG_Z27, REG_Z28,
@@ -1796,7 +1796,6 @@ int decode_scratchpad(context* ctx, Instruction* instr)
 	case ENC_FCMPE_DZ_FLOATCMP:
 	case ENC_FCMP_DZ_FLOATCMP:
 	{
-		instr->setflags = 1;
 		// <Dn>, #0.0
 		ADD_OPERAND_DN;
 		ADD_OPERAND_FLOAT32(0);
@@ -1805,7 +1804,6 @@ int decode_scratchpad(context* ctx, Instruction* instr)
 	case ENC_FCMPE_D_FLOATCMP:
 	case ENC_FCMP_D_FLOATCMP:
 	{
-		instr->setflags = 1;
 		// <Dn>,<Dm>
 		ADD_OPERAND_DN;
 		ADD_OPERAND_DM;
@@ -1814,7 +1812,6 @@ int decode_scratchpad(context* ctx, Instruction* instr)
 	case ENC_FCCMPE_D_FLOATCCMP:
 	case ENC_FCCMP_D_FLOATCCMP:
 	{
-		instr->setflags = 1;
 		// <Dn>,<Dm>, #<nzcv>,<cond>
 		ADD_OPERAND_DN;
 		ADD_OPERAND_DM;
@@ -2157,7 +2154,6 @@ int decode_scratchpad(context* ctx, Instruction* instr)
 	case ENC_FCMPE_HZ_FLOATCMP:
 	case ENC_FCMP_HZ_FLOATCMP:
 	{
-		instr->setflags = 1;
 		// <Hn>, #0.0
 		ADD_OPERAND_HN;
 		ADD_OPERAND_FLOAT32(0);
@@ -2166,7 +2162,6 @@ int decode_scratchpad(context* ctx, Instruction* instr)
 	case ENC_FCMPE_H_FLOATCMP:
 	case ENC_FCMP_H_FLOATCMP:
 	{
-		instr->setflags = 1;
 		// <Hn>,<Hm>
 		ADD_OPERAND_HN;
 		ADD_OPERAND_HM;
@@ -2175,7 +2170,6 @@ int decode_scratchpad(context* ctx, Instruction* instr)
 	case ENC_FCCMPE_H_FLOATCCMP:
 	case ENC_FCCMP_H_FLOATCCMP:
 	{
-		instr->setflags = 1;
 		// <Hn>,<Hm>, #<nzcv>,<cond>
 		ADD_OPERAND_HN;
 		ADD_OPERAND_HM;
@@ -2416,7 +2410,7 @@ int decode_scratchpad(context* ctx, Instruction* instr)
 	{
 		instr->operation = ARM64_MOVA;
 		ArrangementSpec as = ARRSPEC_NONE;
-		uint64_t imm, n;
+		uint64_t imm=0, n=0;
 		switch(instr->encoding) {
 			case ENC_MOV_MOVA_Z_P_RZA_B: as=_1B; imm=ctx->imm4; n=0; break;
 			case ENC_MOV_MOVA_Z_P_RZA_H: as=_1H; imm=ctx->imm3; n=ctx->n; break;
@@ -2438,7 +2432,7 @@ int decode_scratchpad(context* ctx, Instruction* instr)
 	{
 		instr->operation = ARM64_MOVA;
 		ArrangementSpec as = ARRSPEC_NONE;
-		uint64_t imm, d;
+		uint64_t imm=0, d=0;
 		switch(instr->encoding) {
 			case ENC_MOV_MOVA_ZA_P_RZ_B: as=_1B; imm=ctx->imm4; d=0; break;
 			case ENC_MOV_MOVA_ZA_P_RZ_H: as=_1H; imm=ctx->imm3; d=ctx->d; break;
@@ -2861,7 +2855,6 @@ int decode_scratchpad(context* ctx, Instruction* instr)
 	case ENC_FCMPE_SZ_FLOATCMP:
 	case ENC_FCMP_SZ_FLOATCMP:
 	{
-		instr->setflags = 1;
 		// <Sn>, #0.0
 		ADD_OPERAND_SN;
 		ADD_OPERAND_FLOAT32(0);
@@ -2870,7 +2863,6 @@ int decode_scratchpad(context* ctx, Instruction* instr)
 	case ENC_FCMPE_S_FLOATCMP:
 	case ENC_FCMP_S_FLOATCMP:
 	{
-		instr->setflags = 1;
 		// <Sn>,<Sm>
 		ADD_OPERAND_SN;
 		ADD_OPERAND_SM;
@@ -2879,7 +2871,6 @@ int decode_scratchpad(context* ctx, Instruction* instr)
 	case ENC_FCCMPE_S_FLOATCCMP:
 	case ENC_FCCMP_S_FLOATCCMP:
 	{
-		instr->setflags = 1;
 		// <Sn>,<Sm>, #<nzcv>,<cond>
 		ADD_OPERAND_SN;
 		ADD_OPERAND_SM;
@@ -4888,7 +4879,6 @@ int decode_scratchpad(context* ctx, Instruction* instr)
 	case ENC_CCMN_32_CONDCMP_IMM:
 	case ENC_CCMP_32_CONDCMP_IMM:
 	{
-		instr->setflags = 1;
 		uint32_t imm = ctx->imm;
 		// <Wn>, #<imm>, #<nzcv>,<cond>
 		ADD_OPERAND_WN;
@@ -4900,7 +4890,6 @@ int decode_scratchpad(context* ctx, Instruction* instr)
 	case ENC_CCMN_32_CONDCMP_REG:
 	case ENC_CCMP_32_CONDCMP_REG:
 	{
-		instr->setflags = 1;
 		// <Wn>,<Wm>, #<nzcv>,<cond>
 		ADD_OPERAND_WN;
 		ADD_OPERAND_WM;
@@ -6032,7 +6021,6 @@ int decode_scratchpad(context* ctx, Instruction* instr)
 	case ENC_CCMN_64_CONDCMP_IMM:
 	case ENC_CCMP_64_CONDCMP_IMM:
 	{
-		instr->setflags = 1;
 		uint32_t imm = ctx->imm;
 		// <Xn>, #<imm>, #<nzcv>,<cond>
 		ADD_OPERAND_XN;
@@ -6054,7 +6042,6 @@ int decode_scratchpad(context* ctx, Instruction* instr)
 	case ENC_CCMN_64_CONDCMP_REG:
 	case ENC_CCMP_64_CONDCMP_REG:
 	{
-		instr->setflags = 1;
 		// <Xn>,<Xm>, #<nzcv>,<cond>
 		ADD_OPERAND_XN;
 		ADD_OPERAND_XM;
