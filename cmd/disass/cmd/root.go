@@ -24,6 +24,7 @@ package cmd
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -143,6 +144,7 @@ func init() {
 	rootCmd.Flags().BoolP("all", "", false, "Disassemble all functions")
 	rootCmd.Flags().BoolP("quiet", "q", false, "Do NOT markup analysis (Faster)")
 	rootCmd.Flags().StringP("symbol", "s", "", "Function to disassemble")
+	rootCmd.Flags().StringP("opcodes", "o", "", "Disassemble a given set of opcodes")
 	rootCmd.Flags().Uint64P("vaddr", "a", 0, "Virtual address to disassemble")
 
 	rootCmd.Flags().BoolP("completion", "", false, "Generate shell completions")
@@ -162,14 +164,44 @@ func isASCII(s string) bool {
 var rootCmd = &cobra.Command{
 	Use:   "disass",
 	Short: "MachO AARCH64 disassembler",
-	Args:  cobra.MinimumNArgs(1),
+	// Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 
 		startVMAddr, _ := cmd.Flags().GetUint64("vaddr")
 		symbolName, _ := cmd.Flags().GetString("symbol")
+		opCodes, _ := cmd.Flags().GetString("opcodes")
 		asJSON, _ := cmd.Flags().GetBool("json")
 		allFuncs, _ := cmd.Flags().GetBool("all")
 		quiet, _ := cmd.Flags().GetBool("quiet")
+
+		if len(opCodes) > 0 {
+			pattern, err := hex.DecodeString(strings.Replace(opCodes, " ", "", -1))
+			if err != nil {
+				log.Fatalf("failed to decode opcodes '%s': %v", opCodes, err)
+			}
+			var instrValue uint32
+			var startVMAddr uint64
+			var results [1024]byte
+
+			r := bytes.NewReader(pattern)
+
+			for {
+				err = binary.Read(r, binary.LittleEndian, &instrValue)
+
+				if err == io.EOF {
+					break
+				}
+
+				instruction, err := disassemble.Decompose(startVMAddr, instrValue, &results)
+				if err != nil {
+					log.Fatalf("failed to decompose instruction: %v", err)
+				}
+				fmt.Printf("%#08x:  %s\t%s\n", uint64(startVMAddr), disassemble.GetOpCodeByteString(instrValue), instruction.String())
+				startVMAddr += uint64(binary.Size(uint32(0)))
+			}
+
+			return
+		}
 
 		doCompletion, _ := cmd.Flags().GetBool("completion")
 		if doCompletion {
@@ -195,6 +227,10 @@ var rootCmd = &cobra.Command{
 
 		var m *macho.File
 		var instructions []disassemble.Instruction
+
+		if len(args) == 0 {
+			log.Fatalf("no input MachO file specified")
+		}
 
 		machoPath := filepath.Clean(args[0])
 
