@@ -16,6 +16,24 @@ builds:
     goarch:
       - amd64
       - arm64
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    flags:
+      - -trimpath
+  - id: ios
+    main: ./cmd/disass
+    binary: disass
+    env:
+      - CGO_ENABLED=1
+      - CC=$GOROOT/misc/ios/clangwrap.sh
+    goos:
+      - ios
+    goarch:
+      - arm64
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    flags:
+      - -trimpath
+    hooks:
+      post: ./hack/make/codesign {{ .Path }}
   # - id: linux
   #   main: ./cmd/disass
   #   binary: disass
@@ -41,6 +59,7 @@ universal_binaries:
 archives:
   - replacements:
       darwin: macOS
+      ios: iOS
       amd64: x86_64
       all: universal
     name_template: "disass_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
@@ -85,6 +104,21 @@ rigs:
 changelog:
   sort: asc
   use: github
+  groups:
+    - title: 'New Features'
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 100
+    - title: 'Bug fixes'
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 200
+    - title: Dependency updates
+      regexp: "^.*chore\\(deps\\)*:+.*$"
+      order: 300
+    - title: 'Documentation updates'
+      regexp: "^.*docs[(\\w)]*:+.*$"
+      order: 400
+    - title: Other work
+      order: 9999
   filters:
     exclude:
       - "^docs:"
@@ -97,5 +131,7 @@ changelog:
       - Merge branch
 release:
   footer: |
+    ### Summary
+    **Full Changelog**: https://github.com/blacktop/ipsw/compare/{{ .PreviousTag }}...{{ .Tag }}
     ## What to do next?
     - Follow us on [Twitter](https://twitter.com/blacktop__);

@@ -25,7 +25,7 @@ test: build ## Test disass on hello-mte
 .PHONY: dry_release
 dry_release: ## Run goreleaser without releasing/pushing artifacts to github
 	@echo " > Creating Pre-release Build ${NEXT_VERSION}"
-	@goreleaser build --rm-dist --skip-validate --id darwin
+	@GOROOT=$(shell go env GOROOT) goreleaser build -id darwin --rm-dist --snapshot --single-target --output dist/disass
 
 .PHONY: snapshot
 snapshot: ## Run goreleaser snapshot
@@ -36,7 +36,7 @@ snapshot: ## Run goreleaser snapshot
 release: ## Create a new release from the NEXT_VERSION
 	@echo " > Creating Release ${NEXT_VERSION}"
 	@hack/make/release ${NEXT_VERSION}
-	@goreleaser --rm-dist
+	@GOROOT=$(shell go env GOROOT) goreleaser --rm-dist
 
 .PHONY: destroy
 destroy: ## Remove release from the CUR_VERSION
