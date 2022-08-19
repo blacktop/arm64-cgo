@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.5
 	github.com/apex/log v1.9.0
-	github.com/blacktop/go-macho v1.1.93
+	github.com/blacktop/go-macho v1.1.95
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.12.0
 	golang.org/x/sys v0.0.0-20220808155132-1c4a2a72c664 // indirect
@@ -13,6 +13,7 @@ require (
 )
 
 require (
+	github.com/blacktop/go-dwarf v1.0.4 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
