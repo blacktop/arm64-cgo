@@ -1,6 +1,6 @@
 # arm64-cgo
 
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/blacktop/arm64-cgo/Go)
+[![Go](https://github.com/blacktop/arm64-cgo/actions/workflows/go.yml/badge.svg)](https://github.com/blacktop/arm64-cgo/actions/workflows/go.yml)
 ![GitHub all releases](https://img.shields.io/github/downloads/blacktop/arm64-cgo/total)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/blacktop/arm64-cgo)](https://github.com/blacktop/arm64-cgo/releases/latest)
 [![PkgGoDev](https://pkg.go.dev/badge/blacktop/arm64-cgo)](https://pkg.go.dev/github.com/blacktop/arm64-cgo/disassemble)
