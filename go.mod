@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.6
 	github.com/apex/log v1.9.0
-	github.com/blacktop/go-macho v1.1.149
+	github.com/blacktop/go-macho v1.1.151
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.15.0
 	golang.org/x/sys v0.6.0 // indirect
