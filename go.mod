@@ -3,7 +3,7 @@ module github.com/blacktop/arm64-cgo
 go 1.20
 
 require (
-	github.com/AlecAivazis/survey/v2 v2.3.6
+	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/apex/log v1.9.0
 	github.com/blacktop/go-macho v1.1.156
 	github.com/spf13/cobra v1.7.0
