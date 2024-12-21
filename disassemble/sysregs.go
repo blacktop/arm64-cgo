@@ -2910,7 +2910,6 @@ func (s systemReg) String() string {
 		return "upmc6_el1"
 	case 65524:
 		return "upmc7_el1"
-
 	case 65299:
 		return "spsel"
 	case 65300:

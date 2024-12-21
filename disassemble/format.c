@@ -1,4 +1,3 @@
-#define __STDC_FORMAT_MACROS
 #include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
@@ -419,9 +418,9 @@ uint32_t get_sme_tile(const InstructionOperand *operand, char *outBuffer, uint32
 	char base_offset[32] = {'\0'};
 	if(operand->reg[0] != REG_NONE) {
 		if(operand->arrSpec == ARRSPEC_FULL)
-			sprintf(base_offset, "[%s]", get_register_name(operand->reg[0]));
+			snprintf(base_offset, sizeof(base_offset), "[%s]", get_register_name(operand->reg[0]));
 		else
-			sprintf(base_offset, "[%s, #%"PRIu64"]", get_register_name(operand->reg[0]), operand->immediate);
+			snprintf(base_offset, sizeof(base_offset), "[%s, #%" PRIu64 "]", get_register_name(operand->reg[0]), operand->immediate);
 	}
 
 	char *slice = "";
@@ -446,9 +445,9 @@ uint32_t get_indexed_element(const InstructionOperand *operand, char *outBuffer,
 	// make the "{, #<imm>}"
 	char optional_comma_and[32];
 	if(operand->immediate)
-		if(snprintf(optional_comma_and, 32, ", #%"PRIu64, operand->immediate) >= 32)
+		if(snprintf(optional_comma_and, 32, ", #%" PRIu64 "", operand->immediate) >= 32)
 			return FAILED_TO_DISASSEMBLE_OPERAND;
-	
+
 	// <Pn>.<T>[<Wm>{, #<imm>}]
 	if(snprintf(outBuffer, outBufferSize, "%s%s[%s%s]",
 		get_register_name(operand->reg[0]),
@@ -463,7 +462,7 @@ uint32_t get_indexed_element(const InstructionOperand *operand, char *outBuffer,
 
 uint32_t get_accum_array(const InstructionOperand *operand, char *outBuffer, uint32_t outBufferSize)
 {
-	if(snprintf(outBuffer, outBufferSize, "ZA[%s, #%"PRIu64"]",
+	if(snprintf(outBuffer, outBufferSize, "ZA[%s, #%" PRIu64 "]",
 	  get_register_name(operand->reg[0]), operand->immediate
 	  ) >= outBufferSize)
 		return FAILED_TO_DISASSEMBLE_OPERAND;
@@ -581,7 +580,7 @@ int aarch64_disassemble(Instruction *instruction, char *buf, size_t buf_sz)
 					sizeof(tmpOperandString)) != DISASM_SUCCESS)
 					return FAILED_TO_DISASSEMBLE_OPERAND;
 				operand = tmpOperandString;
-				break;				
+				break;
 			case NAME:
 				operand = instruction->operands[i].name;
 				break;

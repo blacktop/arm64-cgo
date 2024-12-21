@@ -264,6 +264,7 @@ const char *get_system_register_name(enum SystemReg sr)
 		case 38944: return "dbgdtr_el0";
 		case 38952: return "dbgdtrtx_el0";
 		case 41016: return "dbgvcr32_el2";
+		case 49157: return "mpidr_el1";
 		case 49280: return "sctlr_el1";
 		case 49281: return "actlr_el1";
 		case 49282: return "cpacr_el1";
@@ -366,6 +367,8 @@ const char *get_system_register_name(enum SystemReg sr)
 		case 50823: return "scxtnum_el1";
 		case 50952: return "cntkctl_el1";
 		case 53248: return "csselr_el1";
+		case 55297: return "ctr_el0";
+		case 55303: return "dczid_el0";
 		case 55824: return "nzcv";
 		case 55825: return "daifset";
 		case 55829: return "dit";
@@ -433,6 +436,7 @@ const char *get_system_register_name(enum SystemReg sr)
 		case 57086: return "amevtyper114_el0";
 		case 57087: return "amevtyper115_el0";
 		case 57088: return "cntfrq_el0";
+		case 57089: return "cntpct_el0";
 		case 57104: return "cntp_tval_el0";
 		case 57105: return "cntp_ctl_el0";
 		case 57106: return "cntp_cval_el0";
