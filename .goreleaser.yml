@@ -57,15 +57,14 @@ universal_binaries:
     replace: true
     name_template: "disass"
 archives:
-  - replacements:
-      darwin: macOS
-      ios: iOS
-      amd64: x86_64
-      all: universal
+  - id: default_archive
     name_template: "disass_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
       - goos: windows
         format: zip
+    builds_info:
+      group: root
+      owner: root
     files:
       - completions/*
 checksum:
@@ -74,13 +73,13 @@ checksum:
 signs:
   - artifacts: checksum
 snapshot:
-  name_template: "{{ incpatch .Version }}-next"
+  version_template: "{{ incpatch .Version }}-next"
 brews:
   - name: disass
-    tap:
+    repository:
       owner: blacktop
       name: homebrew-tap
-    folder: Formula
+    directory: Formula
     homepage: "https://github.com/blacktop/arm64-cgo"
     description: "MachO ARMv9-a Disassembler"
     dependencies:
@@ -97,17 +96,23 @@ changelog:
   sort: asc
   use: github
   groups:
-    - title: 'New Features'
-      regexp: "^.*feat[(\\w)]*:+.*$"
-      order: 100
-    - title: 'Bug fixes'
-      regexp: "^.*fix[(\\w)]*:+.*$"
-      order: 200
     - title: Dependency updates
-      regexp: "^.*chore\\(deps\\)*:+.*$"
+      regexp: '^.*?(.+)\(deps\)!?:.+$'
       order: 300
-    - title: 'Documentation updates'
-      regexp: "^.*docs[(\\w)]*:+.*$"
+    - title: "New Features"
+      regexp: '^.*?feat(\(.+\))??!?:.+$'
+      order: 100
+    - title: "Security updates"
+      regexp: '^.*?sec(\(.+\))??!?:.+$'
+      order: 150
+    - title: "Bug fixes"
+      regexp: '^.*?(fix|refactor)(\(.+\))??!?:.+$'
+      order: 200
+    - title: "Documentation updates"
+      regexp: ^.*?docs?(\(.+\))??!?:.+$
+      order: 400
+    - title: "Build process updates"
+      regexp: ^.*?(build|ci)(\(.+\))??!?:.+$
       order: 400
     - title: Other work
       order: 9999
@@ -127,3 +132,4 @@ release:
     **Full Changelog**: https://github.com/blacktop/arm64-cgo/compare/{{ .PreviousTag }}...{{ .Tag }}
     ## What to do next?
     - Follow us on [Twitter](https://twitter.com/blacktop__);
+    - Follow us on [Mastodon](https://mastodon.social/@blacktop)
