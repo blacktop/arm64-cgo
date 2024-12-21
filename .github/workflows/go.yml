@@ -35,11 +35,11 @@ jobs:
       -
         if: matrix.platform == 'ubuntu-latest'
         name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v4
+        uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
-          version: latest
-          args: release --rm-dist -f hack/goreleaser/linux.yml
+          version: '~> v2'
+          args: release --clean -f hack/goreleaser/linux.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # - name: What is SDK (macOS)
@@ -59,11 +59,11 @@ jobs:
       -
         if: matrix.platform == 'windows-latest'
         name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v4
+        uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
-          version: latest
-          args: release --rm-dist -f hack/goreleaser/windows.yml
+          version: '~> v2'
+          args: release --clean -f hack/goreleaser/windows.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       -
