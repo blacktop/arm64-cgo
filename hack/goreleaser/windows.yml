@@ -1,5 +1,7 @@
-# This is an example .goreleaser.yml file with some sane defaults.
-# Make sure to check the documentation at http://goreleaser.com
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# vim: set ts=2 sw=2 tw=0 fo=jcroql
+version: 2
+
 before:
   hooks:
     # You may remove this if you don't use go modules.
@@ -15,9 +17,7 @@ builds:
     goarch:
       - amd64
 archives:
-  - replacements:
-      amd64: x86_64
-    name_template: "disass_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+  - name_template: "disass_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
       - goos: windows
         format: zip
@@ -25,10 +25,10 @@ archives:
       - completions/*
 
 checksum:
-  name_template: 'checksums.win.txt'
+  name_template: "checksums.win.txt"
 
 snapshot:
-  name_template: "{{ .Tag }}-next"
+  version_template: "{{ incpatch .Version }}-next"
 
 changelog:
   sort: asc
