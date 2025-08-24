@@ -75,7 +75,7 @@ go install github.com/blacktop/arm64-cgo/cmd/disass@latest
 With [Homebrew](https://brew.sh)
 
 ```bash
-brew install blacktop/tap/disass
+brew install blacktop/tap/arm64-cgo
 ```
 
 > OR download from [Releases](https://github.com/blacktop/arm64-cgo/releases/latest)
@@ -230,6 +230,6 @@ disass hello-mte --symbol _main --json | jq .
 
 ## License
 
-MIT Copyright (c) 2021-2023 blacktop
+MIT Copyright (c) 2021-2025 blacktop
 
 Apache License, Version 2.0 Copyright 2020-2021 Vector 35 Inc.

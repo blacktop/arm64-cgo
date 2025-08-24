@@ -391,7 +391,7 @@ func Test_decompose_v8_1a(t *testing.T) {
 				instructionValue: binary.LittleEndian.Uint32([]byte{0xe0, 0xa4, 0x38, 0xd5}),
 				address:          0,
 			},
-			want: "mrs	x0, lorid_el1",
+			want: "mrs	x0, s3_0_c10_c4_7",
 			wantErr: false,
 		},
 		//
@@ -412,7 +412,7 @@ func Test_decompose_v8_1a(t *testing.T) {
 				instructionValue: binary.LittleEndian.Uint32([]byte{0x9f, 0x41, 0x00, 0xd5}),
 				address:          0,
 			},
-			want: "msr	pan, #1",
+			want: "msr	pan, #0x1",
 			wantErr: false,
 		},
 		{

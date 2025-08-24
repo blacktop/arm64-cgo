@@ -16,6 +16,13 @@
 
 .vscode
 dist/
-disass.*
+/disass.*
+cmd/disass/disass
 cmd/disass/__debug_bin
 completions/
+
+# AI
+.claude
+CLAUDE*.md
+AGENT*.md
+coverage.html

@@ -3,57 +3,42 @@ NAME=arm64-cgo
 CLI=github.com/blacktop/arm64-cgo/cmd/disass
 CUR_VERSION=$(shell svu current)
 NEXT_VERSION=$(shell svu patch)
+BIN ?= disass
 
-
-.PHONY: build-deps
-build-deps: ## Install the build dependencies
-	@echo " > Installing build deps"
-	brew install go goreleaser
-	go get -u github.com/crazy-max/xgo
-	go install golang.org/x/tools/cmd/stringer
+.PHONY: bump
+bump:
+	@echo "🚀 Bumping Version"
+	git tag $(shell svu patch)
+	git push --tags
 
 .PHONY: build
-build: ## Build disass locally
-	@echo " > Building locally"
-	CGO_ENABLED=1 go build -o disass.${CUR_VERSION} ./cmd/disass
+build:
+	@echo "🚀 Building Version $(shell svu current)"
+	cd cmd/$(BIN) && go build -o ../../$(BIN) .
 
 .PHONY: test
-test: build ## Test disass on hello-mte
+test: ## Run unit tests
+	@echo " > Running unit tests"
+	@go test -v ./...
+
+.PHONY: test-mte
+test-mte: build ## Test disass on hello-mte
 	@echo " > disassembling hello-mte\n"
-	@./disass.${CUR_VERSION} ../../Proteas/hello-mte/hello-mte --all | bat -l s --tabs 0 -p --theme Nord --wrap=never
-
-.PHONY: dry_release
-dry_release: ## Run goreleaser without releasing/pushing artifacts to github
-	@echo " > Creating Pre-release Build ${NEXT_VERSION}"
-	@GOROOT=$(shell go env GOROOT)  goreleaser build --id darwin --clean --timeout 60m --snapshot --single-target
-
-.PHONY: snapshot
-snapshot: ## Run goreleaser snapshot
-	@echo " > Creating Snapshot ${NEXT_VERSION}"
-	@goreleaser --rm-dist --snapshot
+	@$(BIN) ../../Proteas/hello-mte/hello-mte --all | bat -l s --tabs 0 -p --theme Nord --wrap=never
 
 .PHONY: release
-release: ## Create a new release from the NEXT_VERSION
-	@echo " > Creating Release ${NEXT_VERSION}"
-	@hack/make/release ${NEXT_VERSION}
-	@GOROOT=$(shell go env GOROOT) goreleaser --clean --timeout 60m --skip=validate
+release: ## Run goreleaser without releasing/pushing artifacts to github
+	@echo "🚀 Releasing Version $(shell svu current)"
+	goreleaser build --id default --clean --snapshot --single-target --output dist/$(BIN)
 
-.PHONY: destroy
-destroy: ## Remove release from the CUR_VERSION
-	@echo " > Deleting Release ${CUR_VERSION}"
-	git tag -d ${CUR_VERSION}
-	git push origin :refs/tags/${CUR_VERSION}
-
-.PHONY: cross
-cross: ## Create xgo releases
-	@echo " > Creating xgo releases"
-	@mkdir -p dist/xgo
-	@cd dist/xgo; xgo --targets=*/amd64 -go 1.16.5 -ldflags='-s -w' -out disass-${NEXT_VERSION} ${CLI}
+.PHONY: snapshot
+snapshot:
+	@echo "🚀 Snapshot Version $(shell svu current)"
+	goreleaser --clean --timeout 60m --snapshot
 
 clean: ## Clean up artifacts
 	@echo " > Cleaning"
-	rm -rf dist
-	rm disass.v* || true
+	rm -rf dist/ completions/
 
 # Absolutely awesome: http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 help:

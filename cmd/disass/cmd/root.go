@@ -196,7 +196,13 @@ var rootCmd = &cobra.Command{
 				if err != nil {
 					log.Fatalf("failed to decompose instruction: %v", err)
 				}
-				fmt.Printf("%#08x:  %s\t%s\n", uint64(startVMAddr), disassemble.GetOpCodeByteString(instrValue), instruction.String())
+				if asJSON {
+					if dat, err := json.MarshalIndent(instruction, "", "   "); err == nil {
+						fmt.Println(string(dat))
+					}
+				} else {
+					fmt.Printf("%#08x:  %s\t%s\n", uint64(startVMAddr), disassemble.GetOpCodeByteString(instrValue), instruction.String())
+				}
 				startVMAddr += uint64(binary.Size(uint32(0)))
 			}
 

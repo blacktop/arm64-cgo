@@ -1,0 +1,37 @@
+#!/bin/bash
+# ARM64 Disassembler Tool
+# Usage: echo "0x3a 0x00 0x48 0x2d" | ./dis
+# or: ./dis "0x3a 0x00 0x48 0x2d"
+
+set -euo pipefail
+
+# Path to LLVM MC
+LLVM_MC="/opt/homebrew/opt/llvm/bin/llvm-mc"
+
+# Check if llvm-mc exists
+if [[ ! -x "$LLVM_MC" ]]; then
+    echo "Error: llvm-mc not found at $LLVM_MC" >&2
+    echo "Please install LLVM via: brew install llvm" >&2
+    exit 1
+fi
+
+# Function to process disassembly input
+process_dis() {
+    local input="$1"
+    echo "$input" | "$LLVM_MC" -disassemble -arch=arm64 | sed 's/^[[:space:]]*//'
+}
+
+# Check if input is provided as argument
+if [[ $# -gt 0 ]]; then
+    # Use command line argument
+    process_dis "$1"
+elif [[ ! -t 0 ]]; then
+    # Read from stdin (pipe)
+    while IFS= read -r line; do
+        process_dis "$line"
+    done
+else
+    echo "Usage: echo \"0x3a 0x00 0x48 0x2d\" | $0"
+    echo "   or: $0 \"0x3a 0x00 0x48 0x2d\""
+    exit 1
+fi
