@@ -25,4 +25,3 @@ completions/
 .claude
 CLAUDE*.md
 AGENT*.md
-coverage.html
