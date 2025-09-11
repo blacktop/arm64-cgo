@@ -427,7 +427,7 @@ func (s *ARM64State) ReadMemory(addr uint64, size int) ([]byte, error) {
 
 	// If no part of the range is mapped, return error for out-of-bounds access
 	if !hasAnyMapped {
-		return nil, fmt.Errorf("%w: read from unmapped memory at 0x%x", core.ErrMemoryAccess, addr)
+		return nil, fmt.Errorf("%w: read from unmapped memory at 0x%x", core.ErrUnmappedMemory, addr)
 	}
 
 	// Check local memory map - handle multi-block reads

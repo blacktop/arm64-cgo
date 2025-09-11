@@ -1,7 +1,9 @@
 package emulate
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/blacktop/arm64-cgo/disassemble"
 	"github.com/blacktop/arm64-cgo/emulate/core"
@@ -11,28 +13,36 @@ import (
 
 // Engine provides the primary ARM64 emulation interface using the modular instruction system
 type Engine struct {
-	state           core.State
-	registry        core.InstructionRegistry
-	maxInstructions int
-	instrCount      int
-	enableTrace     bool
-	trace           []core.InstructionInfo
-	StopOnError     bool
-	LastError       error
+	state                   core.State
+	registry                core.InstructionRegistry
+	maxInstructions         int
+	instrCount              int
+	enableTrace             bool
+	trace                   []core.InstructionInfo
+	StopOnError             bool
+	LastError               error
+	StopAddress             uint64
+	ShouldHaltPreHandler    func(state core.State, info core.InstructionInfo) bool
+	ShouldHaltPostHandler   func(state core.State, info core.InstructionInfo) bool
+	ShouldTakeBranchHandler func(state core.State, info core.InstructionInfo) bool
 }
 
 // EngineConfig provides configuration options for the ARM64 emulator engine
 type EngineConfig struct {
-	MaxInstructions int
-	EnableTrace     bool
-	StopOnError     bool
-	InitialPC       uint64
-	InitialSP       uint64
-	StackSize       int
-	StackBase       uint64
-	MemoryHandler   core.MemoryReadHandler
-	StringHandler   core.StringPoolHandler
-	PointerResolver core.PointerResolver
+	MaxInstructions         int
+	EnableTrace             bool
+	StopOnError             bool
+	InitialPC               uint64
+	InitialSP               uint64
+	StackSize               int
+	StackBase               uint64
+	MemoryHandler           core.MemoryReadHandler
+	StringHandler           core.StringPoolHandler
+	PointerResolver         core.PointerResolver
+	StopAddress             uint64
+	ShouldHaltPreHandler    func(state core.State, info core.InstructionInfo) bool
+	ShouldHaltPostHandler   func(state core.State, info core.InstructionInfo) bool
+	ShouldTakeBranchHandler func(state core.State, info core.InstructionInfo) bool
 }
 
 // DefaultEngineConfig returns a configuration with sensible defaults
@@ -78,13 +88,17 @@ func NewEngineWithConfig(config *EngineConfig) *Engine {
 	}
 
 	return &Engine{
-		state:           st,
-		registry:        instructions.DefaultRegistry(),
-		maxInstructions: config.MaxInstructions,
-		instrCount:      0,
-		enableTrace:     config.EnableTrace,
-		trace:           make([]core.InstructionInfo, 0),
-		StopOnError:     config.StopOnError,
+		state:                   st,
+		registry:                instructions.DefaultRegistry(),
+		maxInstructions:         config.MaxInstructions,
+		instrCount:              0,
+		enableTrace:             config.EnableTrace,
+		trace:                   make([]core.InstructionInfo, 0),
+		StopOnError:             config.StopOnError,
+		StopAddress:             config.StopAddress,
+		ShouldHaltPreHandler:    config.ShouldHaltPreHandler,
+		ShouldHaltPostHandler:   config.ShouldHaltPostHandler,
+		ShouldTakeBranchHandler: config.ShouldTakeBranchHandler,
 	}
 }
 
@@ -228,6 +242,9 @@ func (e *Engine) ExecuteInstruction(pc uint64, instr uint32) error {
 		if e.StopOnError {
 			return err
 		}
+		// Advance PC and count to avoid infinite loop when skipping unsupported instructions
+		e.state.SetPC(pc + 4)
+		e.instrCount++
 		return nil
 	}
 
@@ -263,13 +280,81 @@ func (e *Engine) Run() error {
 		// Read instruction at PC
 		instr, err := e.state.ReadUint32(pc)
 		if err != nil {
+			if errors.Is(err, core.ErrUnmappedMemory) {
+				// stop execution cleanly on unmapped fetch
+				break
+			}
 			return fmt.Errorf("failed to read instruction at 0x%x: %w", pc, err)
 		}
 
+		// Optional early stop based on configured stop address or handler
+		if e.StopAddress != 0 && pc == e.StopAddress {
+			break
+		}
+		if e.ShouldHaltPreHandler != nil {
+			var results [1024]byte
+			if decodedInstr, derr := disassemble.Decompose(pc, instr, &results); derr == nil {
+				mnemonic := fmt.Sprintf("%v", decodedInstr.Operation)
+				if _, ok := e.registry.Get(mnemonic); ok {
+					info := core.InstructionInfo{
+						Address:     pc,
+						Instruction: decodedInstr,
+						Value:       instr,
+						Mnemonic:    mnemonic,
+					}
+					if e.ShouldHaltPreHandler(e.state, info) {
+						break
+					}
+				}
+			}
+		}
+
 		// Execute the instruction
+		// Optionally decide whether to take a branch before executing it
+		if e.ShouldTakeBranchHandler != nil {
+			var results [1024]byte
+			if decodedInstr, derr := disassemble.Decompose(pc, instr, &results); derr == nil {
+				mnemonic := fmt.Sprintf("%v", decodedInstr.Operation)
+				if _, ok := e.registry.Get(mnemonic); ok {
+					upper := strings.ToUpper(mnemonic)
+					if instructions.IsBranchInstruction(upper) {
+						info := core.InstructionInfo{
+							Address:     pc,
+							Instruction: decodedInstr,
+							Value:       instr,
+							Mnemonic:    mnemonic,
+						}
+						if !e.ShouldTakeBranchHandler(e.state, info) {
+							// Skip branch: treat as NOP
+							e.state.SetPC(pc + 4)
+							e.instrCount++
+							continue
+						}
+					}
+				}
+			}
+		}
 		err = e.ExecuteInstruction(pc, instr)
 		if err != nil {
 			return err
+		}
+		// Optional post-execution halt check
+		if e.ShouldHaltPostHandler != nil {
+			var results [1024]byte
+			if decodedInstr, derr := disassemble.Decompose(pc, instr, &results); derr == nil {
+				mnemonic := fmt.Sprintf("%v", decodedInstr.Operation)
+				if _, ok := e.registry.Get(mnemonic); ok {
+					info := core.InstructionInfo{
+						Address:     pc,
+						Instruction: decodedInstr,
+						Value:       instr,
+						Mnemonic:    mnemonic,
+					}
+					if e.ShouldHaltPostHandler(e.state, info) {
+						break
+					}
+				}
+			}
 		}
 
 		// Check for stop conditions (RET instruction, etc.)
@@ -286,6 +371,10 @@ func (e *Engine) StepOver() error {
 	pc := e.state.GetPC()
 	instr, err := e.state.ReadUint32(pc)
 	if err != nil {
+		if errors.Is(err, core.ErrUnmappedMemory) {
+			// treat as a valid stopping point
+			return nil
+		}
 		return fmt.Errorf("failed to read instruction at 0x%x: %w", pc, err)
 	}
 
@@ -407,4 +496,8 @@ func (e *Engine) Configure(config *EngineConfig) {
 	if config.PointerResolver != nil {
 		e.state.SetPointerResolver(config.PointerResolver)
 	}
+	e.StopAddress = config.StopAddress
+	e.ShouldHaltPreHandler = config.ShouldHaltPreHandler
+	e.ShouldHaltPostHandler = config.ShouldHaltPostHandler
+	e.ShouldTakeBranchHandler = config.ShouldTakeBranchHandler
 }

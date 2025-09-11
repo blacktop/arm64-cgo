@@ -12,6 +12,7 @@ var (
 	ErrInvalidRegister    = errors.New("invalid register")
 	ErrInvalidInstruction = errors.New("invalid instruction")
 	ErrMemoryAccess       = errors.New("memory access error")
+	ErrUnmappedMemory     = errors.New("unmapped memory")
 	ErrDivisionByZero     = errors.New("division by zero")
 	ErrInvalidAddress     = errors.New("invalid address")
 	ErrUnsupportedFeature = errors.New("unsupported feature")
@@ -211,7 +212,7 @@ func MapRegister(regID disassemble.Register) int {
 		return int(reg - 1) // W0-W30 -> 0-30 (same register index as X)
 	} else if reg == 65 { // REG_XZR
 		return 31 // XZR maps to register 31 (handled specially as zero register)
-	} else if reg == 32 { // REG_WZR  
+	} else if reg == 32 { // REG_WZR
 		return 31 // WZR maps to register 31 (handled specially as zero register)
 	} else if reg == 66 { // REG_SP
 		return 31 // SP maps to register 31

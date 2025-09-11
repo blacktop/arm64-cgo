@@ -384,16 +384,8 @@ func (e *BranchExecutor) calculateBranchTarget(state core.State, operand disasse
 		}
 		return state.GetX(regIdx), nil
 	} else {
-		// PC-relative branch (immediate operand, including zero offset)
-		pc := state.GetPC()
-		if operand.SignedImm {
-			offset := int64(operand.Immediate)
-			if offset >= 0 {
-				return pc + uint64(offset), nil
-			}
-			return pc - uint64(-offset), nil
-		}
-		return pc + uint64(operand.Immediate), nil
+		// Immediate operand is already an absolute target provided by the disassembler
+		return operand.Immediate, nil
 	}
 }
 

@@ -2,6 +2,7 @@ package instructions
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -101,6 +102,10 @@ func (e *MemoryExecutor) executeLDR(state core.State, instr *disassemble.Instruc
 		// 32-bit load, zero-extend to 64-bit
 		value, err := state.ReadUint32(calc.Address)
 		if err != nil {
+			if errors.Is(err, core.ErrUnmappedMemory) {
+				return core.NewEmulationError(core.ErrUnmappedMemory, state.GetPC(),
+					fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
+			}
 			return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
 				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
 		}
@@ -109,6 +114,10 @@ func (e *MemoryExecutor) executeLDR(state core.State, instr *disassemble.Instruc
 		// 64-bit load
 		value, err := state.ReadUint64(calc.Address)
 		if err != nil {
+			if errors.Is(err, core.ErrUnmappedMemory) {
+				return core.NewEmulationError(core.ErrUnmappedMemory, state.GetPC(),
+					fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
+			}
 			return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
 				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
 		}
@@ -153,6 +162,10 @@ func (e *MemoryExecutor) executeLDRB(state core.State, instr *disassemble.Instru
 	// Read 1 byte
 	data, err := state.ReadMemory(calc.Address, 1)
 	if err != nil {
+		if errors.Is(err, core.ErrUnmappedMemory) {
+			return core.NewEmulationError(core.ErrUnmappedMemory, state.GetPC(),
+				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
+		}
 		return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
 			fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
 	}
@@ -191,6 +204,10 @@ func (e *MemoryExecutor) executeLDRH(state core.State, instr *disassemble.Instru
 	// Read 2 bytes
 	data, err := state.ReadMemory(calc.Address, 2)
 	if err != nil {
+		if errors.Is(err, core.ErrUnmappedMemory) {
+			return core.NewEmulationError(core.ErrUnmappedMemory, state.GetPC(),
+				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
+		}
 		return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
 			fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
 	}
@@ -229,6 +246,10 @@ func (e *MemoryExecutor) executeLDRSB(state core.State, instr *disassemble.Instr
 	// Read 1 byte
 	data, err := state.ReadMemory(calc.Address, 1)
 	if err != nil {
+		if errors.Is(err, core.ErrUnmappedMemory) {
+			return core.NewEmulationError(core.ErrUnmappedMemory, state.GetPC(),
+				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
+		}
 		return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
 			fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
 	}
@@ -275,6 +296,10 @@ func (e *MemoryExecutor) executeLDRSH(state core.State, instr *disassemble.Instr
 	// Read 2 bytes
 	data, err := state.ReadMemory(calc.Address, 2)
 	if err != nil {
+		if errors.Is(err, core.ErrUnmappedMemory) {
+			return core.NewEmulationError(core.ErrUnmappedMemory, state.GetPC(),
+				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
+		}
 		return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
 			fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
 	}
@@ -313,6 +338,10 @@ func (e *MemoryExecutor) executeLDRSW(state core.State, instr *disassemble.Instr
 	// Read 4 bytes
 	val32, err := state.ReadUint32(calc.Address)
 	if err != nil {
+		if errors.Is(err, core.ErrUnmappedMemory) {
+			return core.NewEmulationError(core.ErrUnmappedMemory, state.GetPC(),
+				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
+		}
 		return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
 			fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
 	}
@@ -457,8 +486,6 @@ func (e *MemoryExecutor) executeLDP(state core.State, instr *disassemble.Instruc
 
 	// Defer writeback until after loading to avoid overwriting destinations
 	shouldWriteback := calc.RequiresWriteback
-	writebackValue := calc.WritebackValue
-	writebackReg := calc.BaseRegister
 
 	// Determine if this is 32-bit or 64-bit operation
 	// W registers are 1-31, X registers are 34-64
@@ -468,11 +495,19 @@ func (e *MemoryExecutor) executeLDP(state core.State, instr *disassemble.Instruc
 		// Load two 32-bit values
 		val1, err := state.ReadUint32(calc.Address)
 		if err != nil {
+			if errors.Is(err, core.ErrUnmappedMemory) {
+				return core.NewEmulationError(core.ErrUnmappedMemory, state.GetPC(),
+					fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("first read failed: %v", err))
+			}
 			return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
 				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("first read failed: %v", err))
 		}
 		val2, err := state.ReadUint32(calc.Address + 4)
 		if err != nil {
+			if errors.Is(err, core.ErrUnmappedMemory) {
+				return core.NewEmulationError(core.ErrUnmappedMemory, state.GetPC(),
+					fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("second read failed: %v", err))
+			}
 			return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
 				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("second read failed: %v", err))
 		}
@@ -482,11 +517,19 @@ func (e *MemoryExecutor) executeLDP(state core.State, instr *disassemble.Instruc
 		// Load two 64-bit values
 		val1, err := state.ReadUint64(calc.Address)
 		if err != nil {
+			if errors.Is(err, core.ErrUnmappedMemory) {
+				return core.NewEmulationError(core.ErrUnmappedMemory, state.GetPC(),
+					fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("first read failed: %v", err))
+			}
 			return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
 				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("first read failed: %v", err))
 		}
 		val2, err := state.ReadUint64(calc.Address + 8)
 		if err != nil {
+			if errors.Is(err, core.ErrUnmappedMemory) {
+				return core.NewEmulationError(core.ErrUnmappedMemory, state.GetPC(),
+					fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("second read failed: %v", err))
+			}
 			return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
 				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("second read failed: %v", err))
 		}
@@ -494,9 +537,12 @@ func (e *MemoryExecutor) executeLDP(state core.State, instr *disassemble.Instruc
 		state.SetX(dst2Reg, val2)
 	}
 
-	// Apply writeback AFTER loading to avoid overwriting destinations
-	if shouldWriteback && writebackReg != dst1Reg && writebackReg != dst2Reg {
-		state.SetX(writebackReg, writebackValue)
+	// Apply writeback AFTER loading (handles SP correctly)
+	if shouldWriteback {
+		if err := addressing.ApplyWriteback(state, calc); err != nil {
+			return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
+				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("writeback failed: %v", err))
+		}
 	}
 
 	return nil
@@ -524,8 +570,6 @@ func (e *MemoryExecutor) executeSTP(state core.State, instr *disassemble.Instruc
 
 	// Defer writeback until after storing to avoid overwriting source registers
 	shouldWriteback := calc.RequiresWriteback
-	writebackValue := calc.WritebackValue
-	writebackReg := calc.BaseRegister
 
 	// Determine if this is 32-bit or 64-bit operation
 	// W registers are 1-31, X registers are 34-64
@@ -545,9 +589,12 @@ func (e *MemoryExecutor) executeSTP(state core.State, instr *disassemble.Instruc
 		state.WriteUint64(calc.Address+8, val2)
 	}
 
-	// Apply writeback AFTER storing to avoid overwriting source registers
+	// Apply writeback AFTER storing (handles SP correctly)
 	if shouldWriteback {
-		state.SetX(writebackReg, writebackValue)
+		if err := addressing.ApplyWriteback(state, calc); err != nil {
+			return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
+				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("writeback failed: %v", err))
+		}
 	}
 
 	return nil

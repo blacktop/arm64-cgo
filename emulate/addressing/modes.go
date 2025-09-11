@@ -117,12 +117,23 @@ func calculatePreIndexAddress(state core.State, operand disassemble.Operand) (*A
 		return nil, fmt.Errorf("pre-index addressing requires base register")
 	}
 
-	baseReg := mapRegister(operand.Registers[0])
-	if baseReg < 0 {
-		return nil, fmt.Errorf("invalid base register")
-	}
+	regID := operand.Registers[0]
+	baseReg := mapRegister(regID)
+	isSP := false
+	var baseAddr uint64
 
-	baseAddr := getXRegister(state, baseReg)
+	if baseReg >= 0 {
+		baseAddr = getXRegister(state, baseReg)
+	} else {
+		// Handle SP as base register
+		reg := uint32(regID)
+		if reg == 31 || reg > 64 {
+			isSP = true
+			baseAddr = state.GetSP()
+		} else {
+			return nil, fmt.Errorf("invalid base register")
+		}
+	}
 
 	// Calculate new address with sign-extended offset (pre-index typically uses 9-bit signed imm)
 	const prePostImmWidth = 9
@@ -134,11 +145,16 @@ func calculatePreIndexAddress(state core.State, operand disassemble.Operand) (*A
 	}
 	newAddr := uint64(int64(baseAddr) + off)
 
+	baseIndex := baseReg
+	if isSP {
+		baseIndex = 31 // sentinel to indicate SP for ApplyWriteback
+	}
+
 	return &AddressCalculation{
 		Address:           newAddr,
 		WritebackValue:    newAddr,
 		RequiresWriteback: true,
-		BaseRegister:      baseReg,
+		BaseRegister:      baseIndex,
 	}, nil
 }
 
@@ -148,12 +164,23 @@ func calculatePostIndexAddress(state core.State, operand disassemble.Operand) (*
 		return nil, fmt.Errorf("post-index addressing requires base register")
 	}
 
-	baseReg := mapRegister(operand.Registers[0])
-	if baseReg < 0 {
-		return nil, fmt.Errorf("invalid base register")
-	}
+	regID := operand.Registers[0]
+	baseReg := mapRegister(regID)
+	isSP := false
+	var baseAddr uint64
 
-	baseAddr := getXRegister(state, baseReg)
+	if baseReg >= 0 {
+		baseAddr = getXRegister(state, baseReg)
+	} else {
+		// Handle SP as base register
+		reg := uint32(regID)
+		if reg == 31 || reg > 64 {
+			isSP = true
+			baseAddr = state.GetSP()
+		} else {
+			return nil, fmt.Errorf("invalid base register")
+		}
+	}
 
 	// Calculate new address for writeback using sign-extended offset
 	const prePostImmWidth = 9
@@ -165,11 +192,16 @@ func calculatePostIndexAddress(state core.State, operand disassemble.Operand) (*
 	}
 	writebackAddr := uint64(int64(baseAddr) + off)
 
+	baseIndex := baseReg
+	if isSP {
+		baseIndex = 31 // sentinel to indicate SP for ApplyWriteback
+	}
+
 	return &AddressCalculation{
 		Address:           baseAddr, // Use original base address for memory operation
 		WritebackValue:    writebackAddr,
 		RequiresWriteback: true,
-		BaseRegister:      baseReg,
+		BaseRegister:      baseIndex,
 	}, nil
 }
 
