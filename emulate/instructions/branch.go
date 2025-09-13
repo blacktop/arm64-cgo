@@ -571,3 +571,75 @@ func IsRegisterBranch(mnemonic string) bool {
 		return false
 	}
 }
+
+// Enum-based helpers (prefer these in new code to avoid string matching costs)
+
+// IsReturnOp returns true if the instruction is any return-like instruction.
+func IsReturnOp(instr *disassemble.Instruction) bool {
+	if instr == nil {
+		return false
+	}
+	switch instr.Operation {
+	case disassemble.ARM64_RET, disassemble.ARM64_RETAA, disassemble.ARM64_RETAB,
+		disassemble.ARM64_ERET, disassemble.ARM64_ERETAA, disassemble.ARM64_ERETAB:
+		return true
+	default:
+		return false
+	}
+}
+
+// IsReturnMnemonic returns true if the mnemonic corresponds to a return-like instruction.
+func IsReturnMnemonic(mnemonic string) bool {
+	switch strings.ToUpper(mnemonic) {
+	case "RET", "RETAA", "RETAB", "ERET", "ERETAA", "ERETAB":
+		return true
+	default:
+		return false
+	}
+}
+
+// IsConditionalBranchOp returns true for conditional B.<cc> operations.
+func IsConditionalBranchOp(instr *disassemble.Instruction) bool {
+	if instr == nil {
+		return false
+	}
+	switch instr.Operation {
+	case disassemble.ARM64_B_AL, disassemble.ARM64_B_CC, disassemble.ARM64_B_CS,
+		disassemble.ARM64_B_EQ, disassemble.ARM64_B_GE, disassemble.ARM64_B_GT,
+		disassemble.ARM64_B_HI, disassemble.ARM64_B_LE, disassemble.ARM64_B_LS,
+		disassemble.ARM64_B_LT, disassemble.ARM64_B_MI, disassemble.ARM64_B_NE,
+		disassemble.ARM64_B_NV, disassemble.ARM64_B_PL, disassemble.ARM64_B_VC,
+		disassemble.ARM64_B_VS:
+		return true
+	default:
+		return false
+	}
+}
+
+// IsUnconditionalBranchOp returns true for non-return unconditional branches.
+func IsUnconditionalBranchOp(instr *disassemble.Instruction) bool {
+	if instr == nil {
+		return false
+	}
+	switch instr.Operation {
+	case disassemble.ARM64_B, disassemble.ARM64_BL, disassemble.ARM64_BLR, disassemble.ARM64_BR:
+		return true
+	default:
+		return false
+	}
+}
+
+// IsBranchOp returns true for any branch-like operation including returns.
+func IsBranchOp(instr *disassemble.Instruction) bool {
+	if IsUnconditionalBranchOp(instr) || IsConditionalBranchOp(instr) {
+		return true
+	}
+	if instr == nil {
+		return false
+	}
+	switch instr.Operation {
+	case disassemble.ARM64_CBZ, disassemble.ARM64_CBNZ, disassemble.ARM64_TBZ, disassemble.ARM64_TBNZ:
+		return true
+	}
+	return IsReturnOp(instr)
+}

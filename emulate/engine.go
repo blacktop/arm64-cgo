@@ -3,7 +3,6 @@ package emulate
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/blacktop/arm64-cgo/disassemble"
 	"github.com/blacktop/arm64-cgo/emulate/core"
@@ -316,8 +315,7 @@ func (e *Engine) Run() error {
 			if decodedInstr, derr := disassemble.Decompose(pc, instr, &results); derr == nil {
 				mnemonic := fmt.Sprintf("%v", decodedInstr.Operation)
 				if _, ok := e.registry.Get(mnemonic); ok {
-					upper := strings.ToUpper(mnemonic)
-					if instructions.IsBranchInstruction(upper) {
+					if instructions.IsBranchOp(decodedInstr) {
 						info := core.InstructionInfo{
 							Address:     pc,
 							Instruction: decodedInstr,
