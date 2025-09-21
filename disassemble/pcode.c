@@ -134,6 +134,14 @@ int HighestSetBit(uint64_t x)
 	return -1;
 }
 
+int HighestSetBitNZ(uint64_t x)
+{
+	// assert !IsZero(x);
+	if (x == 0)
+		return -1;
+	return HighestSetBit(x);
+}
+
 int LowestSetBit(uint64_t x)
 {
 	for (int i = 0; i < 64; ++i)
@@ -144,6 +152,13 @@ int LowestSetBit(uint64_t x)
 	}
 
 	return -1;
+}
+int LowestSetBitNZ(uint64_t x)
+{
+	// assert !IsZero(x);
+	if (x == 0)
+		return -1;
+	return LowestSetBit(x);
 }
 
 bool SVEMoveMaskPreferred(uint32_t imm13)
@@ -196,124 +211,305 @@ enum ShiftType DecodeShift(uint8_t op)
 
 enum SystemOp SysOp(uint32_t op1, uint32_t CRn, uint32_t CRm, uint32_t op2)
 {
-	uint32_t tmp = (op1 << 11) | (CRn << 7) | (CRm << 3) | op2;
+//	uint32_t tmp = (op1 << 11) | (CRn << 7) | (CRm << 3) | op2;
+	uint32_t tmp = (((op1 & 7) << 11) | ((CRn & 0xF) << 7) | ((CRm & 0xF) << 3) | ((op2) & 7));
 
 	switch (tmp)
 	{
-	case 0b00001111000000:
-		return Sys_AT;  // S1E1R
-	case 0b10001111000000:
-		return Sys_AT;  // S1E2R
-	case 0b11001111000000:
-		return Sys_AT;  // S1E3R
-	case 0b00001111000001:
-		return Sys_AT;  // S1E1W
-	case 0b00001111001001:
-		return Sys_AT;  // S1E1WP
-	case 0b10001111000001:
-		return Sys_AT;  // S1E2W
-	case 0b11001111000001:
-		return Sys_AT;  // S1E3W
-	case 0b00001111000010:
-		return Sys_AT;  // S1E0R
-	case 0b00001111000011:
-		return Sys_AT;  // S1E0W
-	case 0b10001111000100:
-		return Sys_AT;  // S12E1R
-	case 0b10001111000101:
-		return Sys_AT;  // S12E1W
-	case 0b10001111000110:
-		return Sys_AT;  // S12E0R
-	case 0b10001111000111:
-		return Sys_AT;  // S12E0W
-	case 0b01101110100001:
-		return Sys_DC;  // ZVA
-	case 0b00001110110001:
-		return Sys_DC;  // IVAC
-	case 0b00001110110010:
-		return Sys_DC;  // ISW
-	case 0b01101111010001:
-		return Sys_DC;  // CVAC
-	case 0b00001111010010:
-		return Sys_DC;  // CSW
-	case 0b01101111011001:
-		return Sys_DC;  // CVAU
-	case 0b01101111110001:
-		return Sys_DC;  // CIVAC
-	case 0b00001111110010:
-		return Sys_DC;  // CISW
-	case 0b01101111101001:
-		return Sys_DC;  // CVADP
+	case AT_OP_S1E1R:
+	case AT_OP_S1E1W:
+	case AT_OP_S1E0R:
+	case AT_OP_S1E0W:
+	case AT_OP_S1E1RP:
+	case AT_OP_S1E1WP:
+	case AT_OP_S1E1A:
+	case AT_OP_S1E2R:
+	case AT_OP_S1E2W:
+	case AT_OP_S12E1R:
+	case AT_OP_S12E1W:
+	case AT_OP_S12E0R:
+	case AT_OP_S12E0W:
+	case AT_OP_S1E2A:
+	case AT_OP_S1E3R:
+	case AT_OP_S1E3W:
+	case AT_OP_S1E3A:
+		return Sys_AT;
+	case DC_OP_IVAC:
+	case DC_OP_ISW:
+	case DC_OP_IGVAC:
+	case DC_OP_IGSW:
+	case DC_OP_IGDVAC:
+	case DC_OP_IGDSW:
+	case DC_OP_CSW:
+	case DC_OP_CGSW:
+	case DC_OP_CGDSW:
+	case DC_OP_CISW:
+	case DC_OP_CIGSW:
+	case DC_OP_CIGDSW:
+	case DC_OP_CIVAPS:
+	case DC_OP_CIGDVAPS:
+	case DC_OP_ZVA:
+	case DC_OP_GVA:
+	case DC_OP_GZVA:
+	case DC_OP_CVAC:
+	case DC_OP_CGVAC:
+	case DC_OP_CGDVAC:
+	case DC_OP_CVAOC:
+	case DC_OP_CVAU:
+	case DC_OP_CGDVAOC:
+	case DC_OP_CVAP:
+	case DC_OP_CGVAP:
+	case DC_OP_CGDVAP:
+	case DC_OP_CVADP:
+	case DC_OP_CGVADP:
+	case DC_OP_CGDVADP:
+	case DC_OP_CIVAC:
+	case DC_OP_CIGVAC:
+	case DC_OP_CIGDVAC:
+	case DC_OP_CIVAOC:
+	case DC_OP_CIGDVAOC:
+	case DC_OP_CIPAE:
+	case DC_OP_CIGDPAE:
+	case DC_OP_CIPAPA:
+	case DC_OP_CIGDPAPA:
+		return Sys_DC;
 	case 0b00001110001000:
 		return Sys_IC;  // IALLUIS
 	case 0b00001110101000:
 		return Sys_IC;  // IALLU
 	case 0b01101110101001:
 		return Sys_IC;  // IVAU
-	case 0b10010000000001:
+	case TLBI_VMALLE1OS:
+	case TLBI_VAE1OS:
+	case TLBI_ASIDE1OS:
+	case TLBI_VAAE1OS:
+	case TLBI_VALE1OS:
+	case TLBI_VAALE1OS:
+	case TLBI_RVAE1IS:
+	case TLBI_RVAAE1IS:
+	case TLBI_RVALE1IS:
+	case TLBI_RVAALE1IS:
+	case TLBI_VMALLE1IS:
+	case TLBI_VAE1IS:
+	case TLBI_ASIDE1IS:
+	case TLBI_VAAE1IS:
+	case TLBI_VALE1IS:
+	case TLBI_VAALE1IS:
+	case TLBI_RVAE1OS:
+	case TLBI_RVAAE1OS:
+	case TLBI_RVALE1OS:
+	case TLBI_RVAALE1OS:
+	case TLBI_RVAE1:
+	case TLBI_RVAAE1:
+	case TLBI_RVALE1:
+	case TLBI_RVAALE1:
+	case TLBI_VMALLE1:
+	case TLBI_VAE1:
+	case TLBI_ASIDE1:
+	case TLBI_VAAE1:
+	case TLBI_VALE1:
+	case TLBI_VAALE1:
+	case TLBI_VMALLE1OSNXS:
+	case TLBI_VAE1OSNXS:
+	case TLBI_ASIDE1OSNXS:
+	case TLBI_VAAE1OSNXS:
+	case TLBI_VALE1OSNXS:
+	case TLBI_VAALE1OSNXS:
+	case TLBI_RVAE1ISNXS:
+	case TLBI_RVAAE1ISNXS:
+	case TLBI_RVALE1ISNXS:
+	case TLBI_RVAALE1ISNXS:
+	case TLBI_VMALLE1ISNXS:
+	case TLBI_VAE1ISNXS:
+	case TLBI_ASIDE1ISNXS:
+	case TLBI_VAAE1ISNXS:
+	case TLBI_VALE1ISNXS:
+	case TLBI_VAALE1ISNXS:
+	case TLBI_RVAE1OSNXS:
+	case TLBI_RVAAE1OSNXS:
+	case TLBI_RVALE1OSNXS:
+	case TLBI_RVAALE1OSNXS:
+	case TLBI_RVAE1NXS:
+	case TLBI_RVAAE1NXS:
+	case TLBI_RVALE1NXS:
+	case TLBI_RVAALE1NXS:
+	case TLBI_VMALLE1NXS:
+	case TLBI_VAE1NXS:
+	case TLBI_ASIDE1NXS:
+	case TLBI_VAAE1NXS:
+	case TLBI_VALE1NXS:
+	case TLBI_VAALE1NXS:
+	case TLBI_IPAS2E1IS:
+	case TLBI_RIPAS2E1IS:
+	case TLBI_IPAS2LE1IS:
+	case TLBI_RIPAS2LE1IS:
+	case TLBI_ALLE2OS:
+	case TLBI_VAE2OS:
+	case TLBI_ALLE1OS:
+	case TLBI_VALE2OS:
+	case TLBI_VMALLS12E1OS:
+	case TLBI_RVAE2IS:
+	case TLBI_VMALLWS2E1IS:
+	case TLBI_RVALE2IS:
+	case TLBI_ALLE2IS:
+	case TLBI_VAE2IS:
+	case TLBI_ALLE1IS:
+	case TLBI_VALE2IS:
+	case TLBI_VMALLS12E1IS:
+	case TLBI_IPAS2E1OS:
+	case TLBI_IPAS2E1:
+	case TLBI_RIPAS2E1:
+	case TLBI_RIPAS2E1OS:
+	case TLBI_IPAS2LE1OS:
+	case TLBI_IPAS2LE1:
+	case TLBI_RIPAS2LE1:
+	case TLBI_RIPAS2LE1OS:
+	case TLBI_RVAE2OS:
+	case TLBI_VMALLWS2E1OS:
+	case TLBI_RVALE2OS:
+	case TLBI_RVAE2:
+	case TLBI_VMALLWS2E1:
+	case TLBI_RVALE2:
+	case TLBI_ALLE2:
+	case TLBI_VAE2:
+	case TLBI_ALLE1:
+	case TLBI_VALE2:
+	case TLBI_VMALLS12E1:
+	case TLBI_IPAS2E1ISNXS:
+	case TLBI_RIPAS2E1ISNXS:
+	case TLBI_IPAS2LE1ISNXS:
+	case TLBI_RIPAS2LE1ISNXS:
+	case TLBI_ALLE2OSNXS:
+	case TLBI_VAE2OSNXS:
+	case TLBI_ALLE1OSNXS:
+	case TLBI_VALE2OSNXS:
+	case TLBI_VMALLS12E1OSNXS:
+	case TLBI_RVAE2ISNXS:
+	case TLBI_VMALLWS2E1ISNXS:
+	case TLBI_RVALE2ISNXS:
+	case TLBI_ALLE2ISNXS:
+	case TLBI_VAE2ISNXS:
+	case TLBI_ALLE1ISNXS:
+	case TLBI_VALE2ISNXS:
+	case TLBI_VMALLS12E1ISNXS:
+	case TLBI_IPAS2E1OSNXS:
+	case TLBI_IPAS2E1NXS:
+	case TLBI_RIPAS2E1NXS:
+	case TLBI_RIPAS2E1OSNXS:
+	case TLBI_IPAS2LE1OSNXS:
+	case TLBI_IPAS2LE1NXS:
+	case TLBI_RIPAS2LE1NXS:
+	case TLBI_RIPAS2LE1OSNXS:
+	case TLBI_RVAE2OSNXS:
+	case TLBI_VMALLWS2E1OSNXS:
+	case TLBI_RVALE2OSNXS:
+	case TLBI_RVAE2NXS:
+	case TLBI_VMALLWS2E1NXS:
+	case TLBI_RVALE2NXS:
+	case TLBI_ALLE2NXS:
+	case TLBI_VAE2NXS:
+	case TLBI_ALLE1NXS:
+	case TLBI_VALE2NXS:
+	case TLBI_VMALLS12E1NXS:
+	case TLBI_ALLE3OS:
+	case TLBI_VAE3OS:
+	case TLBI_PAALLOS:
+	case TLBI_VALE3OS:
+	case TLBI_RVAE3IS:
+	case TLBI_RVALE3IS:
+	case TLBI_ALLE3IS:
+	case TLBI_VAE3IS:
+	case TLBI_VALE3IS:
+	case TLBI_RPAOS:
+	case TLBI_RPALOS:
+	case TLBI_RVAE3OS:
+	case TLBI_RVALE3OS:
+	case TLBI_RVAE3:
+	case TLBI_RVALE3:
+	case TLBI_ALLE3:
+	case TLBI_VAE3:
+	case TLBI_PAALL:
+	case TLBI_VALE3:
+	case TLBI_ALLE3OSNXS:
+	case TLBI_VAE3OSNXS:
+	case TLBI_VALE3OSNXS:
+	case TLBI_RVAE3ISNXS:
+	case TLBI_RVALE3ISNXS:
+	case TLBI_ALLE3ISNXS:
+	case TLBI_VAE3ISNXS:
+	case TLBI_VALE3ISNXS:
+	case TLBI_RVAE3OSNXS:
+	case TLBI_RVALE3OSNXS:
+	case TLBI_RVAE3NXS:
+	case TLBI_RVALE3NXS:
+	case TLBI_ALLE3NXS:
+	case TLBI_VAE3NXS:
+	case TLBI_VALE3NXS:
 		return Sys_TLBI;  // IPAS2E1IS
-	case 0b10010000000101:
-		return Sys_TLBI;  // IPAS2LE1IS
-	case 0b00010000011000:
-		return Sys_TLBI;  // VMALLE1IS
-	case 0b10010000011000:
-		return Sys_TLBI;  // ALLE2IS
-	case 0b11010000011000:
-		return Sys_TLBI;  // ALLE3IS
-	case 0b00010000011001:
-		return Sys_TLBI;  // VAE1IS
-	case 0b10010000011001:
-		return Sys_TLBI;  // VAE2IS
-	case 0b11010000011001:
-		return Sys_TLBI;  // VAE3IS
-	case 0b00010000011010:
-		return Sys_TLBI;  // ASIDE1IS
-	case 0b00010000011011:
-		return Sys_TLBI;  // VAAE1IS
-	case 0b10010000011100:
-		return Sys_TLBI;  // ALLE1IS
-	case 0b00010000011101:
-		return Sys_TLBI;  // VALE1IS
-	case 0b10010000011101:
-		return Sys_TLBI;  // VALE2IS
-	case 0b11010000011101:
-		return Sys_TLBI;  // VALE3IS
-	case 0b10010000011110:
-		return Sys_TLBI;  // VMALLS12E1IS
-	case 0b00010000011111:
-		return Sys_TLBI;  // VAALE1IS
-	case 0b10010000100001:
-		return Sys_TLBI;  // IPAS2E1
-	case 0b10010000100101:
-		return Sys_TLBI;  // IPAS2LE1
-	case 0b00010000111000:
-		return Sys_TLBI;  // VMALLE1
-	case 0b10010000111000:
-		return Sys_TLBI;  // ALLE2
-	case 0b11010000111000:
-		return Sys_TLBI;  // ALLE3
-	case 0b00010000111001:
-		return Sys_TLBI;  // VAE1
-	case 0b10010000111001:
-		return Sys_TLBI;  // VAE2
-	case 0b11010000111001:
-		return Sys_TLBI;  // VAE3
-	case 0b00010000111010:
-		return Sys_TLBI;  // ASIDE1
-	case 0b00010000111011:
-		return Sys_TLBI;  // VAAE1
-	case 0b10010000111100:
-		return Sys_TLBI;  // ALLE1
-	case 0b00010000111101:
-		return Sys_TLBI;  // VALE1
-	case 0b10010000111101:
-		return Sys_TLBI;  // VALE2
-	case 0b11010000111101:
-		return Sys_TLBI;  // VALE3
-	case 0b10010000111110:
-		return Sys_TLBI;  // VMALLS12E1
-	case 0b00010000111111:
-		return Sys_TLBI;  // VAALE1
+//	case 0b10010000000001:
+//		return Sys_TLBI;  // IPAS2E1IS
+//	case 0b10010000000101:
+//		return Sys_TLBI;  // IPAS2LE1IS
+//	case 0b00010000011000:
+//		return Sys_TLBI;  // VMALLE1IS
+//	case 0b10010000011000:
+//		return Sys_TLBI;  // ALLE2IS
+//	case 0b11010000011000:
+//		return Sys_TLBI;  // ALLE3IS
+//	case 0b00010000011001:
+//		return Sys_TLBI;  // VAE1IS
+//	case 0b10010000011001:
+//		return Sys_TLBI;  // VAE2IS
+//	case 0b11010000011001:
+//		return Sys_TLBI;  // VAE3IS
+//	case 0b00010000011010:
+//		return Sys_TLBI;  // ASIDE1IS
+//	case 0b00010000011011:
+//		return Sys_TLBI;  // VAAE1IS
+//	case 0b10010000011100:
+//		return Sys_TLBI;  // ALLE1IS
+//	case 0b00010000011101:
+//		return Sys_TLBI;  // VALE1IS
+//	case 0b10010000011101:
+//		return Sys_TLBI;  // VALE2IS
+//	case 0b11010000011101:
+//		return Sys_TLBI;  // VALE3IS
+//	case 0b10010000011110:
+//		return Sys_TLBI;  // VMALLS12E1IS
+//	case 0b00010000011111:
+//		return Sys_TLBI;  // VAALE1IS
+//	case 0b10010000100001:
+//		return Sys_TLBI;  // IPAS2E1
+//	case 0b10010000100101:
+//		return Sys_TLBI;  // IPAS2LE1
+//	case 0b00010000111000:
+//		return Sys_TLBI;  // VMALLE1
+//	case 0b10010000111000:
+//		return Sys_TLBI;  // ALLE2
+//	case 0b11010000111000:
+//		return Sys_TLBI;  // ALLE3
+//	case 0b00010000111001:
+//		return Sys_TLBI;  // VAE1
+//	case 0b10010000111001:
+//		return Sys_TLBI;  // VAE2
+//	case 0b11010000111001:
+//		return Sys_TLBI;  // VAE3
+//	case 0b00010000111010:
+//		return Sys_TLBI;  // ASIDE1
+//	case 0b00010000111011:
+//		return Sys_TLBI;  // VAAE1
+//	case 0b10010000111100:
+//		return Sys_TLBI;  // ALLE1
+//	case 0b00010000111101:
+//		return Sys_TLBI;  // VALE1
+//	case 0b10010000111101:
+//		return Sys_TLBI;  // VALE2
+//	case 0b11010000111101:
+//		return Sys_TLBI;  // VALE3
+//	case 0b10010000111110:
+//		return Sys_TLBI;  // VMALLS12E1
+//	case 0b00010000111111:
+//		return Sys_TLBI;  // VAALE1
 	default:
 		return Sys_ERROR;
 	}
@@ -469,7 +665,7 @@ bool BTypeCompatible_BTI(uint8_t hintcode, uint8_t pstate_btype)
 	return false; /* impossible, but appease compiler */
 }
 
-bool BTypeCompatible_PACIXSP()
+bool BTypeCompatible_PACIXSP(void)
 {
 	// TODO: determine if filling this in is necessary
 	return true;
@@ -561,42 +757,63 @@ bool ELUsingAArch32(uint8_t x)
 
 uint64_t FPOne(bool sign, int N)
 {
-	// width should be 16, 32, 64
-	int E, F, exp;
+	int E;
 
 	switch (N)
 	{
 	case 16:
 		E = 5;
+		break;
 	case 32:
 		E = 8;
+		break;
+	case 64:
+		E = 11;
+		break;
 	default:
+		// assert N IN {16,32,64};
 		E = 11;
 	}
 
-	F = N - (E + 1);
-	exp = BITMASK(E - 1) << 1;
-	return (sign << (E - 1 + F)) | (exp << F);
+	int F = N - (E + 1);
+	// exp = '0':Ones(E-1);
+	uint64_t exp = (1ULL << (E - 1)) - 1;
+	// frac = Zeros(F);
+	uint64_t frac = 0;
+	// sign : exp : frac;
+	return ((uint64_t)sign << (N - 1)) | (exp << F) | frac;
 }
 
 uint64_t FPTwo(bool sign, int N)
 {
-	// width should be 16, 32, 64
-	int E, F, exp;
+	int E;
 
 	switch (N)
 	{
 	case 16:
 		E = 5;
+		break;
 	case 32:
 		E = 8;
+		break;
+	case 64:
+		E = 11;
+		break;
 	default:
+		// assert N IN {16,32,64};
 		E = 11;
 	}
-
-	F = N - (E + 1);
-	exp = 1 << (E - 1);
-	return (sign << E) | exp;
+	
+	int F = N - (E + 1);
+	
+	// exp = '1':Zeros(E-1);
+	uint64_t exp = 1ULL << (E - 1);
+	
+	// frac = Zeros(F);
+	uint64_t frac = 0;
+	
+	// sign : exp: frac
+	return ((uint64_t)sign << (N - 1)) | (exp << F) | frac;
 }
 
 uint64_t FPPointFive(bool sign, int N)

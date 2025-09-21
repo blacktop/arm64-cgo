@@ -10,8 +10,8 @@ int aarch64_decompose(uint32_t instructionValue, Instruction* instr, uint64_t ad
 	ctx.halted = 1;  // enable disassembly of exception instructions like DCPS1
 	ctx.insword = instructionValue;
 	ctx.address = address;
-	ctx.features0 = ARCH_FEATURES_ALL;
-	ctx.features1 = ARCH_FEATURES_ALL;
+	ARCH_FEATURES_ENABLE_ALL(ctx.decode_features);
+	ARCH_FEATURES_ENABLE_ALL(ctx.pcode_features);
 	ctx.EDSCR_HDE = 1;
 
 	/* have the spec-generated code populate all the pcode variables */

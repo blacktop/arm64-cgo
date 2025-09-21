@@ -4,11 +4,11 @@
 // registers (and related) to string
 //-----------------------------------------------------------------------------
 
-static const char* RegisterString[] = {"NONE", "w0", "w1", "w2", "w3", "w4", "w5", "w6", "w7", "w8",
+static const char* const RegisterString[] = {"NONE", "w0", "w1", "w2", "w3", "w4", "w5", "w6", "w7", "w8",
     "w9", "w10", "w11", "w12", "w13", "w14", "w15", "w16", "w17", "w18", "w19", "w20", "w21", "w22",
     "w23", "w24", "w25", "w26", "w27", "w28", "w29", "w30", "wzr", "wsp", "x0", "x1", "x2", "x3",
     "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17",
-    "x18", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28", "x29", "x30",
+    "x18", "x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28", "fp", "lr",
     "xzr", "sp", "v0", "v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11", "v12",
     "v13", "v14", "v15", "v16", "v17", "v18", "v19", "v20", "v21", "v22", "v23", "v24", "v25",
     "v26", "v27", "v28", "v29", "v30", "v31", "b0", "b1", "b2", "b3", "b4", "b5", "b6", "b7",
@@ -164,7 +164,7 @@ static const char* RegisterString[] = {"NONE", "w0", "w1", "w2", "w3", "w4", "w5
     "pldl1keep", "pldl1strm", "pldl2keep", "pldl2strm", "pldl3keep", "pldl3strm", "#0x6", "#0x7",
     "plil1keep", "plil1strm", "plil2keep", "plil2strm", "plil3keep", "plil3strm", "#0xe", "#0xf",
     "pstl1keep", "pstl1strm", "pstl2keep", "pstl2strm", "pstl3keep", "pstl3strm", "#0x16", "#0x17",
-    "#0x18", "#0x19", "#0x1a", "#0x1b", "#0x1c", "#0x1d", "#0x1e", "#0x1f", "END"};
+    "#0x18", "#0x19", "#0x1a", "#0x1b", "#0x1c", "#0x1d", "#0x1e", "#0x1f", "zt0", "END"};
 
 const char* get_register_name(enum Register r)
 {
@@ -195,5 +195,8 @@ size_t get_register_size(enum Register r)
 		return 4;
 	else if (r >= REG_V0_D0 && r <= REG_V31_D1)
 		return 8;
+	else if (r == REG_ZT0)
+		return 64;
+
 	return 0;
 }

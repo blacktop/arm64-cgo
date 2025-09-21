@@ -1333,6 +1333,7 @@ enum Register
 	REG_PF29,
 	REG_PF30,
 	REG_PF31,
+	REG_ZT0,
 	REG_END
 };
 

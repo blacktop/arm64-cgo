@@ -100,7 +100,7 @@ const char *get_operation(const Instruction *inst)
 	return operation_to_str(inst->operation);
 }
 
-static const char *ConditionString[] = {
+static const char *const ConditionString[] = {
 	"eq", "ne", "cs", "cc",
 	"mi", "pl", "vs", "vc",
 	"hi", "ls", "ge", "lt",
@@ -115,7 +115,7 @@ const char *get_condition(Condition cond)
 	return ConditionString[cond];
 }
 
-static const char *ShiftString[] = {
+static const char *const ShiftString[] = {
 	"NONE", "lsl", "lsr", "asr",
 	"ror",  "uxtw", "sxtw", "sxtx",
 	"uxtx", "sxtb", "sxth", "uxth",
@@ -200,7 +200,7 @@ uint32_t get_memory_operand(
 			break;
 
 		case MEM_PRE_IDX:
-			if (snprintf(outBuffer, outBufferSize, "[%s, #%s%" PRIu64 "]!", reg0, sign, (uint64_t)imm) >= outBufferSize)
+			if (snprintf(outBuffer, outBufferSize, "[%s, #%s%#" PRIx64 "]!", reg0, sign, (uint64_t)imm) >= outBufferSize)
 				return FAILED_TO_DISASSEMBLE_OPERAND;
 			break;
 
@@ -211,7 +211,7 @@ uint32_t get_memory_operand(
 
 				snprintf(paramBuff, sizeof(paramBuff), ", %s", reg1);
 			}
-			else if (snprintf(paramBuff, sizeof(paramBuff), ", #%s%" PRIu64, sign, (uint64_t)imm) >= sizeof(paramBuff))
+			else if (snprintf(paramBuff, sizeof(paramBuff), ", #%s%#" PRIx64, sign, (uint64_t)imm) >= sizeof(paramBuff))
 				return FAILED_TO_DISASSEMBLE_OPERAND;
 
 			if (snprintf(outBuffer, outBufferSize, "[%s]%s", reg0, paramBuff) >= outBufferSize)
@@ -222,7 +222,7 @@ uint32_t get_memory_operand(
 		case MEM_OFFSET: // [<reg> optional(imm)]
 			if (operand->immediate != 0) {
 				const char *mul_vl = operand->mul_vl ? ", mul vl" : "";
-				if(snprintf(immBuff, sizeof(immBuff), ", #%s%" PRIu64 "%s", sign, (uint64_t)imm, mul_vl) >= sizeof(immBuff)) {
+				if(snprintf(immBuff, sizeof(immBuff), ", #%s%#" PRIx64 "%s", sign, (uint64_t)imm, mul_vl) >= sizeof(immBuff)) {
 					return FAILED_TO_DISASSEMBLE_OPERAND;
 				}
 			}
@@ -241,7 +241,7 @@ uint32_t get_memory_operand(
 
 			// immBuff, like "#0x0"
 			if (operand->shiftValueUsed)
-				if(snprintf(immBuff, sizeof(immBuff), " #%u", operand->shiftValue) >= sizeof(immBuff))
+				if(snprintf(immBuff, sizeof(immBuff), " #%#x", operand->shiftValue) >= sizeof(immBuff))
 					return FAILED_TO_DISASSEMBLE_OPERAND;
 
 			// extendBuff, like "lsl #0x0"
@@ -389,7 +389,7 @@ uint32_t get_shifted_immediate(const InstructionOperand *instructionOperand, cha
 	}
 	else if (type == IMM32)
 	{
-		if (snprintf(outBuffer, outBufferSize, "#%s%u%s", sign, (uint32_t)imm, shiftBuff) >= outBufferSize)
+		if (snprintf(outBuffer, outBufferSize, "#%s%#x%s", sign, (uint32_t)imm, shiftBuff) >= outBufferSize)
 			return FAILED_TO_DISASSEMBLE_OPERAND;
 	}
 	else if (type == LABEL)
@@ -399,12 +399,12 @@ uint32_t get_shifted_immediate(const InstructionOperand *instructionOperand, cha
 	}
 	else if (type == STR_IMM)
 	{
-		if (snprintf(outBuffer, outBufferSize, "%s #%" PRIu64, instructionOperand->name, (uint64_t)imm) >= outBufferSize)
+		if (snprintf(outBuffer, outBufferSize, "%s #0x%" PRIx64, instructionOperand->name, (uint64_t)imm) >= outBufferSize)
 			return FAILED_TO_DISASSEMBLE_OPERAND;
 	}
 	else
 	{
-		if (snprintf(outBuffer, outBufferSize, "#%s%" PRIu64 "%s",
+		if (snprintf(outBuffer, outBufferSize, "#%s%#" PRIx64 "%s",
 					sign,
 					imm,
 					shiftBuff) >= outBufferSize)

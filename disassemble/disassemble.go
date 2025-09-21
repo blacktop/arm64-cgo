@@ -417,11 +417,11 @@ func (f FlagEffect) String() string {
 
 type implSpec []byte
 
-func (i implSpec) GetSysReg() systemReg {
+func (i implSpec) GetSysReg() SystemReg {
 	if len(i) != 5 {
-		return SYSREG_UNKNOWN
+		return SYSREG_NONE
 	}
-	return systemReg(i[0])<<14 | systemReg(i[1])<<11 | systemReg(i[2])<<7 | systemReg(i[3])<<3 | systemReg(i[4])
+	return SystemReg(i[0])<<14 | SystemReg(i[1])<<11 | SystemReg(i[2])<<7 | SystemReg(i[3])<<3 | SystemReg(i[4])
 }
 
 // Operand is an arm64 instruction operand object
@@ -434,7 +434,7 @@ type Operand struct {
 
 	ImplSpec implSpec `json:"impl_spec,omitempty"` // for class IMPLEMENTATION_SPECIFIC
 
-	SysReg systemReg `json:"sys_reg,omitempty"` // for class SYS_REG
+	SysReg SystemReg `json:"sys_reg,omitempty"` // for class SYS_REG
 
 	LaneUsed       bool      `json:"lane_used,omitempty"`
 	Lane           uint32    `json:"lane,omitempty"`
@@ -523,7 +523,7 @@ type Instruction struct {
 	Address     uint64     `json:"addr,omitempty"`
 	Raw         uint32     `json:"raw,omitempty"`
 	Encoding    encoding   `json:"enc,omitempty"`
-	Operation   operation  `json:"op,omitempty"`
+	Operation   Operation  `json:"op,omitempty"`
 	Operands    []Operand  `json:"oprnds,omitempty"`
 	SetFlags    FlagEffect `json:"set_flags,omitempty"`
 	Disassembly string     `json:"disass,omitempty"`
@@ -690,7 +690,7 @@ func goInstruction(instr *C.Instruction) *Instruction {
 		Raw:       uint32(instr.insword),
 		Encoding:  encoding(instr.encoding),
 		SetFlags:  FlagEffect(instr.setflags),
-		Operation: operation(instr.operation),
+		Operation: Operation(instr.operation),
 	}
 
 	for idx, op := range instr.operands {
@@ -699,7 +699,7 @@ func goInstruction(instr *C.Instruction) *Instruction {
 				Class:          operandClass(op.operandClass),
 				ArrSpec:        arrangementSpec(op.arrSpec),
 				Condition:      condition(op.cond),
-				SysReg:         systemReg(op.sysreg),
+				SysReg:         SystemReg(op.sysreg),
 				LaneUsed:       bool(op.laneUsed),
 				Lane:           uint32(op.lane),
 				Immediate:      uint64(op.immediate),
