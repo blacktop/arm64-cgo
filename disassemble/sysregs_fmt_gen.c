@@ -740,7 +740,7 @@ const char *get_system_register_name(enum SystemReg sr)
 	case REG_CTR_EL0: return "ctr_el0";
 	case REG_DCZID_EL0: return "dczid_el0";
 	case REG_NZCV: return "nzcv";
-	case REG_DAIF: return "daifset";
+	case REG_DAIF: return "daif";
 	case REG_SVCR: return "svcr";
 	case REG_DIT: return "dit";
 	case REG_SSBS: return "ssbs";

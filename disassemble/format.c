@@ -523,10 +523,18 @@ int aarch64_disassemble(Instruction *instruction, char *buf, size_t buf_sz)
 				operand = tmpOperandString;
 				break;
 			case SYS_REG:
-				operand = get_system_register_name(instruction->operands[i].sysreg);
-				if (operand == NULL)
+				// Check if name was explicitly set (for special cases like DAIFSet/DAIFClr)
+				if (instruction->operands[i].name[0] != '\0')
 				{
-					return FAILED_TO_DISASSEMBLE_OPERAND;
+					operand = instruction->operands[i].name;
+				}
+				else
+				{
+					operand = get_system_register_name(instruction->operands[i].sysreg);
+					if (operand == NULL)
+					{
+						return FAILED_TO_DISASSEMBLE_OPERAND;
+					}
 				}
 				break;
 			case MULTI_REG:

@@ -8084,14 +8084,42 @@ int decode_scratchpad(context* ctx, Instruction* instr)
 			sr = REG_DIT;  // "DIT";
 		else if (ctx->op1 == 3 && ctx->op2 == 4 && HasMTE())
 			sr = REG_TCO;  // "TCO";
-		else if (ctx->op1 == 3 && ctx->op2 == 6 && HasMTE())
+		else if (ctx->op1 == 3 && ctx->op2 == 6)
 			sr = REG_DAIFSET;  // "DAIFSet";
-		else if (ctx->op1 == 3 && ctx->op2 == 7 && HasMTE())
+		else if (ctx->op1 == 3 && ctx->op2 == 7)
 			sr = REG_DAIFCLR;  // "DAIFClr";
 
 		if (sr == SYSREG_NONE)
 		{
 			ADD_OPERAND_SYSTEMREG_IMPL_SPEC(sr);
+		}
+		else if (ctx->op1 == 3 && ctx->op2 == 6)
+		{
+			// Special case for DAIFSet - use explicit name since enum value conflicts with DAIF
+			memset(&instr->operands[i], 0, sizeof(instr->operands[i])); // Zero-initialize
+			instr->operands[i].operandClass = SYS_REG;
+			instr->operands[i].implspec[0] = ctx->sys_op0;
+			instr->operands[i].implspec[1] = ctx->sys_op1;
+			instr->operands[i].implspec[2] = ctx->sys_crn;
+			instr->operands[i].implspec[3] = ctx->sys_crm;
+			instr->operands[i].implspec[4] = ctx->sys_op2;
+			instr->operands[i].sysreg = REG_DAIFSET;
+			strcpy(instr->operands[i].name, "daifset");
+			i++;
+		}
+		else if (ctx->op1 == 3 && ctx->op2 == 7)
+		{
+			// Special case for DAIFClr
+			memset(&instr->operands[i], 0, sizeof(instr->operands[i])); // Zero-initialize
+			instr->operands[i].operandClass = SYS_REG;
+			instr->operands[i].implspec[0] = ctx->sys_op0;
+			instr->operands[i].implspec[1] = ctx->sys_op1;
+			instr->operands[i].implspec[2] = ctx->sys_crn;
+			instr->operands[i].implspec[3] = ctx->sys_crm;
+			instr->operands[i].implspec[4] = ctx->sys_op2;
+			instr->operands[i].sysreg = REG_DAIFCLR;
+			strcpy(instr->operands[i].name, "daifclr");
+			i++;
 		}
 		else
 		{
@@ -11161,8 +11189,90 @@ int decode_scratchpad(context* ctx, Instruction* instr)
 		ADD_OPERAND_IMM32(ctx->operation_, false);
 		ADD_OPERAND_XM;
 		ADD_OPERAND_MEM_XN_SP;
-		break;	
+		break;
 	}
+
+	/* Apple AMX instructions */
+	case ENC_AMX_LDX:
+	case ENC_AMX_LDY:
+	case ENC_AMX_STX:
+	case ENC_AMX_STY:
+	case ENC_AMX_LDZ:
+	case ENC_AMX_STZ:
+	case ENC_AMX_LDZI:
+	case ENC_AMX_STZI:
+	{
+		// <Xn>
+		ADD_OPERAND_XN;
+		break;
+	}
+	case ENC_AMX_EXTRX:
+	case ENC_AMX_EXTRY:
+	case ENC_AMX_FMA64:
+	case ENC_AMX_FMS64:
+	case ENC_AMX_FMA32:
+	case ENC_AMX_FMS32:
+	case ENC_AMX_MAC16:
+	case ENC_AMX_FMA16:
+	case ENC_AMX_FMS16:
+	case ENC_AMX_VECINT:
+	case ENC_AMX_VECFP:
+	case ENC_AMX_MATINT:
+	case ENC_AMX_MATFP:
+	case ENC_AMX_GENLUT:
+	{
+		// <Xn>
+		ADD_OPERAND_XN;
+		break;
+	}
+	case ENC_AMX_SET:
+	case ENC_AMX_CLR:
+	{
+		// No operands
+		break;
+	}
+
+	/* Apple guarded execution */
+	case ENC_GENTER:
+	{
+		// #<imm>
+		ADD_OPERAND_IMM32(ctx->imm, 0);
+		break;
+	}
+	case ENC_GEXIT:
+	{
+		// No operands
+		break;
+	}
+
+	/* Apple memory compression */
+	case ENC_WKDMC:
+	case ENC_WKDMD:
+	{
+		// <Xt>, <Xn> (may need adjustment based on actual format)
+		ADD_OPERAND_XT;
+		ADD_OPERAND_XN;
+		break;
+	}
+
+	/* Apple multiplication */
+	case ENC_MUL53HI:
+	case ENC_MUL53LO:
+	{
+		// <Xd>, <Xn>, <Xm> (may need adjustment)
+		ADD_OPERAND_XD;
+		ADD_OPERAND_XN;
+		ADD_OPERAND_XM;
+		break;
+	}
+
+	/* Apple barrier */
+	case ENC_SDSB:
+	{
+		// No operands (barrier instruction)
+		break;
+	}
+
 	default:
 		instr->operation = ARM64_ERROR;
 		return DECODE_STATUS_ERROR_OPERANDS;

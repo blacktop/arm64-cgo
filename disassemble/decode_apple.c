@@ -103,6 +103,8 @@ int decode_apple_amx(uint32_t opcode, context* ctx, Instruction* instr)
                     instr->encoding = ENC_AMX_SET;
                 } else if (op == 0x21) {
                     instr->encoding = ENC_AMX_CLR;
+                } else {
+                    return DECODE_STATUS_UNMATCHED; // Unknown SET/CLR variant
                 }
                 break;
             case 2: // VECINT
@@ -120,6 +122,8 @@ int decode_apple_amx(uint32_t opcode, context* ctx, Instruction* instr)
             case 6: // GENLUT
                 instr->encoding = ENC_AMX_GENLUT;
                 break;
+            default: // variant 7 or any other unexpected value
+                return DECODE_STATUS_UNMATCHED;
         }
 
         if (variant != 1) { // Not SET/CLR
@@ -134,16 +138,17 @@ int decode_apple_amx(uint32_t opcode, context* ctx, Instruction* instr)
 /* Decode Apple guarded execution instructions */
 int decode_apple_guarded(uint32_t opcode, context* ctx, Instruction* instr)
 {
-    // GEXIT: 0x00142000
-    if (opcode == 0x00142000) {
+    // GEXIT: 0x00201400 (exact match)
+    if (opcode == 0x00201400) {
         instr->encoding = ENC_GEXIT;
         return DECODE_STATUS_OK;
     }
 
-    // GENTER: 0x001420xx (where xx != 0)
-    if ((opcode & 0xFFFFFF00) == 0x00142000 && (opcode & 0xFF) != 0) {
+    // GENTER: 0x002014xx (bits [4:0] contain the immediate, bit 5 is always set)
+    // GENTER #0 is 0x00201420, GENTER #4 is 0x00201424
+    if ((opcode & 0xFFFFFFE0) == 0x00201420) {
         instr->encoding = ENC_GENTER;
-        ctx->imm = opcode & 0xFF; // Immediate value
+        ctx->imm = (opcode & 0x1F); // Immediate value in bits [4:0]
         return DECODE_STATUS_OK;
     }
 
@@ -153,8 +158,8 @@ int decode_apple_guarded(uint32_t opcode, context* ctx, Instruction* instr)
 /* Decode Apple memory compression instructions */
 int decode_apple_wkdm(uint32_t opcode, context* ctx, Instruction* instr)
 {
-    // WKDMC: 0x22082000 (bits swapped from test file which was big-endian)
-    if ((opcode & 0xFFFFFFFF) == 0x00200822) {
+    // WKDMC: 0x00200822
+    if (opcode == 0x00200822) {
         instr->encoding = ENC_WKDMC;
         // Extract registers from encoding
         ctx->n = (opcode >> 5) & 0x1F;  // Rn
@@ -162,8 +167,8 @@ int decode_apple_wkdm(uint32_t opcode, context* ctx, Instruction* instr)
         return DECODE_STATUS_OK;
     }
 
-    // WKDMD: 0x62082000 (bits swapped from test file which was big-endian)
-    if ((opcode & 0xFFFFFFFF) == 0x00200862) {
+    // WKDMD: 0x00200862
+    if (opcode == 0x00200862) {
         instr->encoding = ENC_WKDMD;
         // Extract registers from encoding
         ctx->n = (opcode >> 5) & 0x1F;  // Rn
@@ -179,14 +184,14 @@ int decode_apple_instruction(uint32_t opcode, context* ctx, Instruction* instr)
 {
     int rc;
 
-    // Check for AMX instructions (0x0020xxxx pattern)
-    if ((opcode & 0xFFE00000) == 0x00200000) {
+    // Check for guarded execution first (0x002014xx pattern)
+    rc = decode_apple_guarded(opcode, ctx, instr);
+    if (rc == DECODE_STATUS_OK) return rc;
+
+    // Check for AMX instructions (0x0020xxxx and 0x0010xxxx patterns)
+    if ((opcode & 0xFFF00000) == 0x00200000 || (opcode & 0xFFF00000) == 0x00100000) {
         // Try AMX instructions
         rc = decode_apple_amx(opcode, ctx, instr);
-        if (rc == DECODE_STATUS_OK) return rc;
-
-        // Try guarded execution
-        rc = decode_apple_guarded(opcode, ctx, instr);
         if (rc == DECODE_STATUS_OK) return rc;
 
         // Try WKdm compression

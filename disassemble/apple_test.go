@@ -57,15 +57,15 @@ func TestAppleInstructions(t *testing.T) {
 		// Guarded execution
 		{
 			name:       "GEXIT",
-			opcode:     0x00142000,
+			opcode:     0x00201400,
 			wantOp:     disassemble.ARM64_GEXIT,
 			wantDisasm: "gexit",
 		},
 		{
 			name:       "GENTER #2",
-			opcode:     0x00142002,
+			opcode:     0x00201422,
 			wantOp:     disassemble.ARM64_GENTER,
-			wantDisasm: "genter #2",
+			wantDisasm: "genter	#0x2",
 		},
 
 		// Memory compression
