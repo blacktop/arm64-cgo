@@ -20,6 +20,7 @@ dist/
 cmd/disass/disass
 cmd/disass/__debug_bin
 completions/
+.gocache
 
 # AI
 .claude
