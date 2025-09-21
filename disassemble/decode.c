@@ -3,6 +3,7 @@
 
 int decode_spec(context* ctx, Instruction* dec);        // from decode0.cpp
 int decode_scratchpad(context* ctx, Instruction* dec);  // from decode_scratchpad.c
+int decode_apple_instruction(uint32_t opcode, context* ctx, Instruction* instr); // from decode_apple.c
 
 int aarch64_decompose(uint32_t instructionValue, Instruction* instr, uint64_t address)
 {
@@ -14,8 +15,15 @@ int aarch64_decompose(uint32_t instructionValue, Instruction* instr, uint64_t ad
 	ARCH_FEATURES_ENABLE_ALL(ctx.pcode_features);
 	ctx.EDSCR_HDE = 1;
 
+	/* Try Apple proprietary instructions first (if enabled) */
+	int rc = decode_apple_instruction(instructionValue, &ctx, instr);
+	if (rc == DECODE_STATUS_OK) {
+		/* Apple instruction decoded successfully */
+		return decode_scratchpad(&ctx, instr);
+	}
+
 	/* have the spec-generated code populate all the pcode variables */
-	int rc = decode_spec(&ctx, instr);
+	rc = decode_spec(&ctx, instr);
 
 	if (rc != DECODE_STATUS_OK)
 	{

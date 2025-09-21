@@ -6476,6 +6476,69 @@ enum Operation enc_to_oper2(enum ENCODING enc)
 			return ARM64_UXTL2;
 		case ENC_XTN_ASIMDMISC_N:
 			return ARM64_XTN2;
+		// Apple proprietary instructions
+		case ENC_AMX_LDX:
+			return ARM64_AMX_LDX;
+		case ENC_AMX_LDY:
+			return ARM64_AMX_LDY;
+		case ENC_AMX_LDZ:
+			return ARM64_AMX_LDZ;
+		case ENC_AMX_LDZI:
+			return ARM64_AMX_LDZI;
+		case ENC_AMX_STX:
+			return ARM64_AMX_STX;
+		case ENC_AMX_STY:
+			return ARM64_AMX_STY;
+		case ENC_AMX_STZ:
+			return ARM64_AMX_STZ;
+		case ENC_AMX_STZI:
+			return ARM64_AMX_STZI;
+		case ENC_AMX_EXTRX:
+			return ARM64_AMX_EXTRX;
+		case ENC_AMX_EXTRY:
+			return ARM64_AMX_EXTRY;
+		case ENC_AMX_FMA16:
+			return ARM64_AMX_FMA16;
+		case ENC_AMX_FMA32:
+			return ARM64_AMX_FMA32;
+		case ENC_AMX_FMA64:
+			return ARM64_AMX_FMA64;
+		case ENC_AMX_FMS16:
+			return ARM64_AMX_FMS16;
+		case ENC_AMX_FMS32:
+			return ARM64_AMX_FMS32;
+		case ENC_AMX_FMS64:
+			return ARM64_AMX_FMS64;
+		case ENC_AMX_MAC16:
+			return ARM64_AMX_MAC16;
+		case ENC_AMX_VECINT:
+			return ARM64_AMX_VECINT;
+		case ENC_AMX_VECFP:
+			return ARM64_AMX_VECFP;
+		case ENC_AMX_MATINT:
+			return ARM64_AMX_MATINT;
+		case ENC_AMX_MATFP:
+			return ARM64_AMX_MATFP;
+		case ENC_AMX_GENLUT:
+			return ARM64_AMX_GENLUT;
+		case ENC_AMX_SET:
+			return ARM64_AMX_SET;
+		case ENC_AMX_CLR:
+			return ARM64_AMX_CLR;
+		case ENC_GENTER:
+			return ARM64_GENTER;
+		case ENC_GEXIT:
+			return ARM64_GEXIT;
+		case ENC_WKDMC:
+			return ARM64_WKDMC;
+		case ENC_WKDMD:
+			return ARM64_WKDMD;
+		case ENC_MUL53HI:
+			return ARM64_MUL53HI;
+		case ENC_MUL53LO:
+			return ARM64_MUL53LO;
+		case ENC_SDSB:
+			return ARM64_SDSB;
 		default:
 			return ARM64_ERROR;
 	}
