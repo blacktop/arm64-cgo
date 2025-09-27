@@ -755,6 +755,11 @@ bool ELUsingAArch32(uint8_t x)
 	return true;
 }
 
+bool HaveEL(uint8_t el)
+{
+	return true;
+}
+
 uint64_t FPOne(bool sign, int N)
 {
 	int E;

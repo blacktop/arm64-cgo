@@ -8084,9 +8084,9 @@ int decode_scratchpad(context* ctx, Instruction* instr)
 			sr = REG_DIT;  // "DIT";
 		else if (ctx->op1 == 3 && ctx->op2 == 4 && HasMTE())
 			sr = REG_TCO;  // "TCO";
-		else if (ctx->op1 == 3 && ctx->op2 == 6)
+		else if (ctx->op1 == 3 && ctx->op2 == 6 && HasMTE())
 			sr = REG_DAIFSET;  // "DAIFSet";
-		else if (ctx->op1 == 3 && ctx->op2 == 7)
+		else if (ctx->op1 == 3 && ctx->op2 == 7 && HasMTE())
 			sr = REG_DAIFCLR;  // "DAIFClr";
 
 		if (sr == SYSREG_NONE)

@@ -478,6 +478,7 @@ uint64_t VFPExpandImm(uint8_t imm8, unsigned width);
 #define EL3 3
 bool EL2Enabled(void);
 bool ELUsingAArch32(uint8_t);
+bool HaveEL(uint8_t);
 
 uint64_t FPOne(bool sign, int width);
 uint64_t FPTwo(bool sign, int width);

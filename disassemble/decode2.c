@@ -11678,6 +11678,10 @@ int HVC(context *ctx, Instruction *instr)
 	/* 110|101|00|opc=000|imm16=xxxxxxxxxxxxxxxx|op2=000|LL=10 */
 	if((INSWORD & 0xFFE0001F)==0xD4000002) {
 		decode_fields32(ENC_HVC_EX_EXCEPTION, ctx, instr);
+		if(!HaveEL(EL2)) {
+			EndOfDecode(Decode_UNDEF);
+		}
+		ctx->imm = ctx->imm16;
 		OK(ENC_HVC_EX_EXCEPTION);
 	}
 	return rc;
@@ -27081,7 +27085,6 @@ int UDF_perm_undef(context *ctx, Instruction *instr)
 	/* 0|00|0000|000000000|imm16=xxxxxxxxxxxxxxxx */
 	if((INSWORD & 0xFFFF0000)==0x0) {
 		decode_fields32(ENC_UDF_ONLY_PERM_UNDEF, ctx, instr);
-		EndOfDecode(Decode_UNDEF);
 		OK(ENC_UDF_ONLY_PERM_UNDEF);
 	}
 	return rc;
