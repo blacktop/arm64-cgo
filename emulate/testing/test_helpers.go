@@ -17,16 +17,16 @@ import (
 // EngineConfig provides configuration options for test engines
 type EngineConfig struct {
 	MaxInstructions int
-	InitialSP      uint64
-	InitialRegs    map[int]uint64
+	InitialSP       uint64
+	InitialRegs     map[int]uint64
 }
 
 // DefaultTestEngineConfig returns a standard test engine configuration
 func DefaultTestEngineConfig() *EngineConfig {
 	return &EngineConfig{
 		MaxInstructions: 1000000,
-		InitialSP:      0,
-		InitialRegs:    make(map[int]uint64),
+		InitialSP:       0,
+		InitialRegs:     make(map[int]uint64),
 	}
 }
 
@@ -39,10 +39,10 @@ func CreateTestEngine(config *EngineConfig) *emulate.Engine {
 	emulatorConfig := emulate.DefaultEngineConfig()
 	emulatorConfig.MaxInstructions = config.MaxInstructions
 	engine := emulate.NewEngineWithConfig(emulatorConfig)
-	
+
 	testState := state.NewState()
 	testState.SetSP(config.InitialSP)
-	
+
 	// Set initial register values
 	for reg, value := range config.InitialRegs {
 		if reg == 31 {
@@ -52,7 +52,7 @@ func CreateTestEngine(config *EngineConfig) *emulate.Engine {
 		}
 		testState.SetX(reg, value)
 	}
-	
+
 	engine.SetState(testState)
 	return engine
 }
@@ -61,23 +61,23 @@ func CreateTestEngine(config *EngineConfig) *emulate.Engine {
 func CreateBenchmarkEngine(maxInstructions int) *emulate.Engine {
 	config := &EngineConfig{
 		MaxInstructions: maxInstructions,
-		InitialSP:      0,
-		InitialRegs:    make(map[int]uint64),
+		InitialSP:       0,
+		InitialRegs:     make(map[int]uint64),
 	}
 	return CreateTestEngine(config)
 }
 
 // CommonInstructions provides frequently used instruction encodings
 var CommonInstructions = struct {
-	AddX0Imm1    []byte // ADD X0, X0, #1
-	AddX1X0      []byte // ADD X1, X1, X0
-	SubX0Imm1    []byte // SUB X0, X0, #1
-	AddX2X1X0    []byte // ADD X2, X1, X0
-	MovX0Imm100  []byte // ADD X0, XZR, #100
-	MovX1Imm200  []byte // ADD X1, XZR, #200
-	LdrX0FromX0  []byte // LDR X0, [X0]
-	StrX0ToX1    []byte // STR X0, [X1]
-	Nop          []byte // NOP
+	AddX0Imm1   []byte // ADD X0, X0, #1
+	AddX1X0     []byte // ADD X1, X1, X0
+	SubX0Imm1   []byte // SUB X0, X0, #1
+	AddX2X1X0   []byte // ADD X2, X1, X0
+	MovX0Imm100 []byte // ADD X0, XZR, #100
+	MovX1Imm200 []byte // ADD X1, XZR, #200
+	LdrX0FromX0 []byte // LDR X0, [X0]
+	StrX0ToX1   []byte // STR X0, [X1]
+	Nop         []byte // NOP
 }{
 	AddX0Imm1:   []byte{0x00, 0x04, 0x00, 0x91},
 	AddX1X0:     []byte{0x21, 0x00, 0x00, 0x8b},
@@ -152,9 +152,9 @@ func PredefinedSequences() map[string][][]byte {
 
 // StateComparison provides utilities for comparing engine states
 type StateComparison struct {
-	OurState       *state.ARM64State
-	ExpectedState  *state.ARM64State
-	Differences    []StateDifference
+	OurState      *state.ARM64State
+	ExpectedState *state.ARM64State
+	Differences   []StateDifference
 }
 
 // CompareStates compares two emulator states and returns differences
@@ -178,7 +178,7 @@ func CompareStates(our, expected *state.ARM64State) *StateComparison {
 	// Compare SP (Stack Pointer)
 	if our.GetSP() != expected.GetSP() {
 		comparison.Differences = append(comparison.Differences, StateDifference{
-			Type:            "register", 
+			Type:            "register",
 			Name:            "SP",
 			OurValue:        fmt.Sprintf("0x%x", our.GetSP()),
 			HypervisorValue: fmt.Sprintf("0x%x", expected.GetSP()),
@@ -198,7 +198,7 @@ func CompareStates(our, expected *state.ARM64State) *StateComparison {
 			case 30:
 				regName = "LR" // Link Register
 			}
-			
+
 			comparison.Differences = append(comparison.Differences, StateDifference{
 				Type:            "register",
 				Name:            regName,
@@ -210,9 +210,9 @@ func CompareStates(our, expected *state.ARM64State) *StateComparison {
 
 	// Compare ARM64 condition flags (NZCV)
 	flags := []struct {
-		name     string
-		ourFlag  bool
-		expFlag  bool
+		name    string
+		ourFlag bool
+		expFlag bool
 	}{
 		{"N", our.GetN(), expected.GetN()},
 		{"Z", our.GetZ(), expected.GetZ()},
@@ -247,7 +247,7 @@ func (sc *StateComparison) String() string {
 
 	result := fmt.Sprintf("Found %d differences:\n", len(sc.Differences))
 	for _, diff := range sc.Differences {
-		result += fmt.Sprintf("  %s %s: our=%v, expected=%v\n", 
+		result += fmt.Sprintf("  %s %s: our=%v, expected=%v\n",
 			diff.Type, diff.Name, diff.OurValue, diff.HypervisorValue)
 	}
 	return result
@@ -330,7 +330,7 @@ func (eh *ErrorHelper) ContainsError(err error, expectedText string) bool {
 	if expectedText == "" {
 		return false
 	}
-	
+
 	errStr := err.Error()
 	// Simple case-insensitive substring matching
 	// Could be extended with regex or more sophisticated matching
@@ -342,7 +342,7 @@ func (eh *ErrorHelper) MatchesErrorPattern(err error, patterns ...string) bool {
 	if err == nil {
 		return len(patterns) == 0
 	}
-	
+
 	errStr := err.Error()
 	for _, pattern := range patterns {
 		if containsIgnoreCase(errStr, pattern) {
@@ -371,7 +371,7 @@ func NewTestHelper() *TestHelper {
 // ExecuteInstructionSequence executes a sequence of instructions and measures performance
 func (th *TestHelper) ExecuteInstructionSequence(t *testing.T, engine *emulate.Engine, instructions [][]byte, startPC uint64) time.Duration {
 	th.Performance.Start()
-	
+
 	pc := startPC
 	for i, instrBytes := range instructions {
 		instrValue := binary.LittleEndian.Uint32(instrBytes)
@@ -381,7 +381,7 @@ func (th *TestHelper) ExecuteInstructionSequence(t *testing.T, engine *emulate.E
 		}
 		pc += 4
 	}
-	
+
 	return th.Performance.Stop()
 }
 

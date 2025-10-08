@@ -348,7 +348,6 @@ func TestLogicalExecutor_WithImmediate(t *testing.T) {
 	}
 }
 
-
 func TestBitfieldExecutor_BFM(t *testing.T) {
 	s := state.NewState()
 	s.SetX(0, 0xAAAAAAAAAAAAAAAA) // destination

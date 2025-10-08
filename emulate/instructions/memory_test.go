@@ -173,9 +173,89 @@ func TestMemoryExecutor_LDP_Simple(t *testing.T) {
 	}
 }
 
+func TestMemoryExecutor_LDADDA(t *testing.T) {
+	executor := NewMemoryExecutor("LDADDA", "Atomic load-add with acquire semantics")
+
+	t.Run("word", func(t *testing.T) {
+		state := NewMockState()
+		addr := uint64(0x2000)
+		initial := uint32(0xFFFFFFF0)
+		addend := uint32(0x30)
+
+		state.WriteUint32(addr, initial)
+		state.SetX(2, addr)
+		state.SetW(1, addend)
+
+		instr := &disassemble.Instruction{
+			Operation: disassemble.ARM64_LDADDA,
+			Operands: []disassemble.Operand{
+				{Registers: []disassemble.Register{W0_REG}},
+				{Registers: []disassemble.Register{W1_REG}},
+				{Registers: []disassemble.Register{X2_REG}},
+			},
+		}
+
+		if err := executor.Execute(state, instr); err != nil {
+			t.Fatalf("LDADDA execution failed: %v", err)
+		}
+
+		if got := state.GetW(0); got != initial {
+			t.Errorf("LDADDA should return original value, want 0x%x got 0x%x", initial, got)
+		}
+
+		mem, err := state.ReadUint32(addr)
+		if err != nil {
+			t.Fatalf("Failed to read memory: %v", err)
+		}
+
+		expectedMem := uint32(uint64(initial) + uint64(addend))
+		if mem != expectedMem {
+			t.Errorf("LDADDA should store updated value, want 0x%x got 0x%x", expectedMem, mem)
+		}
+	})
+
+	t.Run("doubleword", func(t *testing.T) {
+		state := NewMockState()
+		addr := uint64(0x3000)
+		initial := uint64(0x7FFFFFFFFFFFFFF0)
+		addend := uint64(0x30)
+
+		state.WriteUint64(addr, initial)
+		state.SetX(2, addr)
+		state.SetX(1, addend)
+
+		instr := &disassemble.Instruction{
+			Operation: disassemble.ARM64_LDADDA,
+			Operands: []disassemble.Operand{
+				{Registers: []disassemble.Register{X0_REG}},
+				{Registers: []disassemble.Register{X1_REG}},
+				{Registers: []disassemble.Register{X2_REG}},
+			},
+		}
+
+		if err := executor.Execute(state, instr); err != nil {
+			t.Fatalf("LDADDA execution failed: %v", err)
+		}
+
+		if got := state.GetX(0); got != initial {
+			t.Errorf("LDADDA should return original value, want 0x%x got 0x%x", initial, got)
+		}
+
+		mem, err := state.ReadUint64(addr)
+		if err != nil {
+			t.Fatalf("Failed to read memory: %v", err)
+		}
+
+		expectedMem := initial + addend
+		if mem != expectedMem {
+			t.Errorf("LDADDA should store updated value, want 0x%x got 0x%x", expectedMem, mem)
+		}
+	})
+}
+
 func TestMemoryHelperFunctions(t *testing.T) {
 	// Test IsLoadInstruction
-	loadInstructions := []string{"LDR", "LDRB", "LDRH", "LDRSB", "LDRSH", "LDRSW", "LDUR", "LDP"}
+	loadInstructions := []string{"LDR", "LDRB", "LDRH", "LDRSB", "LDRSH", "LDRSW", "LDUR", "LDP", "LDADDA"}
 	for _, instr := range loadInstructions {
 		if !IsLoadInstruction(instr) {
 			t.Errorf("Expected %s to be a load instruction", instr)
@@ -187,7 +267,7 @@ func TestMemoryHelperFunctions(t *testing.T) {
 	}
 
 	// Test IsStoreInstruction
-	storeInstructions := []string{"STR", "STRB", "STRH", "STUR", "STP"}
+	storeInstructions := []string{"STR", "STRB", "STRH", "STUR", "STP", "LDADDA"}
 	for _, instr := range storeInstructions {
 		if !IsStoreInstruction(instr) {
 			t.Errorf("Expected %s to be a store instruction", instr)
@@ -227,6 +307,8 @@ func TestMemoryHelperFunctions(t *testing.T) {
 		{"STR", true, 4},
 		{"LDR", false, 8},
 		{"STR", false, 8},
+		{"LDADDA", true, 4},
+		{"LDADDA", false, 8},
 		{"LDP", true, 8},
 		{"STP", true, 8},
 		{"LDP", false, 16},
@@ -250,6 +332,7 @@ func TestRegisterMemoryInstructions(t *testing.T) {
 	// Test that all memory instructions are registered
 	expectedInstructions := []string{
 		"LDR", "LDRB", "LDRH", "LDRSB", "LDRSH", "LDRSW", "LDUR",
+		"LDADDA",
 		"STR", "STRB", "STRH", "STUR",
 		"LDP", "STP",
 	}

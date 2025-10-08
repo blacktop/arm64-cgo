@@ -45,6 +45,8 @@ func (e *MemoryExecutor) Execute(state core.State, instr *disassemble.Instructio
 		return e.executeLDRSH(state, instr)
 	case "LDRSW":
 		return e.executeLDRSW(state, instr)
+	case "LDADDA":
+		return e.executeLDADDA(state, instr)
 	case "STR":
 		return e.executeSTR(state, instr)
 	case "STRB":
@@ -400,6 +402,87 @@ func (e *MemoryExecutor) executeSTR(state core.State, instr *disassemble.Instruc
 	return nil
 }
 
+// LDADDA - Atomic load-add with acquire semantics
+func (e *MemoryExecutor) executeLDADDA(state core.State, instr *disassemble.Instruction) error {
+	ops := instr.Operands
+	if len(ops) < 3 {
+		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
+			fmt.Sprintf("%v", instr.Operation), "LDADDA requires destination, source, and memory operands")
+	}
+
+	if len(ops[0].Registers) == 0 {
+		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
+			fmt.Sprintf("%v", instr.Operation), "missing destination register")
+	}
+	if len(ops[1].Registers) == 0 {
+		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
+			fmt.Sprintf("%v", instr.Operation), "missing source register")
+	}
+
+	dstReg := core.MapRegister(ops[0].Registers[0])
+	srcReg := core.MapRegister(ops[1].Registers[0])
+	if dstReg == -1 {
+		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
+			fmt.Sprintf("%v", instr.Operation), "invalid destination register")
+	}
+	if srcReg == -1 {
+		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
+			fmt.Sprintf("%v", instr.Operation), "invalid source register")
+	}
+
+	calc, err := addressing.CalculateAddress(state, ops[2])
+	if err != nil {
+		return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
+			fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("address calculation failed: %v", err))
+	}
+
+	is32Bit := func(regID disassemble.Register) bool {
+		id := uint32(regID)
+		return (id >= 1 && id <= 32)
+	}(ops[0].Registers[0])
+
+	if is32Bit {
+		oldVal, readErr := state.ReadUint32(calc.Address)
+		if readErr != nil {
+			if errors.Is(readErr, core.ErrUnmappedMemory) {
+				return core.NewEmulationError(core.ErrUnmappedMemory, state.GetPC(),
+					fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", readErr))
+			}
+			return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
+				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", readErr))
+		}
+
+		addend := state.GetW(srcReg)
+		newVal := oldVal + addend // uint32 arithmetic wraps automatically
+		state.WriteUint32(calc.Address, newVal)
+		state.SetW(dstReg, oldVal)
+	} else {
+		oldVal, readErr := state.ReadUint64(calc.Address)
+		if readErr != nil {
+			if errors.Is(readErr, core.ErrUnmappedMemory) {
+				return core.NewEmulationError(core.ErrUnmappedMemory, state.GetPC(),
+					fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", readErr))
+			}
+			return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
+				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", readErr))
+		}
+
+		addend := state.GetX(srcReg)
+		newVal := oldVal + addend
+		state.WriteUint64(calc.Address, newVal)
+		state.SetX(dstReg, oldVal)
+	}
+
+	if err := addressing.ApplyWriteback(state, calc); err != nil {
+		return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
+			fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("writeback failed: %v", err))
+	}
+
+	// Acquire semantics prevent later memory accesses from being reordered before this instruction.
+	// In this single-threaded emulator model, we treat it as a full completion of the RMW cycle.
+	return nil
+}
+
 // STRB - Store register byte
 func (e *MemoryExecutor) executeSTRB(state core.State, instr *disassemble.Instruction) error {
 	ops := instr.Operands
@@ -624,7 +707,8 @@ func RegisterMemoryInstructions(registry *Registry) {
 	registry.Register("LDRSH", NewMemoryExecutor("LDRSH", "Load register signed halfword"))
 	registry.Register("LDRSW", NewMemoryExecutor("LDRSW", "Load register signed word"))
 	registry.Register("LDUR", NewMemoryExecutor("LDUR", "Load register (unscaled offset)"))
-
+	// Atomic load/store operations
+	registry.Register("LDADDA", NewMemoryExecutor("LDADDA", "Atomic load-add with acquire semantics"))
 	// Store instructions
 	registry.Register("STR", NewMemoryExecutor("STR", "Store register"))
 	registry.Register("STRB", NewMemoryExecutor("STRB", "Store register byte"))
@@ -641,7 +725,7 @@ func RegisterMemoryInstructions(registry *Registry) {
 // IsLoadInstruction checks if a mnemonic is a load instruction
 func IsLoadInstruction(mnemonic string) bool {
 	switch mnemonic {
-	case "LDR", "LDRB", "LDRH", "LDRSB", "LDRSH", "LDRSW", "LDUR", "LDP":
+	case "LDR", "LDRB", "LDRH", "LDRSB", "LDRSH", "LDRSW", "LDUR", "LDP", "LDADDA":
 		return true
 	default:
 		return false
@@ -651,7 +735,7 @@ func IsLoadInstruction(mnemonic string) bool {
 // IsStoreInstruction checks if a mnemonic is a store instruction
 func IsStoreInstruction(mnemonic string) bool {
 	switch mnemonic {
-	case "STR", "STRB", "STRH", "STUR", "STP":
+	case "STR", "STRB", "STRH", "STUR", "STP", "LDADDA":
 		return true
 	default:
 		return false
@@ -678,6 +762,11 @@ func GetMemoryAccessSize(mnemonic string, is32Bit bool) int {
 	case "LDRSW":
 		return 4
 	case "LDR", "STR", "LDUR", "STUR":
+		if is32Bit {
+			return 4
+		}
+		return 8
+	case "LDADDA":
 		if is32Bit {
 			return 4
 		}

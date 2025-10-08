@@ -119,6 +119,16 @@ func createMockSystemInstruction(operation string, operands []disassemble.Operan
 		return &disassemble.Instruction{Operation: disassemble.ARM64_SYSL, Operands: operands}
 	case "XPACLRI":
 		return &disassemble.Instruction{Operation: disassemble.ARM64_XPACLRI, Operands: operands}
+	case "PACIBSP":
+		return &disassemble.Instruction{Operation: disassemble.ARM64_PACIBSP, Operands: operands}
+	case "PACIASP":
+		return &disassemble.Instruction{Operation: disassemble.ARM64_PACIASP, Operands: operands}
+	case "PACIAZ":
+		return &disassemble.Instruction{Operation: disassemble.ARM64_PACIAZ, Operands: operands}
+	case "PACIBZ":
+		return &disassemble.Instruction{Operation: disassemble.ARM64_PACIBZ, Operands: operands}
+	case "AUTIBSP":
+		return &disassemble.Instruction{Operation: disassemble.ARM64_AUTIBSP, Operands: operands}
 	case "SB":
 		return &disassemble.Instruction{Operation: disassemble.ARM64_SB, Operands: operands}
 	case "ADD":
@@ -487,6 +497,41 @@ func TestSystemExecutor_XPACLRI_SB(t *testing.T) {
 	}
 }
 
+func TestSystemExecutor_AUTIBSP(t *testing.T) {
+	state := NewMockSystemState()
+	state.SetSP(0x7fff1234000)
+	baseLR := uint64(0x0000000100002222)
+	state.SetX(30, baseLR)
+
+	pacExecutor := NewSystemExecutor("PACIBSP", "Pointer authenticate LR using SP")
+	if err := pacExecutor.Execute(state, createMockSystemInstruction("PACIBSP", nil)); err != nil {
+		t.Fatalf("PACIBSP execution failed: %v", err)
+	}
+
+	signedLR := state.GetX(30)
+	if signedLR>>56 == 0 {
+		t.Fatalf("PACIBSP should set a pseudo PAC in the top byte, got 0x%x", signedLR)
+	}
+
+	autExecutor := NewSystemExecutor("AUTIBSP", "Authenticate LR using SP (B-key)")
+	if err := autExecutor.Execute(state, createMockSystemInstruction("AUTIBSP", nil)); err != nil {
+		t.Fatalf("AUTIBSP execution failed: %v", err)
+	}
+
+	if got := state.GetX(30); got != baseLR {
+		t.Errorf("AUTIBSP should restore LR to base value, want 0x%x got 0x%x", baseLR, got)
+	}
+
+	state.SetX(30, uint64(0xAA)<<56|0x0000000000003333)
+	if err := autExecutor.Execute(state, createMockSystemInstruction("AUTIBSP", nil)); err != nil {
+		t.Fatalf("AUTIBSP execution failed on invalid PAC: %v", err)
+	}
+
+	if got := state.GetX(30); got != 0 {
+		t.Errorf("AUTIBSP should poison LR on invalid PAC, want 0 got 0x%x", got)
+	}
+}
+
 func TestSystemExecutor_UnsupportedInstruction(t *testing.T) {
 	executor := NewSystemExecutor("NOP", "No operation")
 	state := NewMockSystemState()
@@ -512,7 +557,7 @@ func TestRegisterSystemInstructions(t *testing.T) {
 		"NOP", "MRS", "MSR", "SYS", "SYSL",
 		"ISB", "DSB", "DMB",
 		"HINT", "YIELD", "WFE", "WFI", "SEV", "SEVL",
-		"HLT", "XPACLRI", "SB",
+		"HLT", "XPACLRI", "PACIBSP", "PACIASP", "PACIAZ", "PACIBZ", "AUTIBSP", "SB",
 	}
 
 	for _, instr := range expectedInstructions {

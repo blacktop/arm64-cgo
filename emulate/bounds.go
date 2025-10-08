@@ -16,10 +16,9 @@ import (
 // Typical usage:
 //
 //	guard, _ := NewBoundsGuard(start, end, WithStrictRange(true))
-//	cfg := DefaultEngineConfig()
-//	cfg.ShouldHaltPreHandler = guard.Pre
-//	cfg.ShouldHaltPostHandler = guard.Post
-//	eng := NewEngineWithConfig(cfg)
+//	eng := NewEngine()
+//	_ = eng.AddHook(core.HookPreInstruction, guard.Pre)
+//	_ = eng.AddHook(core.HookPostInstruction, guard.Post)
 //
 // Start is inclusive; End is exclusive.
 type BoundsGuard struct {
@@ -72,25 +71,25 @@ func (g *BoundsGuard) MaxDepth() int64 { return g.maxDepth }
 // Reset clears the tracked depth back to 0.
 func (g *BoundsGuard) Reset() { atomic.StoreInt64(&g.depth, 0) }
 
-// Pre is intended for Engine.ShouldHaltPreHandler.
+// Pre is intended for Engine HookPreInstruction.
 // It halts when we are back at depth 0 and PC has reached the end (or left the range if Strict).
-func (g *BoundsGuard) Pre(state core.State, _ core.InstructionInfo) bool {
+func (g *BoundsGuard) Pre(state core.State, _ core.InstructionInfo) core.HookResult {
 	pc := state.GetPC()
 	if atomic.LoadInt64(&g.depth) == 0 {
 		if g.strict {
 			if pc < g.start || pc >= g.end {
-				return true
+				return core.HookResult{Halt: true}
 			}
 		} else if pc >= g.end {
-			return true
+			return core.HookResult{Halt: true}
 		}
 	}
-	return false
+	return core.HookResult{}
 }
 
-// Post is intended for Engine.ShouldHaltPostHandler.
+// Post is intended for Engine HookPostInstruction.
 // It updates call depth by observing executed branch mnemonics.
-func (g *BoundsGuard) Post(state core.State, info core.InstructionInfo) bool {
+func (g *BoundsGuard) Post(state core.State, info core.InstructionInfo) core.HookResult {
 	// Track calls/returns via operation codes (no string allocations)
 	switch info.Instruction.Operation {
 	case disassemble.ARM64_BL, disassemble.ARM64_BLR,
@@ -148,15 +147,15 @@ func (g *BoundsGuard) Post(state core.State, info core.InstructionInfo) bool {
 			if pc < g.start || pc >= g.end {
 				// Re-check depth to avoid a rare race if depth changed concurrently
 				if atomic.LoadInt64(&g.depth) == 0 {
-					return true
+					return core.HookResult{Halt: true}
 				}
 			}
 		} else if pc >= g.end {
 			if atomic.LoadInt64(&g.depth) == 0 {
-				return true
+				return core.HookResult{Halt: true}
 			}
 		}
 	}
 
-	return false
+	return core.HookResult{}
 }

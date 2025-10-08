@@ -513,13 +513,35 @@ func isConditionalInstruction(mnemonic string) bool {
 
 func isSystemInstruction(mnemonic string) bool {
 	systemInstructions := []string{"NOP", "MRS", "MSR", "SYS", "SYSL", "ISB", "DSB", "DMB",
-		"HINT", "YIELD", "WFE", "WFI", "HLT", "SEV", "SEVL"}
+		"HINT", "YIELD", "WFE", "WFI", "HLT", "SEV", "SEVL", "PAC"}
 	for _, instr := range systemInstructions {
 		if strings.HasPrefix(mnemonic, instr) {
 			return true
 		}
 	}
 	return false
+}
+
+// IsPACInstruction checks if an instruction operation is a Pointer Authentication Code operation
+func IsPACInstruction(op disassemble.Operation) bool {
+	switch op {
+	case disassemble.ARM64_PACDA,
+		disassemble.ARM64_PACIA,
+		disassemble.ARM64_PACIA1716,
+		disassemble.ARM64_PACIA171615,
+		disassemble.ARM64_PACIASP,
+		disassemble.ARM64_PACIASPPC,
+		disassemble.ARM64_PACIAZ,
+		disassemble.ARM64_PACDB,
+		disassemble.ARM64_PACDZA,
+		disassemble.ARM64_PACDZB,
+		disassemble.ARM64_PACIB,
+		disassemble.ARM64_PACIZA,
+		disassemble.ARM64_PACIZB:
+		return true
+	default:
+		return false
+	}
 }
 
 func isCryptoInstruction(mnemonic string) bool {

@@ -357,6 +357,25 @@ func TestMemoryInstructions(t *testing.T) {
 			InitialRegs:  map[int]uint64{0: 0x10000000, 1: 0x123456789ABCDEF0, 2: 0xDEADBEEFCAFEBABE},
 			Description:  "STP - store pair",
 		},
+		// LDADDA - Atomic load-add acquire
+		{
+			Name: "LDADDA",
+			Instructions: [][]byte{
+				{0xf8, 0xa0, 0x00, 0x41}, // LDADDA X0, X1, [X2]
+			},
+			InitialRegs: map[int]uint64{
+				0: 0x0,
+				1: 0x10,
+				2: 0x10000000,
+			},
+			InitialMem: map[uint64][]byte{
+				0x10000000: {0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01},
+			},
+			Description: "LDADDA - atomic load-add with acquire semantics",
+			ExpectedRegs: map[int]uint64{
+				0: 0x0102030405060708,
+			},
+		},
 	}
 
 	runInstructionTests(t, "Memory", testCases)
@@ -554,6 +573,22 @@ func TestSystemInstructions(t *testing.T) {
 			InitialRegs:  map[int]uint64{0: 42},
 			Description:  "ISB - instruction synchronization barrier",
 			ExpectedRegs: map[int]uint64{0: 42},
+		},
+		// PACIBSP followed by AUTIBSP to verify authentication flow
+		{
+			Name: "PACIBSP_AUTIBSP",
+			Instructions: [][]byte{
+				{0x7f, 0x23, 0x03, 0xd5}, // PACIBSP
+				{0xff, 0x23, 0x03, 0xd5}, // AUTIBSP
+			},
+			InitialRegs: map[int]uint64{
+				30: 0x0000000100002222, // LR
+				31: 0x0000000100001110, // SP
+			},
+			Description: "PACIBSP followed by AUTIBSP to authenticate LR using SP",
+			ExpectedRegs: map[int]uint64{
+				30: 0x0000000100002222,
+			},
 		},
 	}
 

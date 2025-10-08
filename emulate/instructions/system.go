@@ -129,6 +129,11 @@ func (e *SystemExecutor) ValidateInstruction(instr *disassemble.Instruction) err
 			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
 				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
 		}
+	case "AUTIBSP":
+		if instr.Operation != disassemble.ARM64_AUTIBSP {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		}
 	case "BTI":
 		if instr.Operation != disassemble.ARM64_BTI {
 			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
@@ -136,6 +141,26 @@ func (e *SystemExecutor) ValidateInstruction(instr *disassemble.Instruction) err
 		}
 	case "SB":
 		if instr.Operation != disassemble.ARM64_SB {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		}
+	case "PACDA":
+		if instr.Operation != disassemble.ARM64_PACDA && instr.Operation != disassemble.ARM64_PACDZA {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		}
+	case "PACIA":
+		if instr.Operation != disassemble.ARM64_PACIA && instr.Operation != disassemble.ARM64_PACIZA {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		}
+	case "PACDB":
+		if instr.Operation != disassemble.ARM64_PACDB && instr.Operation != disassemble.ARM64_PACDZB {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		}
+	case "PACIB":
+		if instr.Operation != disassemble.ARM64_PACIB && instr.Operation != disassemble.ARM64_PACIZB {
 			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
 				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
 		}
@@ -194,10 +219,20 @@ func (e *SystemExecutor) Execute(state core.State, instr *disassemble.Instructio
 		return e.executePACIAZ(state, instr)
 	case "PACIBZ":
 		return e.executePACIBZ(state, instr)
+	case "AUTIBSP":
+		return e.executeAUTIBSP(state, instr)
 	case "BTI":
 		return e.executeBTI(state, instr)
 	case "SB":
 		return e.executeSB(state, instr)
+	case "PACDA":
+		return e.executePACDA(state, instr)
+	case "PACIA":
+		return e.executePACIA(state, instr)
+	case "PACDB":
+		return e.executePACDB(state, instr)
+	case "PACIB":
+		return e.executePACIB(state, instr)
 	default:
 		return core.NewEmulationError(core.ErrUnsupportedFeature, state.GetPC(),
 			fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("system instruction %s not implemented", e.mnemonic))
@@ -422,24 +457,20 @@ func (e *SystemExecutor) executeXPACLRI(state core.State, instr *disassemble.Ins
 	return nil
 }
 
+// computePseudoPAC folds the modifier value into a single byte and mixes in a key tag.
+func computePseudoPAC(modifier uint64, keyTag uint8) uint8 {
+	var pacByte uint8
+	for shift := 0; shift < 64; shift += 8 {
+		pacByte ^= uint8(modifier >> shift)
+	}
+	return pacByte ^ keyTag
+}
+
 // PACIBSP - Pointer authenticate LR using SP and B-key
 func (e *SystemExecutor) executePACIBSP(state core.State, instr *disassemble.Instruction) error {
 	// Pseudo-implement PACIBSP: set top byte of LR using a simple hash of SP and a B-key tag
 	lr := state.GetX(30) // X30 is LR
-	sp := state.GetSP()
-
-	// Simple 8-bit fold of SP, mixed with a constant to represent the B-key
-	var pacByte uint8
-	x := sp
-	pacByte ^= uint8(x >> 0)
-	pacByte ^= uint8(x >> 8)
-	pacByte ^= uint8(x >> 16)
-	pacByte ^= uint8(x >> 24)
-	pacByte ^= uint8(x >> 32)
-	pacByte ^= uint8(x >> 40)
-	pacByte ^= uint8(x >> 48)
-	pacByte ^= uint8(x >> 56)
-	pacByte ^= 0xB3 // arbitrary constant to differentiate B-key path
+	pacByte := computePseudoPAC(state.GetSP(), 0xB3)
 
 	// Write pseudo PAC into the top byte of LR
 	lr = (lr & 0x00FFFFFFFFFFFFFF) | (uint64(pacByte) << 56)
@@ -450,20 +481,7 @@ func (e *SystemExecutor) executePACIBSP(state core.State, instr *disassemble.Ins
 // PACIASP - Pointer authenticate LR using SP and A-key
 func (e *SystemExecutor) executePACIASP(state core.State, instr *disassemble.Instruction) error {
 	lr := state.GetX(30) // X30 is LR
-	sp := state.GetSP()
-
-	// Simple 8-bit fold of SP, mixed with a constant to represent the A-key
-	var pacByte uint8
-	x := sp
-	pacByte ^= uint8(x >> 0)
-	pacByte ^= uint8(x >> 8)
-	pacByte ^= uint8(x >> 16)
-	pacByte ^= uint8(x >> 24)
-	pacByte ^= uint8(x >> 32)
-	pacByte ^= uint8(x >> 40)
-	pacByte ^= uint8(x >> 48)
-	pacByte ^= uint8(x >> 56)
-	pacByte ^= 0xA5 // arbitrary constant to differentiate A-key path
+	pacByte := computePseudoPAC(state.GetSP(), 0xA5)
 
 	// Write pseudo PAC into the top byte of LR
 	lr = (lr & 0x00FFFFFFFFFFFFFF) | (uint64(pacByte) << 56)
@@ -497,6 +515,24 @@ func (e *SystemExecutor) executePACIBZ(state core.State, instr *disassemble.Inst
 	return nil
 }
 
+// AUTIBSP - Authenticate LR using SP and B-key
+func (e *SystemExecutor) executeAUTIBSP(state core.State, instr *disassemble.Instruction) error {
+	lr := state.GetX(30) // X30 is LR
+	expectedPAC := computePseudoPAC(state.GetSP(), 0xB3)
+	actualPAC := uint8(lr >> 56)
+
+	if actualPAC == expectedPAC {
+		// Successful authentication: strip the pseudo-PAC
+		lr &= 0x00FFFFFFFFFFFFFF
+	} else {
+		// Authentication failed: poison LR so future use is obvious
+		lr = 0
+	}
+
+	state.SetX(30, lr)
+	return nil
+}
+
 // BTI - Branch Target Identification
 func (e *SystemExecutor) executeBTI(state core.State, instr *disassemble.Instruction) error {
 	// BTI enforces branch landing pads; emulate as NOP
@@ -507,6 +543,36 @@ func (e *SystemExecutor) executeBTI(state core.State, instr *disassemble.Instruc
 func (e *SystemExecutor) executeSB(state core.State, instr *disassemble.Instruction) error {
 	// SB is a speculation barrier that prevents speculative execution
 	// In emulation, this is effectively a NOP
+	return nil
+}
+
+// PACDA - Pointer authenticate using key D (data pointer, A-key)
+// For emulation purposes, we don't actually perform signing - we just pass through
+// The pre-hook in C++ class discovery will capture registers before this executes
+func (e *SystemExecutor) executePACDA(state core.State, instr *disassemble.Instruction) error {
+	// PACDA Xd, Xn - Xd is the pointer to sign, Xn is the modifier
+	// Real hardware would sign the pointer using secret keys and crypto
+	// For emulation, we treat this as a no-op (pointer remains unchanged)
+	// This allows code to execute through PAC instructions without errors
+	return nil
+}
+
+// PACIA - Pointer authenticate using key A (instruction pointer, A-key)
+func (e *SystemExecutor) executePACIA(state core.State, instr *disassemble.Instruction) error {
+	// Same as PACDA but uses A-key instead of D-key
+	// Still a no-op for emulation purposes
+	return nil
+}
+
+// PACDB - Pointer authenticate using key D (data pointer, B-key)
+func (e *SystemExecutor) executePACDB(state core.State, instr *disassemble.Instruction) error {
+	// B-key variant of PACDA
+	return nil
+}
+
+// PACIB - Pointer authenticate using key B (instruction pointer, B-key)
+func (e *SystemExecutor) executePACIB(state core.State, instr *disassemble.Instruction) error {
+	// B-key variant of PACIA
 	return nil
 }
 
@@ -541,5 +607,12 @@ func RegisterSystemInstructions(registry *Registry) {
 	registry.Register("PACIASP", NewSystemExecutor("PACIASP", "Pointer authenticate LR using SP (A-key)"))
 	registry.Register("PACIAZ", NewSystemExecutor("PACIAZ", "Pointer authenticate LR using zero modifier (A-key)"))
 	registry.Register("PACIBZ", NewSystemExecutor("PACIBZ", "Pointer authenticate LR using zero modifier (B-key)"))
+	registry.Register("AUTIBSP", NewSystemExecutor("AUTIBSP", "Authenticate LR using SP (B-key)"))
 	registry.Register("SB", NewSystemExecutor("SB", "Speculation barrier"))
+
+	// PAC instructions with register operands
+	registry.Register("PACDA", NewSystemExecutor("PACDA", "Pointer authenticate data address using key D"))
+	registry.Register("PACIA", NewSystemExecutor("PACIA", "Pointer authenticate instruction address using key A"))
+	registry.Register("PACDB", NewSystemExecutor("PACDB", "Pointer authenticate data address using key B"))
+	registry.Register("PACIB", NewSystemExecutor("PACIB", "Pointer authenticate instruction address using key B"))
 }

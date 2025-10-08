@@ -55,14 +55,14 @@ func IsADD(instr uint32) bool {
 // STP encoding: 1010_1001_x0ii_iiii_iiii_iinn_nnnt_tttt (bit 22 = 0 for store)
 func IsSTP(instr uint32) bool {
 	// Check if it's a pair operation and bit 22 is 0 (store)
-	return (instr & 0xFE000000) == 0xA8000000 && (instr & 0x00400000) == 0
+	return (instr&0xFE000000) == 0xA8000000 && (instr&0x00400000) == 0
 }
 
 // IsLDP checks if instruction is LDP (Load Pair)
 // LDP encoding: 1010_1001_x1ii_iiii_iiii_iinn_nnnt_tttt (bit 22 = 1 for load)
 func IsLDP(instr uint32) bool {
 	// Check if it's a pair operation and bit 22 is 1 (load)
-	return (instr & 0xFE000000) == 0xA8000000 && (instr & 0x00400000) != 0
+	return (instr&0xFE000000) == 0xA8000000 && (instr&0x00400000) != 0
 }
 
 // IsADR checks if instruction is ADR (Address)

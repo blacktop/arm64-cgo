@@ -12,36 +12,40 @@ import (
 
 // Engine provides the primary ARM64 emulation interface using the modular instruction system
 type Engine struct {
-	state                   core.State
-	registry                core.InstructionRegistry
-	maxInstructions         int
-	instrCount              int
-	enableTrace             bool
-	trace                   []core.InstructionInfo
-	StopOnError             bool
-	LastError               error
-	StopAddress             uint64
-	ShouldHaltPreHandler    func(state core.State, info core.InstructionInfo) bool
-	ShouldHaltPostHandler   func(state core.State, info core.InstructionInfo) bool
-	ShouldTakeBranchHandler func(state core.State, info core.InstructionInfo) bool
+	state              core.State
+	registry           core.InstructionRegistry
+	maxInstructions    int
+	instrCount         int
+	enableTrace        bool
+	trace              []core.InstructionInfo
+	StopOnError        bool
+	LastError          error
+	StopAddress        uint64
+	preHooks           []core.PreInstructionHook
+	postHooks          []core.PostInstructionHook
+	unimplementedHooks []core.UnimplementedInstructionHook
+}
+
+// HookRegistration associates a hook kind with its implementation for batch configuration.
+type HookRegistration struct {
+	Kind    core.HookKind
+	Handler any
 }
 
 // EngineConfig provides configuration options for the ARM64 emulator engine
 type EngineConfig struct {
-	MaxInstructions         int
-	EnableTrace             bool
-	StopOnError             bool
-	InitialPC               uint64
-	InitialSP               uint64
-	StackSize               int
-	StackBase               uint64
-	MemoryHandler           core.MemoryReadHandler
-	StringHandler           core.StringPoolHandler
-	PointerResolver         core.PointerResolver
-	StopAddress             uint64
-	ShouldHaltPreHandler    func(state core.State, info core.InstructionInfo) bool
-	ShouldHaltPostHandler   func(state core.State, info core.InstructionInfo) bool
-	ShouldTakeBranchHandler func(state core.State, info core.InstructionInfo) bool
+	MaxInstructions int
+	EnableTrace     bool
+	StopOnError     bool
+	InitialPC       uint64
+	InitialSP       uint64
+	StackSize       int
+	StackBase       uint64
+	MemoryHandler   core.MemoryReadHandler
+	StringHandler   core.StringPoolHandler
+	PointerResolver core.PointerResolver
+	StopAddress     uint64
+	Hooks           []HookRegistration
 }
 
 // DefaultEngineConfig returns a configuration with sensible defaults
@@ -86,19 +90,24 @@ func NewEngineWithConfig(config *EngineConfig) *Engine {
 		st.SetPointerResolver(config.PointerResolver)
 	}
 
-	return &Engine{
-		state:                   st,
-		registry:                instructions.DefaultRegistry(),
-		maxInstructions:         config.MaxInstructions,
-		instrCount:              0,
-		enableTrace:             config.EnableTrace,
-		trace:                   make([]core.InstructionInfo, 0),
-		StopOnError:             config.StopOnError,
-		StopAddress:             config.StopAddress,
-		ShouldHaltPreHandler:    config.ShouldHaltPreHandler,
-		ShouldHaltPostHandler:   config.ShouldHaltPostHandler,
-		ShouldTakeBranchHandler: config.ShouldTakeBranchHandler,
+	eng := &Engine{
+		state:           st,
+		registry:        instructions.DefaultRegistry(),
+		maxInstructions: config.MaxInstructions,
+		instrCount:      0,
+		enableTrace:     config.EnableTrace,
+		trace:           make([]core.InstructionInfo, 0),
+		StopOnError:     config.StopOnError,
+		StopAddress:     config.StopAddress,
 	}
+
+	for _, hook := range config.Hooks {
+		if err := eng.AddHook(hook.Kind, hook.Handler); err != nil {
+			panic(err)
+		}
+	}
+
+	return eng
 }
 
 // NewEngineWithState creates a new engine with a custom initial state
@@ -112,6 +121,40 @@ func NewEngineWithState(st core.State) *Engine {
 		trace:           make([]core.InstructionInfo, 0),
 		StopOnError:     true,
 	}
+}
+
+// AddHook registers a hook callback for the specified kind.
+func (e *Engine) AddHook(kind core.HookKind, handler any) error {
+	switch kind {
+	case core.HookPreInstruction:
+		h, ok := handler.(core.PreInstructionHook)
+		if !ok {
+			return fmt.Errorf("engine: HookPreInstruction handler must be core.PreInstructionHook")
+		}
+		e.preHooks = append(e.preHooks, h)
+	case core.HookPostInstruction:
+		h, ok := handler.(core.PostInstructionHook)
+		if !ok {
+			return fmt.Errorf("engine: HookPostInstruction handler must be core.PostInstructionHook")
+		}
+		e.postHooks = append(e.postHooks, h)
+	case core.HookUnimplementedInstruction:
+		h, ok := handler.(core.UnimplementedInstructionHook)
+		if !ok {
+			return fmt.Errorf("engine: HookUnimplementedInstruction handler must be core.UnimplementedInstructionHook")
+		}
+		e.unimplementedHooks = append(e.unimplementedHooks, h)
+	default:
+		return fmt.Errorf("engine: unsupported hook kind %d", kind)
+	}
+	return nil
+}
+
+// ClearHooks removes all registered hooks.
+func (e *Engine) ClearHooks() {
+	e.preHooks = nil
+	e.postHooks = nil
+	e.unimplementedHooks = nil
 }
 
 // LoadInstructions loads a blob of ARM64 machine code into memory at the specified address
@@ -195,6 +238,129 @@ func (e *Engine) GetTrace() []core.InstructionInfo {
 	return e.trace
 }
 
+func (e *Engine) buildInstructionInfo(pc uint64, instr uint32) (core.InstructionInfo, string, error) {
+	var results [1024]byte
+	decodedInstr, err := disassemble.Decompose(pc, instr, &results)
+	if err != nil {
+		return core.InstructionInfo{}, "", err
+	}
+
+	mnemonicLen := 0
+	for i, b := range results {
+		if b == 0 {
+			mnemonicLen = i
+			break
+		}
+	}
+	if mnemonicLen == 0 {
+		mnemonicLen = len(results)
+	}
+
+	info := core.InstructionInfo{
+		Address:     pc,
+		Instruction: decodedInstr,
+		Value:       instr,
+		Mnemonic:    string(results[:mnemonicLen]),
+	}
+
+	opName := fmt.Sprintf("%v", decodedInstr.Operation)
+	return info, opName, nil
+}
+
+func (e *Engine) dispatchPreHooks(info core.InstructionInfo) core.HookResult {
+	var result core.HookResult
+	for _, hook := range e.preHooks {
+		hookRes := hook(e.state, info)
+		if hookRes.SkipInstruction {
+			result.SkipInstruction = true
+		}
+		if hookRes.Halt {
+			result.Halt = true
+			break
+		}
+	}
+	return result
+}
+
+func (e *Engine) dispatchPostHooks(info core.InstructionInfo) core.HookResult {
+	var result core.HookResult
+	for _, hook := range e.postHooks {
+		hookRes := hook(e.state, info)
+		if hookRes.Halt {
+			result.Halt = true
+			break
+		}
+	}
+	return result
+}
+
+func (e *Engine) dispatchUnimplementedHooks(info core.InstructionInfo, err error) core.HookResult {
+	var result core.HookResult
+	for _, hook := range e.unimplementedHooks {
+		hookRes := hook(e.state, info, err)
+		if hookRes.SkipInstruction {
+			result.SkipInstruction = true
+		}
+		if hookRes.Halt {
+			result.Halt = true
+			break
+		}
+	}
+	return result
+}
+
+func (e *Engine) executeDecoded(info core.InstructionInfo, opName string) (bool, core.HookResult, error) {
+	if e.instrCount >= e.maxInstructions {
+		return false, core.HookResult{}, fmt.Errorf("maximum instruction limit reached (%d)", e.maxInstructions)
+	}
+
+	if e.enableTrace {
+		e.trace = append(e.trace, info)
+	}
+
+	executor, found := e.registry.Get(opName)
+	if !found {
+		err := fmt.Errorf("unsupported instruction: %s at 0x%x", opName, info.Address)
+		e.LastError = err
+		hookRes := e.dispatchUnimplementedHooks(info, err)
+		if hookRes.Halt {
+			return false, hookRes, nil
+		}
+		if hookRes.SkipInstruction || !e.StopOnError {
+			e.state.SetPC(info.Address + 4)
+			e.instrCount++
+			return false, hookRes, nil
+		}
+		return false, hookRes, err
+	}
+
+	err := executor.Execute(e.state, info.Instruction)
+	if err != nil {
+		e.LastError = err
+		if errors.Is(err, core.ErrUnsupportedFeature) {
+			hookRes := e.dispatchUnimplementedHooks(info, err)
+			if hookRes.Halt {
+				return false, hookRes, nil
+			}
+			if hookRes.SkipInstruction {
+				e.state.SetPC(info.Address + 4)
+				e.instrCount++
+				return false, hookRes, nil
+			}
+		}
+		if e.StopOnError {
+			return false, core.HookResult{}, err
+		}
+	}
+
+	if e.state.GetPC() == info.Address {
+		e.state.SetPC(info.Address + 4)
+	}
+
+	e.instrCount++
+	return true, core.HookResult{}, nil
+}
+
 // ExecuteInstruction executes a single instruction using the modular instruction system
 func (e *Engine) ExecuteInstruction(pc uint64, instr uint32) error {
 	if e.instrCount >= e.maxInstructions {
@@ -203,65 +369,37 @@ func (e *Engine) ExecuteInstruction(pc uint64, instr uint32) error {
 
 	e.state.SetPC(pc)
 
-	// Decode the instruction
-	var results [1024]byte
-	decodedInstr, err := disassemble.Decompose(pc, instr, &results)
+	info, opName, err := e.buildInstructionInfo(pc, instr)
 	if err != nil {
 		return fmt.Errorf("failed to decode instruction at 0x%x: %w", pc, err)
 	}
 
-	// Track instruction if tracing is enabled
-	if e.enableTrace {
-		// Find the actual length of the decoded string
-		mnemonicLen := 0
-		for i, b := range results {
-			if b == 0 {
-				mnemonicLen = i
-				break
-			}
-		}
-		if mnemonicLen == 0 {
-			mnemonicLen = len(results)
-		}
-
-		e.trace = append(e.trace, core.InstructionInfo{
-			Address:     pc,
-			Instruction: decodedInstr,
-			Value:       instr,
-			Mnemonic:    string(results[:mnemonicLen]),
-		})
-	}
-
-	// Use the modular instruction registry system
-	mnemonic := fmt.Sprintf("%v", decodedInstr.Operation)
-	executor, found := e.registry.Get(mnemonic)
-	if !found {
-		err = fmt.Errorf("unsupported instruction: %s at 0x%x", mnemonic, pc)
-		e.LastError = err
-		if e.StopOnError {
-			return err
-		}
-		// Advance PC and count to avoid infinite loop when skipping unsupported instructions
+	preRes := e.dispatchPreHooks(info)
+	if preRes.SkipInstruction {
 		e.state.SetPC(pc + 4)
 		e.instrCount++
 		return nil
 	}
-
-	// Execute using the modular executor
-	err = executor.Execute(e.state, decodedInstr)
-	if err != nil {
-		e.LastError = err
-		if e.StopOnError {
-			return err
-		}
+	if preRes.Halt {
+		return nil
 	}
 
-	// Update PC for sequential execution (if not modified by instruction)
-	if e.state.GetPC() == pc {
-		e.state.SetPC(pc + 4)
+	executed, hookRes, execErr := e.executeDecoded(info, opName)
+	if execErr != nil {
+		return execErr
+	}
+	if hookRes.Halt {
+		return nil
+	}
+	if !executed {
+		return nil
 	}
 
-	e.instrCount++
+	postRes := e.dispatchPostHooks(info)
+	if postRes.Halt {
+		return nil
+	}
+
 	return nil
 }
 
@@ -286,73 +424,43 @@ func (e *Engine) Run() error {
 			return fmt.Errorf("failed to read instruction at 0x%x: %w", pc, err)
 		}
 
-		// Optional early stop based on configured stop address or handler
+		// Optional early stop based on configured stop address
 		if e.StopAddress != 0 && pc == e.StopAddress {
 			break
 		}
-		if e.ShouldHaltPreHandler != nil {
-			var results [1024]byte
-			if decodedInstr, derr := disassemble.Decompose(pc, instr, &results); derr == nil {
-				mnemonic := fmt.Sprintf("%v", decodedInstr.Operation)
-				if _, ok := e.registry.Get(mnemonic); ok {
-					info := core.InstructionInfo{
-						Address:     pc,
-						Instruction: decodedInstr,
-						Value:       instr,
-						Mnemonic:    mnemonic,
-					}
-					if e.ShouldHaltPreHandler(e.state, info) {
-						break
-					}
-				}
-			}
+
+		info, opName, err := e.buildInstructionInfo(pc, instr)
+		if err != nil {
+			return fmt.Errorf("failed to decode instruction at 0x%x: %w", pc, err)
 		}
 
-		// Execute the instruction
-		// Optionally decide whether to take a branch before executing it
-		if e.ShouldTakeBranchHandler != nil {
-			var results [1024]byte
-			if decodedInstr, derr := disassemble.Decompose(pc, instr, &results); derr == nil {
-				mnemonic := fmt.Sprintf("%v", decodedInstr.Operation)
-				if _, ok := e.registry.Get(mnemonic); ok {
-					if instructions.IsBranchOp(decodedInstr) {
-						info := core.InstructionInfo{
-							Address:     pc,
-							Instruction: decodedInstr,
-							Value:       instr,
-							Mnemonic:    mnemonic,
-						}
-						if !e.ShouldTakeBranchHandler(e.state, info) {
-							// Skip branch: treat as NOP
-							e.state.SetPC(pc + 4)
-							e.instrCount++
-							continue
-						}
-					}
-				}
+		preRes := e.dispatchPreHooks(info)
+		if preRes.SkipInstruction {
+			e.state.SetPC(pc + 4)
+			e.instrCount++
+			if preRes.Halt {
+				break
 			}
+			continue
 		}
-		err = e.ExecuteInstruction(pc, instr)
-		if err != nil {
-			return err
+		if preRes.Halt {
+			break
 		}
-		// Optional post-execution halt check
-		if e.ShouldHaltPostHandler != nil {
-			var results [1024]byte
-			if decodedInstr, derr := disassemble.Decompose(pc, instr, &results); derr == nil {
-				mnemonic := fmt.Sprintf("%v", decodedInstr.Operation)
-				if _, ok := e.registry.Get(mnemonic); ok {
-					info := core.InstructionInfo{
-						Address:     pc,
-						Instruction: decodedInstr,
-						Value:       instr,
-						Mnemonic:    mnemonic,
-					}
-					if e.ShouldHaltPostHandler(e.state, info) {
-						break
-					}
-				}
-			}
+
+		executed, hookRes, execErr := e.executeDecoded(info, opName)
+		if execErr != nil {
+			return execErr
+		}
+		if hookRes.Halt {
+			break
+		}
+		if !executed {
+			continue
+		}
+
+		postRes := e.dispatchPostHooks(info)
+		if postRes.Halt {
+			break
 		}
 
 		// Check for stop conditions (RET instruction, etc.)
@@ -495,7 +603,13 @@ func (e *Engine) Configure(config *EngineConfig) {
 		e.state.SetPointerResolver(config.PointerResolver)
 	}
 	e.StopAddress = config.StopAddress
-	e.ShouldHaltPreHandler = config.ShouldHaltPreHandler
-	e.ShouldHaltPostHandler = config.ShouldHaltPostHandler
-	e.ShouldTakeBranchHandler = config.ShouldTakeBranchHandler
+
+	if config.Hooks != nil {
+		e.ClearHooks()
+		for _, hook := range config.Hooks {
+			if err := e.AddHook(hook.Kind, hook.Handler); err != nil {
+				panic(err)
+			}
+		}
+	}
 }

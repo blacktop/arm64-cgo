@@ -10,15 +10,15 @@ func TestFrameworkStructure(t *testing.T) {
 	t.Run("type_definitions", func(t *testing.T) {
 		testTypeDefinitions(t)
 	})
-	
+
 	t.Run("build_validation", func(t *testing.T) {
 		testBuildValidation(t)
 	})
-	
+
 	t.Run("sequence_structure", func(t *testing.T) {
 		testSequenceStructure(t)
 	})
-	
+
 	t.Run("instruction_encoding", func(t *testing.T) {
 		testInstructionEncoding(t)
 	})
@@ -115,7 +115,7 @@ func testBuildValidation(t *testing.T) {
 	var diff StateDifference
 	diff.Type = "register"
 	diff.Name = "X0"
-	
+
 	if diff.Type != "register" {
 		t.Error("StateDifference struct not properly defined")
 	}
@@ -201,10 +201,10 @@ func testSequenceStructure(t *testing.T) {
 func testInstructionEncoding(t *testing.T) {
 	// Test ARM64 instruction format constants
 	const ARM64InstructionSize = 4
-	
+
 	// Test standard test constants
 	const StandardTestPC = 0x10000000
-	
+
 	testCases := []struct {
 		name  string
 		instr []byte
@@ -246,13 +246,13 @@ func testInstructionEncoding(t *testing.T) {
 			if testCase.PC != StandardTestPC {
 				t.Error("Standard test PC constant not working")
 			}
-			
+
 			if len(testCase.InstrBytes) != ARM64InstructionSize {
 				t.Error("Instruction encoding validation failed")
 			}
 		})
 	}
-	
+
 	t.Log("Instruction encoding validation completed successfully")
 }
 
@@ -263,7 +263,7 @@ func TestFrameworkIntegrity(t *testing.T) {
 		mem := make(map[uint64][]byte)
 		mem[0x1000] = make([]byte, 64)
 		mem[0x2000] = make([]byte, 128)
-		
+
 		if len(mem[0x1000]) != 64 {
 			t.Error("Memory allocation pattern failed")
 		}
@@ -271,14 +271,14 @@ func TestFrameworkIntegrity(t *testing.T) {
 			t.Error("Memory allocation pattern failed")
 		}
 	})
-	
+
 	t.Run("register_mapping", func(t *testing.T) {
 		// Test register mapping patterns
 		regs := make(map[int]uint64)
 		for i := 0; i < 32; i++ {
 			regs[i] = uint64(i * 10)
 		}
-		
+
 		if len(regs) != 32 {
 			t.Error("Register mapping failed")
 		}
@@ -286,7 +286,7 @@ func TestFrameworkIntegrity(t *testing.T) {
 			t.Error("Register value mapping failed")
 		}
 	})
-	
+
 	t.Run("error_handling_structure", func(t *testing.T) {
 		// Test error handling structure
 		diff := StateDifference{
@@ -295,7 +295,7 @@ func TestFrameworkIntegrity(t *testing.T) {
 			OurValue:        "error_message",
 			HypervisorValue: "expected_message",
 		}
-		
+
 		if diff.Type != "error" {
 			t.Error("Error handling structure invalid")
 		}

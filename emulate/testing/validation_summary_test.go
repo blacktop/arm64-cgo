@@ -32,7 +32,7 @@ func TestInstructionValidationSummary(t *testing.T) {
 		},
 		"Memory": {
 			"LDR", "STR", "LDRB", "STRB", "LDRH", "STRH",
-			"LDRSB", "LDRSH", "LDRSW", "LDUR", "STUR", 
+			"LDRSB", "LDRSH", "LDRSW", "LDUR", "STUR",
 			"LDP", "STP",
 		},
 		"Move": {
@@ -59,10 +59,10 @@ func TestInstructionValidationSummary(t *testing.T) {
 
 	for category, instructions := range instructionCategories {
 		totalInstructions += len(instructions)
-		
+
 		// All instructions in our categories have tests
 		totalTested += len(instructions)
-		
+
 		t.Logf("✅ %s: %d instructions tested", category, len(instructions))
 		for i, instr := range instructions {
 			if i < 5 { // Show first 5 as examples
@@ -103,7 +103,7 @@ func TestInstructionValidationSummary(t *testing.T) {
 	t.Log("🎯 This represents COMPREHENSIVE instruction validation!")
 	t.Log("Every ARM64 instruction we emulate now has hypervisor validation.")
 	t.Log("This ensures our emulator matches hardware behavior exactly.")
-	
+
 	// This test always passes - it's just for reporting
 	t.Log("")
 	t.Log("✅ Validation framework successfully established!")

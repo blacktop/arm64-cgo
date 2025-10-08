@@ -35,8 +35,8 @@ func TestCompareStates(t *testing.T) {
 		state1.SetX(1, 0x5678)
 
 		state2 := state.NewState()
-		state2.SetX(0, 0x4321)  // Different X0
-		state2.SetX(1, 0x5678)  // Same X1
+		state2.SetX(0, 0x4321) // Different X0
+		state2.SetX(1, 0x5678) // Same X1
 
 		comparison := CompareStates(state1, state2)
 		if !comparison.HasDifferences() {
@@ -61,8 +61,8 @@ func TestCompareStates(t *testing.T) {
 		state1.SetSP(0x7000)
 
 		state2 := state.NewState()
-		state2.SetPC(0x20000000)  // Different PC
-		state2.SetSP(0x8000)      // Different SP
+		state2.SetPC(0x20000000) // Different PC
+		state2.SetSP(0x8000)     // Different SP
 
 		comparison := CompareStates(state1, state2)
 		if !comparison.HasDifferences() {
@@ -96,12 +96,12 @@ func TestCompareStates(t *testing.T) {
 	t.Run("different_flags", func(t *testing.T) {
 		// Create states with different flags
 		state1 := state.NewState()
-		state1.SetN(true)   // Set Negative flag
-		state1.SetZ(false)  // Clear Zero flag
+		state1.SetN(true)  // Set Negative flag
+		state1.SetZ(false) // Clear Zero flag
 
 		state2 := state.NewState()
-		state2.SetN(false)  // Clear Negative flag (different)
-		state2.SetZ(false)  // Clear Zero flag (same)
+		state2.SetN(false) // Clear Negative flag (different)
+		state2.SetZ(false) // Clear Zero flag (same)
 
 		comparison := CompareStates(state1, state2)
 		if !comparison.HasDifferences() {
@@ -115,7 +115,7 @@ func TestCompareStates(t *testing.T) {
 				flagDiffs++
 				if diff.Name == "N" {
 					if diff.OurValue != true || diff.HypervisorValue != false {
-						t.Errorf("N flag difference values incorrect: our=%v, expected=%v", 
+						t.Errorf("N flag difference values incorrect: our=%v, expected=%v",
 							diff.OurValue, diff.HypervisorValue)
 					}
 				}
@@ -133,7 +133,7 @@ func TestCompareStates(t *testing.T) {
 		state1.SetX(0, 0x1234)
 		state1.SetPC(0x10000000)
 
-		state2 := state.NewState() 
+		state2 := state.NewState()
 		state2.SetX(0, 0x5678)
 		state2.SetPC(0x20000000)
 

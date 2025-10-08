@@ -42,8 +42,8 @@ func (e *ConditionalExecutor) Execute(state core.State, instr *disassemble.Instr
 	switch e.GetMnemonic() {
 	case "CSEL":
 		return e.executeCSEL(state, instr)
-    case "CSINC":
-        return e.executeCSINC(state, instr)
+	case "CSINC":
+		return e.executeCSINC(state, instr)
 	case "CSINV":
 		return e.executeCSINV(state, instr)
 	case "CSNEG":
@@ -52,8 +52,8 @@ func (e *ConditionalExecutor) Execute(state core.State, instr *disassemble.Instr
 		return e.executeCSET(state, instr)
 	case "CSETM":
 		return e.executeCSETM(state, instr)
-    case "CINC":
-        return e.executeCINC(state, instr)
+	case "CINC":
+		return e.executeCINC(state, instr)
 	case "CINV":
 		return e.executeCSINV(state, instr)
 	case "CNEG":
@@ -140,14 +140,14 @@ func (e *ConditionalExecutor) executeCSINC(state core.State, instr *disassemble.
 			fmt.Sprintf("%v", instr.Operation), "invalid register")
 	}
 
-    // CSINC semantics: if condition true -> Rd = Rn, else -> Rd = Rm + 1
-    condition := e.ExtractCondition(instr)
-    var result uint64
-    if e.evaluateCondition(state, condition) {
-        result = state.GetX(src1Reg)
-    } else {
-        result = state.GetX(src2Reg) + 1
-    }
+	// CSINC semantics: if condition true -> Rd = Rn, else -> Rd = Rm + 1
+	condition := e.ExtractCondition(instr)
+	var result uint64
+	if e.evaluateCondition(state, condition) {
+		result = state.GetX(src1Reg)
+	} else {
+		result = state.GetX(src2Reg) + 1
+	}
 
 	// Handle 32-bit vs 64-bit operations (W registers are 1-31, X registers are 34-64)
 	if uint32(ops[0].Registers[0]) >= 1 && uint32(ops[0].Registers[0]) <= 31 {
@@ -191,11 +191,11 @@ func (e *ConditionalExecutor) executeCSINV(state core.State, instr *disassemble.
 			fmt.Sprintf("%v", instr.Operation), "invalid register")
 	}
 
-    condition := e.ExtractCondition(instr)
-    // CINV alias requires inverted condition relative to CSINV semantics
-    if e.GetMnemonic() == "CINV" {
-        condition = e.invertCondition(condition)
-    }
+	condition := e.ExtractCondition(instr)
+	// CINV alias requires inverted condition relative to CSINV semantics
+	if e.GetMnemonic() == "CINV" {
+		condition = e.invertCondition(condition)
+	}
 
 	// Determine width for inversion mask
 	is32 := uint32(ops[0].Registers[0]) >= 1 && uint32(ops[0].Registers[0]) <= 31
@@ -204,15 +204,15 @@ func (e *ConditionalExecutor) executeCSINV(state core.State, instr *disassemble.
 		allOnes = 0xFFFFFFFF
 	}
 
-    var result uint64
-    if e.evaluateCondition(state, condition) {
-        // Condition true: select Rn
-        result = state.GetX(src1Reg)
-    } else {
-        // Condition false: select bitwise NOT of Rm (masked to width)
-        rm := state.GetX(src2Reg)
-        result = (^rm) & allOnes
-    }
+	var result uint64
+	if e.evaluateCondition(state, condition) {
+		// Condition true: select Rn
+		result = state.GetX(src1Reg)
+	} else {
+		// Condition false: select bitwise NOT of Rm (masked to width)
+		rm := state.GetX(src2Reg)
+		result = (^rm) & allOnes
+	}
 
 	if is32 {
 		state.SetW(dstReg, uint32(result))
@@ -246,20 +246,20 @@ func (e *ConditionalExecutor) executeCSNEG(state core.State, instr *disassemble.
 			fmt.Sprintf("%v", instr.Operation), "invalid register")
 	}
 
-    condition := e.ExtractCondition(instr)
-    // CNEG alias requires inverted condition relative to CSNEG semantics
-    if e.GetMnemonic() == "CNEG" {
-        condition = e.invertCondition(condition)
-    }
+	condition := e.ExtractCondition(instr)
+	// CNEG alias requires inverted condition relative to CSNEG semantics
+	if e.GetMnemonic() == "CNEG" {
+		condition = e.invertCondition(condition)
+	}
 
 	var result uint64
-    if e.evaluateCondition(state, condition) {
-        // Condition true: select Rn
-        result = state.GetX(src1Reg)
-    } else {
-        // Condition false: select -Rm
-        result = uint64(-int64(state.GetX(src2Reg)))
-    }
+	if e.evaluateCondition(state, condition) {
+		// Condition true: select Rn
+		result = state.GetX(src1Reg)
+	} else {
+		// Condition false: select -Rm
+		result = uint64(-int64(state.GetX(src2Reg)))
+	}
 
 	// Handle 32-bit vs 64-bit operations (W registers are 1-31, X registers are 34-64)
 	if uint32(ops[0].Registers[0]) >= 1 && uint32(ops[0].Registers[0]) <= 31 {
@@ -351,40 +351,40 @@ func (e *ConditionalExecutor) executeCSETM(state core.State, instr *disassemble.
 
 // CINC - Conditional increment (alias for CSINC)
 func (e *ConditionalExecutor) executeCINC(state core.State, instr *disassemble.Instruction) error {
-    ops := instr.Operands
-    if len(ops) < 2 {
-        return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-            fmt.Sprintf("%v", instr.Operation), "CINC requires at least 2 operands")
-    }
+	ops := instr.Operands
+	if len(ops) < 2 {
+		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
+			fmt.Sprintf("%v", instr.Operation), "CINC requires at least 2 operands")
+	}
 
-    // dst and src (Rn)
-    if len(ops[0].Registers) == 0 || len(ops[1].Registers) == 0 {
-        return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-            fmt.Sprintf("%v", instr.Operation), "CINC operands missing register information")
-    }
+	// dst and src (Rn)
+	if len(ops[0].Registers) == 0 || len(ops[1].Registers) == 0 {
+		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
+			fmt.Sprintf("%v", instr.Operation), "CINC operands missing register information")
+	}
 
-    dstReg := core.MapRegister(ops[0].Registers[0])
-    srcReg := core.MapRegister(ops[1].Registers[0])
-    if dstReg == -1 || srcReg == -1 {
-        return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-            fmt.Sprintf("%v", instr.Operation), "invalid register")
-    }
+	dstReg := core.MapRegister(ops[0].Registers[0])
+	srcReg := core.MapRegister(ops[1].Registers[0])
+	if dstReg == -1 || srcReg == -1 {
+		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
+			fmt.Sprintf("%v", instr.Operation), "invalid register")
+	}
 
-    // CINC semantics: increment if condition is true
-    cond := e.ExtractCondition(instr)
-    var result uint64
-    if e.evaluateCondition(state, cond) {
-        result = state.GetX(srcReg) + 1
-    } else {
-        result = state.GetX(srcReg)
-    }
+	// CINC semantics: increment if condition is true
+	cond := e.ExtractCondition(instr)
+	var result uint64
+	if e.evaluateCondition(state, cond) {
+		result = state.GetX(srcReg) + 1
+	} else {
+		result = state.GetX(srcReg)
+	}
 
-    if uint32(ops[0].Registers[0]) >= 1 && uint32(ops[0].Registers[0]) <= 31 {
-        state.SetW(dstReg, uint32(result))
-    } else {
-        state.SetX(dstReg, result)
-    }
-    return nil
+	if uint32(ops[0].Registers[0]) >= 1 && uint32(ops[0].Registers[0]) <= 31 {
+		state.SetW(dstReg, uint32(result))
+	} else {
+		state.SetX(dstReg, result)
+	}
+	return nil
 }
 
 // CINV - Conditional invert (alias for CSINV)
