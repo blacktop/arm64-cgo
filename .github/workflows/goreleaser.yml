@@ -23,6 +23,12 @@ jobs:
         with:
           go-version: "stable"
       -
+        name: Add Go bin to PATH
+        run: echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+      -
+        name: Install stringer
+        run: go install golang.org/x/tools/cmd/stringer@latest
+      -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
