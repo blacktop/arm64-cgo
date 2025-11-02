@@ -12,42 +12,28 @@ jobs:
   goreleaser:
     runs-on: ubuntu-latest
     steps:
-      -
-        name: Checkout
+      - name: Checkout
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      -
-        name: Install build dependencies
+      - name: Install build dependencies
         run: sudo apt-get update && sudo apt-get install -y gcc-multilib libc6-dev libc6-dev-i386
-      -
-        name: Install Zig
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wget gnupg
-          wget -O - https://ziglang.org/apt/ziglang.asc | sudo gpg --dearmor -o /usr/share/keyrings/ziglang.gpg
-          echo "deb [signed-by=/usr/share/keyrings/ziglang.gpg] https://ziglang.org/apt/ stable main" | sudo tee /etc/apt/sources.list.d/ziglang.list
-          sudo apt-get update
-          sudo apt-get install -y zig
-      -
-        name: Set up Go
+      - uses: mlugg/setup-zig@v2
+      - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: "stable"
-      -
-        name: Add Go bin to PATH
+      - name: Add Go bin to PATH
         run: echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-      -
-        name: Install stringer
+      - name: Install stringer
         run: go install golang.org/x/tools/cmd/stringer@latest
-      -
-        name: Run GoReleaser
+      - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
           # either 'goreleaser' (default) or 'goreleaser-pro'
           distribution: goreleaser
           # 'latest', 'nightly', or a semver
-          version: '~> v2'
+          version: "~> v2"
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
