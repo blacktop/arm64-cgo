@@ -19,7 +19,16 @@ jobs:
           fetch-depth: 0
       -
         name: Install build dependencies
-        run: sudo apt-get update && sudo apt-get install -y gcc-multilib libc6-dev libc6-dev-i386 zig
+        run: sudo apt-get update && sudo apt-get install -y gcc-multilib libc6-dev libc6-dev-i386
+      -
+        name: Install Zig
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget gnupg
+          wget -O - https://ziglang.org/apt/ziglang.asc | sudo gpg --dearmor -o /usr/share/keyrings/ziglang.gpg
+          echo "deb [signed-by=/usr/share/keyrings/ziglang.gpg] https://ziglang.org/apt/ stable main" | sudo tee /etc/apt/sources.list.d/ziglang.list
+          sudo apt-get update
+          sudo apt-get install -y zig
       -
         name: Set up Go
         uses: actions/setup-go@v5
