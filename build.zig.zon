@@ -1,0 +1,6 @@
+.{
+  .name = "arm64-cgo",
+  .version = "0.0.0",
+  .paths = .{},
+  .dependencies = .{},
+}
