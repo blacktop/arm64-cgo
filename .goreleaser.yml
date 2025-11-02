@@ -22,6 +22,18 @@ builds:
     binary: disass
     env:
       - CGO_ENABLED=1
+      - >-
+        {{- if eq .Os "linux" -}}
+          {{- if eq .Arch "amd64" }}CC=zig cc -target x86_64-linux-musl{{- else if eq .Arch "arm64" }}CC=zig cc -target aarch64-linux-musl{{- else }}CC=cc{{- end }}
+        {{- else if eq .Os "windows" -}}
+          {{- if eq .Arch "386" }}CC=zig cc -target i386-windows-gnu{{- else if eq .Arch "amd64" }}CC=zig cc -target x86_64-windows-gnu{{- else if eq .Arch "arm64" }}CC=zig cc -target aarch64-windows-gnu{{- else }}CC=cc{{- end }}
+        {{- else }}CC=cc{{- end }}
+      - >-
+        {{- if eq .Os "linux" -}}
+          {{- if eq .Arch "amd64" }}CXX=zig cc -target x86_64-linux-musl{{- else if eq .Arch "arm64" }}CXX=zig cc -target aarch64-linux-musl{{- else }}CXX=c++{{- end }}
+        {{- else if eq .Os "windows" -}}
+          {{- if eq .Arch "386" }}CXX=zig cc -target i386-windows-gnu{{- else if eq .Arch "amd64" }}CXX=zig cc -target x86_64-windows-gnu{{- else if eq .Arch "arm64" }}CXX=zig cc -target aarch64-windows-gnu{{- else }}CXX=c++{{- end }}
+        {{- else }}CXX=c++{{- end }}
     goos:
       - linux
       - windows
