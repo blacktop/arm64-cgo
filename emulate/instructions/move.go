@@ -20,60 +20,60 @@ func NewMoveExecutor(mnemonic, description string) *MoveExecutor {
 }
 
 // Execute executes move instructions
-func (e *MoveExecutor) Execute(state core.State, instr *disassemble.Instruction) error {
-	if err := e.ValidateInstruction(instr); err != nil {
+func (e *MoveExecutor) Execute(state core.State, inst *disassemble.Inst) error {
+	if err := e.ValidateInstruction(inst); err != nil {
 		return err
 	}
 
 	switch e.mnemonic {
 	case "MOV":
-		return e.executeMOV(state, instr)
+		return e.executeMOV(state, inst)
 	case "MOVZ":
-		return e.executeMOVZ(state, instr)
+		return e.executeMOVZ(state, inst)
 	case "MOVN":
-		return e.executeMOVN(state, instr)
+		return e.executeMOVN(state, inst)
 	case "MOVK":
-		return e.executeMOVK(state, instr)
+		return e.executeMOVK(state, inst)
 	case "ADR":
-		return e.executeADR(state, instr)
+		return e.executeADR(state, inst)
 	case "ADRP":
-		return e.executeADRP(state, instr)
+		return e.executeADRP(state, inst)
 	case "SXTB":
-		return e.executeSXTB(state, instr)
+		return e.executeSXTB(state, inst)
 	case "SXTH":
-		return e.executeSXTH(state, instr)
+		return e.executeSXTH(state, inst)
 	case "SXTW":
-		return e.executeSXTW(state, instr)
+		return e.executeSXTW(state, inst)
 	case "UXTB":
-		return e.executeUXTB(state, instr)
+		return e.executeUXTB(state, inst)
 	case "UXTH":
-		return e.executeUXTH(state, instr)
+		return e.executeUXTH(state, inst)
 	default:
 		return core.NewEmulationError(core.ErrUnsupportedFeature, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("move instruction %s not implemented", e.mnemonic))
+			inst.Operation.String(), fmt.Sprintf("move instruction %s not implemented", e.mnemonic))
 	}
 }
 
 // MOV - Move (register or immediate)
-func (e *MoveExecutor) executeMOV(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) < 2 {
+func (e *MoveExecutor) executeMOV(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) < 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "MOV requires at least 2 operands")
+			inst.Operation.String(), "MOV requires at least 2 operands")
 	}
 
-	dstOp := instr.Operands[0]
-	srcOp := instr.Operands[1]
+	dstOp := inst.Operands[0]
+	srcOp := inst.Operands[1]
 
 	// Get destination register
-	if len(dstOp.Registers) == 0 {
+	if dstOp.NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "MOV requires destination register")
+			inst.Operation.String(), "MOV requires destination register")
 	}
 
 	dstReg := core.MapRegister(dstOp.Registers[0])
 	if dstReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid destination register")
+			inst.Operation.String(), "invalid destination register")
 	}
 
 	var value uint64
@@ -81,10 +81,10 @@ func (e *MoveExecutor) executeMOV(state core.State, instr *disassemble.Instructi
 	// Handle MOV alias encodings
 	// - ORR (immediate) with XZR source -> MOV immediate
 	// - ORR (register) with XZR source -> MOV register
-	// Prefer decoding ORR immediate mask when instr.Raw indicates logical immediate form.
+	// Prefer decoding ORR immediate mask when inst.Raw indicates logical immediate form.
 
 	// Get source value (register or immediate)
-	if len(srcOp.Registers) > 0 {
+	if srcOp.NumRegisters > 0 {
 		srcRegID := srcOp.Registers[0]
 		// Handle SP register specifically, as MOV Xd, SP is a common pattern.
 		if uint32(srcRegID) == 66 { // Special ID for SP register from disassembler
@@ -94,7 +94,7 @@ func (e *MoveExecutor) executeMOV(state core.State, instr *disassemble.Instructi
 			srcReg := core.MapRegister(srcRegID)
 			if srcReg == -1 {
 				return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), "invalid source register")
+					inst.Operation.String(), "invalid source register")
 			}
 			value = state.GetX(srcReg)
 		}
@@ -105,7 +105,7 @@ func (e *MoveExecutor) executeMOV(state core.State, instr *disassemble.Instructi
 		// 2) MOV (logical immediate) -> alias of ORR (immediate) with ZR
 		// Prefer decoding the specific encoding from raw bits to choose path.
 
-		raw := instr.Raw
+		raw := inst.Raw
 		// Detect Move Wide class (matches MOVZ/MOVN encodings)
 		isMovWide := (raw&0x7F800000) == 0x52800000 || (raw&0x7F800000) == 0x12800000 // MOVZ or MOVN pattern
 		if isMovWide {
@@ -116,7 +116,7 @@ func (e *MoveExecutor) executeMOV(state core.State, instr *disassemble.Instructi
 
 			if shiftAmount%16 != 0 || shiftAmount > 48 {
 				return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), "invalid shift amount for MOV (wide immediate)")
+					inst.Operation.String(), "invalid shift amount for MOV (wide immediate)")
 			}
 
 			field := (imm16 & 0xFFFF) << shiftAmount
@@ -150,12 +150,12 @@ func (e *MoveExecutor) executeMOV(state core.State, instr *disassemble.Instructi
 	}
 
 	// Handle shift if present
-	if len(instr.Operands) > 2 && instr.Operands[2].ShiftValueUsed {
+	if int(inst.NumOps) > 2 && inst.Operands[2].ShiftValueUsed {
 		var err error
-		value, err = e.applyShift(value, instr.Operands[2])
+		value, err = applyShift(value, inst.Operands[2])
 		if err != nil {
 			return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("shift error: %v", err))
+				inst.Operation.String(), fmt.Sprintf("shift error: %v", err))
 		}
 	}
 
@@ -171,52 +171,52 @@ func (e *MoveExecutor) executeMOV(state core.State, instr *disassemble.Instructi
 }
 
 // MOVZ - Move wide with zero
-func (e *MoveExecutor) executeMOVZ(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) < 2 {
+func (e *MoveExecutor) executeMOVZ(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) < 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "MOVZ requires at least 2 operands")
+			inst.Operation.String(), "MOVZ requires at least 2 operands")
 	}
 
-	dstOp := instr.Operands[0]
+	dstOp := inst.Operands[0]
 
-	if len(dstOp.Registers) == 0 {
+	if dstOp.NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "MOVZ requires destination register")
+			inst.Operation.String(), "MOVZ requires destination register")
 	}
 
 	dstReg := core.MapRegister(dstOp.Registers[0])
 	if dstReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid destination register")
+			inst.Operation.String(), "invalid destination register")
 	}
 
 	var immediate uint64
 	var shiftAmount uint64
 
 	// Prefer operand-provided immediate/shift when present (unit tests)
-	if len(instr.Operands) > 1 && (instr.Operands[1].Immediate != 0 || len(instr.Operands) <= 2) {
-		immediate = uint64(instr.Operands[1].Immediate) & 0xFFFF
-		if len(instr.Operands) > 2 && instr.Operands[2].ShiftValueUsed {
-			shiftOp := instr.Operands[2]
+	if int(inst.NumOps) > 1 && (inst.Operands[1].Immediate != 0 || int(inst.NumOps) <= 2) {
+		immediate = uint64(inst.Operands[1].Immediate) & 0xFFFF
+		if int(inst.NumOps) > 2 && inst.Operands[2].ShiftValueUsed {
+			shiftOp := inst.Operands[2]
 			if shiftOp.ShiftType != disassemble.SHIFT_TYPE_LSL {
-				return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(), fmt.Sprintf("%v", instr.Operation), "MOVZ only supports LSL shift")
+				return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(), inst.Operation.String(), "MOVZ only supports LSL shift")
 			}
 			shiftAmount = uint64(shiftOp.ShiftValue)
 		}
-	} else if instr.Raw != 0 {
+	} else if inst.Raw != 0 {
 		// Decode from encoding: imm16 in bits [20:5], hw in [22:21]
-		instrValue := instr.Raw
+		instrValue := inst.Raw
 		imm16 := uint64((instrValue >> 5) & 0xFFFF)
 		hw := (instrValue >> 21) & 0x3
 		shiftAmount = uint64(hw * 16)
 		immediate = imm16
 	} else {
-		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(), fmt.Sprintf("%v", instr.Operation), "MOVZ requires source immediate")
+		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(), inst.Operation.String(), "MOVZ requires source immediate")
 	}
 
 	// Validate shift amount
 	if shiftAmount%16 != 0 || shiftAmount > 48 {
-		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(), fmt.Sprintf("%v", instr.Operation), "invalid shift amount for MOVZ")
+		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(), inst.Operation.String(), "invalid shift amount for MOVZ")
 	}
 
 	// Construct value and zero rest
@@ -233,51 +233,51 @@ func (e *MoveExecutor) executeMOVZ(state core.State, instr *disassemble.Instruct
 }
 
 // MOVN - Move wide with NOT
-func (e *MoveExecutor) executeMOVN(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) < 2 {
+func (e *MoveExecutor) executeMOVN(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) < 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "MOVN requires at least 2 operands")
+			inst.Operation.String(), "MOVN requires at least 2 operands")
 	}
 
-	dstOp := instr.Operands[0]
+	dstOp := inst.Operands[0]
 
-	if len(dstOp.Registers) == 0 {
+	if dstOp.NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "MOVN requires destination register")
+			inst.Operation.String(), "MOVN requires destination register")
 	}
 
 	dstReg := core.MapRegister(dstOp.Registers[0])
 	if dstReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid destination register")
+			inst.Operation.String(), "invalid destination register")
 	}
 
 	var immediate uint64
 	var shiftAmount uint64
 
 	// Prefer operand-provided immediate/shift when present (unit tests)
-	if len(instr.Operands) > 1 && (instr.Operands[1].Immediate != 0 || len(instr.Operands) <= 2) {
-		immediate = uint64(instr.Operands[1].Immediate) & 0xFFFF
-		if len(instr.Operands) > 2 && instr.Operands[2].ShiftValueUsed {
-			shiftOp := instr.Operands[2]
+	if int(inst.NumOps) > 1 && (inst.Operands[1].Immediate != 0 || int(inst.NumOps) <= 2) {
+		immediate = uint64(inst.Operands[1].Immediate) & 0xFFFF
+		if int(inst.NumOps) > 2 && inst.Operands[2].ShiftValueUsed {
+			shiftOp := inst.Operands[2]
 			if shiftOp.ShiftType != disassemble.SHIFT_TYPE_LSL {
-				return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(), fmt.Sprintf("%v", instr.Operation), "MOVN only supports LSL shift")
+				return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(), inst.Operation.String(), "MOVN only supports LSL shift")
 			}
 			shiftAmount = uint64(shiftOp.ShiftValue)
 		}
-	} else if instr.Raw != 0 {
-		instrValue := instr.Raw
+	} else if inst.Raw != 0 {
+		instrValue := inst.Raw
 		imm16 := uint64((instrValue >> 5) & 0xFFFF)
 		hw := (instrValue >> 21) & 0x3
 		shiftAmount = uint64(hw * 16)
 		immediate = imm16
 	} else {
-		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(), fmt.Sprintf("%v", instr.Operation), "MOVN requires source immediate")
+		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(), inst.Operation.String(), "MOVN requires source immediate")
 	}
 
 	// Validate shift amount
 	if shiftAmount%16 != 0 || shiftAmount > 48 {
-		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(), fmt.Sprintf("%v", instr.Operation), "invalid shift amount for MOVN")
+		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(), inst.Operation.String(), "invalid shift amount for MOVN")
 	}
 
 	// Invert 16-bit field within width
@@ -296,32 +296,32 @@ func (e *MoveExecutor) executeMOVN(state core.State, instr *disassemble.Instruct
 }
 
 // MOVK - Move wide with keep
-func (e *MoveExecutor) executeMOVK(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) < 2 {
+func (e *MoveExecutor) executeMOVK(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) < 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "MOVK requires at least 2 operands")
+			inst.Operation.String(), "MOVK requires at least 2 operands")
 	}
 
-	dstOp := instr.Operands[0]
+	dstOp := inst.Operands[0]
 
-	if len(dstOp.Registers) == 0 {
+	if dstOp.NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "MOVK requires destination register")
+			inst.Operation.String(), "MOVK requires destination register")
 	}
 
 	dstReg := core.MapRegister(dstOp.Registers[0])
 	if dstReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid destination register")
+			inst.Operation.String(), "invalid destination register")
 	}
 
 	var immediate uint64
 	var shiftAmount uint64
 
 	// Extract immediate from instruction encoding or fallback to operand
-	if instr.Raw != 0 {
+	if inst.Raw != 0 {
 		// Decode imm16 and hw per encoding
-		instrValue := instr.Raw
+		instrValue := inst.Raw
 		imm16 := uint64((instrValue >> 5) & 0xFFFF)
 		hw := (instrValue >> 21) & 0x3
 		shiftAmount = uint64(hw * 16)
@@ -329,21 +329,21 @@ func (e *MoveExecutor) executeMOVK(state core.State, instr *disassemble.Instruct
 		immediate = imm16
 	} else {
 		// Fallback for unit tests - use operand immediate and shift
-		if len(instr.Operands) < 2 {
+		if int(inst.NumOps) < 2 {
 			return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), "MOVK requires source immediate")
+				inst.Operation.String(), "MOVK requires source immediate")
 		}
-		srcOp := instr.Operands[1]
+		srcOp := inst.Operands[1]
 		immediate = uint64(srcOp.Immediate)
 
 		// Get shift amount from operand
-		if len(instr.Operands) > 2 && instr.Operands[2].ShiftValueUsed {
-			shiftOp := instr.Operands[2]
+		if int(inst.NumOps) > 2 && inst.Operands[2].ShiftValueUsed {
+			shiftOp := inst.Operands[2]
 			if shiftOp.ShiftType == disassemble.SHIFT_TYPE_LSL {
 				shiftAmount = uint64(shiftOp.ShiftValue)
 			} else {
 				return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), "MOVK only supports LSL shift")
+					inst.Operation.String(), "MOVK only supports LSL shift")
 			}
 		}
 	}
@@ -351,7 +351,7 @@ func (e *MoveExecutor) executeMOVK(state core.State, instr *disassemble.Instruct
 	// Validate shift amount
 	if shiftAmount%16 != 0 || shiftAmount > 48 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid shift amount for MOVK")
+			inst.Operation.String(), "invalid shift amount for MOVK")
 	}
 
 	// Get current register value
@@ -375,28 +375,28 @@ func (e *MoveExecutor) executeMOVK(state core.State, instr *disassemble.Instruct
 }
 
 // ADR - Address to register
-func (e *MoveExecutor) executeADR(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) < 1 {
+func (e *MoveExecutor) executeADR(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) < 1 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "ADR requires destination register")
+			inst.Operation.String(), "ADR requires destination register")
 	}
 
-	dstOp := instr.Operands[0]
+	dstOp := inst.Operands[0]
 
-	if len(dstOp.Registers) == 0 {
+	if dstOp.NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "ADR requires destination register")
+			inst.Operation.String(), "ADR requires destination register")
 	}
 
 	dstReg := core.MapRegister(dstOp.Registers[0])
 	if dstReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid destination register")
+			inst.Operation.String(), "invalid destination register")
 	}
 
 	// Extract 21-bit immediate from instruction encoding
 	// ADR instruction format: op(1) | immlo(2) | 10000 | immhi(19) | Rd(5)
-	instrValue := instr.Raw
+	instrValue := inst.Raw
 
 	// Extract immhi (bits 23-5) and immlo (bits 30-29)
 	immhi := int64((instrValue >> 5) & 0x7FFFF) // Bits 23-5 (19 bits)
@@ -419,28 +419,28 @@ func (e *MoveExecutor) executeADR(state core.State, instr *disassemble.Instructi
 }
 
 // ADRP - Address to register, page
-func (e *MoveExecutor) executeADRP(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) < 1 {
+func (e *MoveExecutor) executeADRP(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) < 1 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "ADRP requires destination register")
+			inst.Operation.String(), "ADRP requires destination register")
 	}
 
-	dstOp := instr.Operands[0]
+	dstOp := inst.Operands[0]
 
-	if len(dstOp.Registers) == 0 {
+	if dstOp.NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "ADRP requires destination register")
+			inst.Operation.String(), "ADRP requires destination register")
 	}
 
 	dstReg := core.MapRegister(dstOp.Registers[0])
 	if dstReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid destination register")
+			inst.Operation.String(), "invalid destination register")
 	}
 
 	// Extract 21-bit immediate from instruction encoding (same as ADR)
 	// ADRP instruction format: op(1) | immlo(2) | 10000 | immhi(19) | Rd(5)
-	instrValue := instr.Raw
+	instrValue := inst.Raw
 
 	// Extract immhi (bits 23-5) and immlo (bits 30-29)
 	immhi := int64((instrValue >> 5) & 0x7FFFF) // Bits 23-5 (19 bits)
@@ -464,18 +464,18 @@ func (e *MoveExecutor) executeADRP(state core.State, instr *disassemble.Instruct
 }
 
 // SXTB - Sign extend byte
-func (e *MoveExecutor) executeSXTB(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) < 2 {
+func (e *MoveExecutor) executeSXTB(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) < 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "SXTB requires destination and source registers")
+			inst.Operation.String(), "SXTB requires destination and source registers")
 	}
 
-	dstOp := instr.Operands[0]
-	srcOp := instr.Operands[1]
+	dstOp := inst.Operands[0]
+	srcOp := inst.Operands[1]
 
-	if len(dstOp.Registers) == 0 || len(srcOp.Registers) == 0 {
+	if dstOp.NumRegisters == 0 || srcOp.NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "SXTB requires register operands")
+			inst.Operation.String(), "SXTB requires register operands")
 	}
 
 	dstReg := core.MapRegister(dstOp.Registers[0])
@@ -483,7 +483,7 @@ func (e *MoveExecutor) executeSXTB(state core.State, instr *disassemble.Instruct
 
 	if dstReg == -1 || srcReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid register")
+			inst.Operation.String(), "invalid register")
 	}
 
 	// Get low byte and sign extend
@@ -496,18 +496,18 @@ func (e *MoveExecutor) executeSXTB(state core.State, instr *disassemble.Instruct
 }
 
 // SXTH - Sign extend halfword
-func (e *MoveExecutor) executeSXTH(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) < 2 {
+func (e *MoveExecutor) executeSXTH(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) < 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "SXTH requires destination and source registers")
+			inst.Operation.String(), "SXTH requires destination and source registers")
 	}
 
-	dstOp := instr.Operands[0]
-	srcOp := instr.Operands[1]
+	dstOp := inst.Operands[0]
+	srcOp := inst.Operands[1]
 
-	if len(dstOp.Registers) == 0 || len(srcOp.Registers) == 0 {
+	if dstOp.NumRegisters == 0 || srcOp.NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "SXTH requires register operands")
+			inst.Operation.String(), "SXTH requires register operands")
 	}
 
 	dstReg := core.MapRegister(dstOp.Registers[0])
@@ -515,7 +515,7 @@ func (e *MoveExecutor) executeSXTH(state core.State, instr *disassemble.Instruct
 
 	if dstReg == -1 || srcReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid register")
+			inst.Operation.String(), "invalid register")
 	}
 
 	// Get low halfword and sign extend
@@ -528,18 +528,18 @@ func (e *MoveExecutor) executeSXTH(state core.State, instr *disassemble.Instruct
 }
 
 // SXTW - Sign extend word
-func (e *MoveExecutor) executeSXTW(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) < 2 {
+func (e *MoveExecutor) executeSXTW(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) < 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "SXTW requires destination and source registers")
+			inst.Operation.String(), "SXTW requires destination and source registers")
 	}
 
-	dstOp := instr.Operands[0]
-	srcOp := instr.Operands[1]
+	dstOp := inst.Operands[0]
+	srcOp := inst.Operands[1]
 
-	if len(dstOp.Registers) == 0 || len(srcOp.Registers) == 0 {
+	if dstOp.NumRegisters == 0 || srcOp.NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "SXTW requires register operands")
+			inst.Operation.String(), "SXTW requires register operands")
 	}
 
 	dstReg := core.MapRegister(dstOp.Registers[0])
@@ -547,7 +547,7 @@ func (e *MoveExecutor) executeSXTW(state core.State, instr *disassemble.Instruct
 
 	if dstReg == -1 || srcReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid register")
+			inst.Operation.String(), "invalid register")
 	}
 
 	// Get low word and sign extend
@@ -560,18 +560,18 @@ func (e *MoveExecutor) executeSXTW(state core.State, instr *disassemble.Instruct
 }
 
 // UXTB - Zero extend byte (alias for AND with 0xFF)
-func (e *MoveExecutor) executeUXTB(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) < 2 {
+func (e *MoveExecutor) executeUXTB(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) < 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "UXTB requires destination and source registers")
+			inst.Operation.String(), "UXTB requires destination and source registers")
 	}
 
-	dstOp := instr.Operands[0]
-	srcOp := instr.Operands[1]
+	dstOp := inst.Operands[0]
+	srcOp := inst.Operands[1]
 
-	if len(dstOp.Registers) == 0 || len(srcOp.Registers) == 0 {
+	if dstOp.NumRegisters == 0 || srcOp.NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "UXTB requires register operands")
+			inst.Operation.String(), "UXTB requires register operands")
 	}
 
 	dstReg := core.MapRegister(dstOp.Registers[0])
@@ -579,7 +579,7 @@ func (e *MoveExecutor) executeUXTB(state core.State, instr *disassemble.Instruct
 
 	if dstReg == -1 || srcReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid register")
+			inst.Operation.String(), "invalid register")
 	}
 
 	// Zero extend byte (keep only low 8 bits)
@@ -591,18 +591,18 @@ func (e *MoveExecutor) executeUXTB(state core.State, instr *disassemble.Instruct
 }
 
 // UXTH - Zero extend halfword (alias for AND with 0xFFFF)
-func (e *MoveExecutor) executeUXTH(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) < 2 {
+func (e *MoveExecutor) executeUXTH(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) < 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "UXTH requires destination and source registers")
+			inst.Operation.String(), "UXTH requires destination and source registers")
 	}
 
-	dstOp := instr.Operands[0]
-	srcOp := instr.Operands[1]
+	dstOp := inst.Operands[0]
+	srcOp := inst.Operands[1]
 
-	if len(dstOp.Registers) == 0 || len(srcOp.Registers) == 0 {
+	if dstOp.NumRegisters == 0 || srcOp.NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "UXTH requires register operands")
+			inst.Operation.String(), "UXTH requires register operands")
 	}
 
 	dstReg := core.MapRegister(dstOp.Registers[0])
@@ -610,7 +610,7 @@ func (e *MoveExecutor) executeUXTH(state core.State, instr *disassemble.Instruct
 
 	if dstReg == -1 || srcReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid register")
+			inst.Operation.String(), "invalid register")
 	}
 
 	// Zero extend halfword (keep only low 16 bits)
@@ -619,38 +619,6 @@ func (e *MoveExecutor) executeUXTH(state core.State, instr *disassemble.Instruct
 
 	state.SetX(dstReg, extendedValue)
 	return nil
-}
-
-// Helper method to apply shift operations
-func (e *MoveExecutor) applyShift(value uint64, shiftOp disassemble.Operand) (uint64, error) {
-	shiftType := shiftOp.ShiftType
-	shiftAmount := uint64(shiftOp.ShiftValue)
-
-	switch shiftType {
-	case disassemble.SHIFT_TYPE_LSL: // Logical shift left
-		if shiftAmount >= 64 {
-			return 0, nil
-		}
-		return value << shiftAmount, nil
-	case disassemble.SHIFT_TYPE_LSR: // Logical shift right
-		if shiftAmount >= 64 {
-			return 0, nil
-		}
-		return value >> shiftAmount, nil
-	case disassemble.SHIFT_TYPE_ASR: // Arithmetic shift right
-		if shiftAmount >= 64 {
-			if (value & 0x8000000000000000) != 0 {
-				return 0xFFFFFFFFFFFFFFFF, nil // Sign extend
-			}
-			return 0, nil
-		}
-		return uint64(int64(value) >> shiftAmount), nil
-	case disassemble.SHIFT_TYPE_ROR: // Rotate right
-		shiftAmount %= 64
-		return (value >> shiftAmount) | (value << (64 - shiftAmount)), nil
-	default:
-		return 0, fmt.Errorf("unsupported shift type: %v", shiftType)
-	}
 }
 
 // RegisterMoveInstructions registers all move instructions

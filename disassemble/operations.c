@@ -1733,3 +1733,8 @@ const char* operation_to_str(enum Operation oper)
 
 	return names[oper];
 }
+
+size_t operation_count(void)
+{
+	return sizeof(names) / sizeof(names[0]);
+}

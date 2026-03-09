@@ -11,18 +11,19 @@ import (
 func TestMoveExecutor_MOV(t *testing.T) {
 	tests := []struct {
 		name        string
-		instruction *disassemble.Instruction
+		instruction *disassemble.Inst
 		setupState  func(s core.State)
 		checkState  func(t *testing.T, s core.State)
 		expectError bool
 	}{
 		{
 			name: "MOV X1, X0 - register to register",
-			instruction: &disassemble.Instruction{
+			instruction: &disassemble.Inst{
 				Operation: disassemble.ARM64_MOV,
-				Operands: []disassemble.Operand{
-					{Registers: []disassemble.Register{X1_REG}},
-					{Registers: []disassemble.Register{X0_REG}},
+				NumOps:    2,
+				Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{X1_REG}},
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{X0_REG}},
 				},
 			},
 			setupState: func(s core.State) {
@@ -36,11 +37,12 @@ func TestMoveExecutor_MOV(t *testing.T) {
 		},
 		{
 			name: "MOV W1, W0 - 32-bit register to register",
-			instruction: &disassemble.Instruction{
+			instruction: &disassemble.Inst{
 				Operation: disassemble.ARM64_MOV,
-				Operands: []disassemble.Operand{
-					{Registers: []disassemble.Register{W1_REG}},
-					{Registers: []disassemble.Register{W0_REG}},
+				NumOps:    2,
+				Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{W1_REG}},
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{W0_REG}},
 				},
 			},
 			setupState: func(s core.State) {
@@ -58,10 +60,11 @@ func TestMoveExecutor_MOV(t *testing.T) {
 		},
 		{
 			name: "MOV X1, #0x1234 - immediate to register",
-			instruction: &disassemble.Instruction{
+			instruction: &disassemble.Inst{
 				Operation: disassemble.ARM64_MOV,
-				Operands: []disassemble.Operand{
-					{Registers: []disassemble.Register{X1_REG}},
+				NumOps:    2,
+				Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{X1_REG}},
 					{Immediate: 0x1234},
 				},
 			},
@@ -97,16 +100,17 @@ func TestMoveExecutor_MOV(t *testing.T) {
 func TestMoveExecutor_MOVZ(t *testing.T) {
 	tests := []struct {
 		name        string
-		instruction *disassemble.Instruction
+		instruction *disassemble.Inst
 		checkState  func(t *testing.T, s core.State)
 		expectError bool
 	}{
 		{
 			name: "MOVZ X1, #0x1234 - basic immediate",
-			instruction: &disassemble.Instruction{
+			instruction: &disassemble.Inst{
 				Operation: disassemble.ARM64_MOVZ,
-				Operands: []disassemble.Operand{
-					{Registers: []disassemble.Register{X1_REG}},
+				NumOps:    2,
+				Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{X1_REG}},
 					{Immediate: 0x1234},
 				},
 			},
@@ -118,10 +122,11 @@ func TestMoveExecutor_MOVZ(t *testing.T) {
 		},
 		{
 			name: "MOVZ X1, #0x1234, LSL #16 - shifted immediate",
-			instruction: &disassemble.Instruction{
+			instruction: &disassemble.Inst{
 				Operation: disassemble.ARM64_MOVZ,
-				Operands: []disassemble.Operand{
-					{Registers: []disassemble.Register{X1_REG}},
+				NumOps:    3,
+				Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{X1_REG}},
 					{Immediate: 0x1234},
 					{ShiftValueUsed: true, ShiftType: disassemble.SHIFT_TYPE_LSL, ShiftValue: 16},
 				},
@@ -135,10 +140,11 @@ func TestMoveExecutor_MOVZ(t *testing.T) {
 		},
 		{
 			name: "MOVZ W1, #0x1234 - 32-bit operation",
-			instruction: &disassemble.Instruction{
+			instruction: &disassemble.Inst{
 				Operation: disassemble.ARM64_MOVZ,
-				Operands: []disassemble.Operand{
-					{Registers: []disassemble.Register{W1_REG}},
+				NumOps:    2,
+				Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{W1_REG}},
 					{Immediate: 0x1234},
 				},
 			},

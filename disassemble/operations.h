@@ -1,6 +1,8 @@
 /* GENERATED FILE */
 #pragma once
 
+#include <stddef.h>
+
 enum Operation {
 	ARM64_ERROR,
 	ARM64_ABS,
@@ -1726,3 +1728,4 @@ enum Operation {
 
 };
 const char *operation_to_str(enum Operation oper);
+size_t operation_count(void);

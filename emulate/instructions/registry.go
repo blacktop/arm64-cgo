@@ -15,6 +15,17 @@ type Registry struct {
 	mu        sync.RWMutex
 	executors map[string]core.InstructionExecutor
 	aliases   map[string]string // Maps aliases to canonical names
+	byOp      []core.InstructionExecutor
+}
+
+type supportedOpAdder interface {
+	AddSupportedOp(op disassemble.Operation)
+}
+
+func addSupportedOp(executor core.InstructionExecutor, op disassemble.Operation) {
+	if adder, ok := executor.(supportedOpAdder); ok {
+		adder.AddSupportedOp(op)
+	}
 }
 
 // NewRegistry creates a new instruction registry
@@ -22,6 +33,7 @@ func NewRegistry() *Registry {
 	return &Registry{
 		executors: make(map[string]core.InstructionExecutor),
 		aliases:   make(map[string]string),
+		byOp:      make([]core.InstructionExecutor, disassemble.OperationCount()),
 	}
 }
 
@@ -39,6 +51,10 @@ func (r *Registry) Register(mnemonic string, executor core.InstructionExecutor) 
 
 	canonical := strings.ToUpper(mnemonic)
 	r.executors[canonical] = executor
+	if op, ok := disassemble.OperationFromString(canonical); ok {
+		r.byOp[int(op)] = executor
+		addSupportedOp(executor, op)
+	}
 	return nil
 }
 
@@ -54,7 +70,14 @@ func (r *Registry) RegisterWithAliases(primary string, executor core.Instruction
 	canonical := strings.ToUpper(primary)
 	for _, alias := range aliases {
 		if alias != "" {
-			r.aliases[strings.ToUpper(alias)] = canonical
+			upper := strings.ToUpper(alias)
+			r.aliases[upper] = canonical
+			if op, ok := disassemble.OperationFromString(upper); ok {
+				if r.byOp[int(op)] == nil {
+					r.byOp[int(op)] = executor
+				}
+				addSupportedOp(executor, op)
+			}
 		}
 	}
 
@@ -83,6 +106,20 @@ func (r *Registry) Get(mnemonic string) (core.InstructionExecutor, bool) {
 	return nil, false
 }
 
+// GetByOp retrieves an instruction executor by Operation enum.
+// This is an O(1) array-index lookup with no locking, intended
+// for hot-path dispatch after init is complete.
+func (r *Registry) GetByOp(op disassemble.Operation) (core.InstructionExecutor, bool) {
+	idx := int(op)
+	if idx >= 0 && idx < len(r.byOp) {
+		exec := r.byOp[idx]
+		if exec != nil {
+			return exec, true
+		}
+	}
+	return nil, false
+}
+
 // List returns all registered instruction mnemonics
 func (r *Registry) List() []string {
 	r.mu.RLock()
@@ -104,6 +141,7 @@ func (r *Registry) Clear() {
 
 	r.executors = make(map[string]core.InstructionExecutor)
 	r.aliases = make(map[string]string)
+	clear(r.byOp)
 }
 
 // Count returns the number of registered executors
@@ -121,21 +159,39 @@ func (r *Registry) HasInstruction(mnemonic string) bool {
 
 // BaseExecutor provides common functionality for instruction executors
 type BaseExecutor struct {
-	mnemonic    string
-	description string
+	mnemonic     string
+	description  string
+	supportedOps map[disassemble.Operation]struct{}
 }
 
 // NewBaseExecutor creates a new base executor
 func NewBaseExecutor(mnemonic, description string) *BaseExecutor {
+	upper := strings.ToUpper(mnemonic)
+	ops := make(map[disassemble.Operation]struct{})
+	if op, ok := disassemble.OperationFromString(upper); ok {
+		ops[op] = struct{}{}
+	}
 	return &BaseExecutor{
-		mnemonic:    strings.ToUpper(mnemonic),
-		description: description,
+		mnemonic:     upper,
+		description:  description,
+		supportedOps: ops,
 	}
 }
 
 // Supports checks if this executor supports the given mnemonic
 func (e *BaseExecutor) Supports(mnemonic string) bool {
 	return strings.ToUpper(mnemonic) == e.mnemonic
+}
+
+// SupportsOp checks if this executor supports the given operation.
+func (e *BaseExecutor) SupportsOp(op disassemble.Operation) bool {
+	_, ok := e.supportedOps[op]
+	return ok
+}
+
+// AddSupportedOp registers an operation as supported by this executor.
+func (e *BaseExecutor) AddSupportedOp(op disassemble.Operation) {
+	e.supportedOps[op] = struct{}{}
 }
 
 // GetMnemonic returns the mnemonic this executor handles
@@ -149,14 +205,15 @@ func (e *BaseExecutor) GetDescription() string {
 }
 
 // ValidateInstruction performs basic validation on an instruction
-func (e *BaseExecutor) ValidateInstruction(instr *disassemble.Instruction) error {
-	if instr == nil {
+func (e *BaseExecutor) ValidateInstruction(inst *disassemble.Inst) error {
+	if inst == nil {
 		return core.NewEmulationError(core.ErrInvalidInstruction, 0, e.mnemonic, "nil instruction")
 	}
 
-	if !e.Supports(fmt.Sprintf("%v", instr.Operation)) {
-		return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-			fmt.Sprintf("executor %s does not support %s", e.mnemonic, fmt.Sprintf("%v", instr.Operation)))
+	if !e.SupportsOp(inst.Operation) {
+		opStr := inst.Operation.String()
+		return core.NewEmulationError(core.ErrInvalidInstruction, 0, opStr,
+			fmt.Sprintf("executor %s does not support %s", e.mnemonic, opStr))
 	}
 
 	return nil
@@ -164,26 +221,44 @@ func (e *BaseExecutor) ValidateInstruction(instr *disassemble.Instruction) error
 
 // ExecutorFunc is a function type that implements InstructionExecutor
 type ExecutorFunc struct {
-	mnemonic string
-	fn       func(state core.State, instr *disassemble.Instruction) error
+	mnemonic     string
+	fn           func(state core.State, inst *disassemble.Inst) error
+	supportedOps map[disassemble.Operation]struct{}
 }
 
 // NewExecutorFunc creates a new function-based executor
-func NewExecutorFunc(mnemonic string, fn func(state core.State, instr *disassemble.Instruction) error) *ExecutorFunc {
+func NewExecutorFunc(mnemonic string, fn func(state core.State, inst *disassemble.Inst) error) *ExecutorFunc {
+	upper := strings.ToUpper(mnemonic)
+	ops := make(map[disassemble.Operation]struct{})
+	if op, ok := disassemble.OperationFromString(upper); ok {
+		ops[op] = struct{}{}
+	}
 	return &ExecutorFunc{
-		mnemonic: strings.ToUpper(mnemonic),
-		fn:       fn,
+		mnemonic:     upper,
+		fn:           fn,
+		supportedOps: ops,
 	}
 }
 
 // Execute executes the instruction using the function
-func (e *ExecutorFunc) Execute(state core.State, instr *disassemble.Instruction) error {
-	return e.fn(state, instr)
+func (e *ExecutorFunc) Execute(state core.State, inst *disassemble.Inst) error {
+	return e.fn(state, inst)
 }
 
 // Supports checks if this executor supports the given mnemonic
 func (e *ExecutorFunc) Supports(mnemonic string) bool {
 	return strings.ToUpper(mnemonic) == e.mnemonic
+}
+
+// SupportsOp checks if this executor supports the given operation.
+func (e *ExecutorFunc) SupportsOp(op disassemble.Operation) bool {
+	_, ok := e.supportedOps[op]
+	return ok
+}
+
+// AddSupportedOp registers an operation as supported by this executor.
+func (e *ExecutorFunc) AddSupportedOp(op disassemble.Operation) {
+	e.supportedOps[op] = struct{}{}
 }
 
 // DefaultRegistry creates and returns a registry with all standard ARM64 instructions

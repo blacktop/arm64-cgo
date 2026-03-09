@@ -170,12 +170,14 @@ func (cc ConditionCode) String() string {
 	}
 }
 
-// InstructionInfo contains metadata about an instruction
+// InstructionInfo contains metadata about an instruction.
+// Inst is populated only when hooks or tracing are enabled.
 type InstructionInfo struct {
-	Address     uint64
-	Instruction *disassemble.Instruction
-	Value       uint32
-	Mnemonic    string
+	Address   uint64
+	Value     uint32
+	Mnemonic  string
+	Operation disassemble.Operation
+	Inst      *disassemble.Inst
 }
 
 // ProcessorFlags represents the ARM64 processor state flags (NZCV)

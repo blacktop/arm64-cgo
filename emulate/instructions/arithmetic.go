@@ -20,59 +20,59 @@ func NewArithmeticExecutor(mnemonic, description string) *ArithmeticExecutor {
 }
 
 // Execute executes arithmetic instructions
-func (e *ArithmeticExecutor) Execute(state core.State, instr *disassemble.Instruction) error {
-	if err := e.ValidateInstruction(instr); err != nil {
+func (e *ArithmeticExecutor) Execute(state core.State, inst *disassemble.Inst) error {
+	if err := e.ValidateInstruction(inst); err != nil {
 		return err
 	}
 
 	switch e.mnemonic {
 	case "ADD":
-		return e.executeADD(state, instr)
+		return e.executeADD(state, inst)
 	case "ADDG":
-		return e.executeADDG(state, instr)
+		return e.executeADDG(state, inst)
 	case "ADDS":
-		return e.executeADDS(state, instr)
+		return e.executeADDS(state, inst)
 	case "SUB":
-		return e.executeSUB(state, instr)
+		return e.executeSUB(state, inst)
 	case "SUBS":
-		return e.executeSUBS(state, instr)
+		return e.executeSUBS(state, inst)
 	case "MUL":
-		return e.executeMUL(state, instr)
+		return e.executeMUL(state, inst)
 	case "UDIV":
-		return e.executeUDIV(state, instr)
+		return e.executeUDIV(state, inst)
 	case "SDIV":
-		return e.executeSDIV(state, instr)
+		return e.executeSDIV(state, inst)
 	case "MADD":
-		return e.executeMADD(state, instr)
+		return e.executeMADD(state, inst)
 	case "MSUB":
-		return e.executeMSUB(state, instr)
+		return e.executeMSUB(state, inst)
 	case "SMULL":
-		return e.executeSMULL(state, instr)
+		return e.executeSMULL(state, inst)
 	case "UMULL":
-		return e.executeUMULL(state, instr)
+		return e.executeUMULL(state, inst)
 	case "NEG":
-		return e.executeNEG(state, instr)
+		return e.executeNEG(state, inst)
 	case "NEGS":
-		return e.executeNEGS(state, instr)
+		return e.executeNEGS(state, inst)
 	default:
 		return core.NewEmulationError(core.ErrUnsupportedFeature, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("arithmetic instruction %s not implemented", e.mnemonic))
+			inst.Operation.String(), fmt.Sprintf("arithmetic instruction %s not implemented", e.mnemonic))
 	}
 }
 
-func (e *ArithmeticExecutor) executeADD(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) < 3 {
+func (e *ArithmeticExecutor) executeADD(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) < 3 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "ADD requires at least 3 operands")
+			inst.Operation.String(), "ADD requires at least 3 operands")
 	}
 
-	dstOp := instr.Operands[0]
-	src1Op := instr.Operands[1]
-	src2Op := instr.Operands[2]
+	dstOp := inst.Operands[0]
+	src1Op := inst.Operands[1]
+	src2Op := inst.Operands[2]
 
 	// Get destination register
 	var setDstRegister func(uint64)
-	if len(dstOp.Registers) > 0 {
+	if dstOp.NumRegisters > 0 {
 		dstRegID := dstOp.Registers[0]
 		reg := uint32(dstRegID)
 		if reg == 66 { // explicit SP id
@@ -84,18 +84,18 @@ func (e *ArithmeticExecutor) executeADD(state core.State, instr *disassemble.Ins
 			dstReg := core.MapRegister(dstRegID)
 			if dstReg == -1 {
 				return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("invalid destination register: %d", reg))
+					inst.Operation.String(), fmt.Sprintf("invalid destination register: %d", reg))
 			}
 			setDstRegister = func(val uint64) { state.SetX(dstReg, val) }
 		}
 	} else {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "no destination register")
+			inst.Operation.String(), "no destination register")
 	}
 
 	// Get first operand value
 	var val1 uint64
-	if len(src1Op.Registers) > 0 {
+	if src1Op.NumRegisters > 0 {
 		src1RegID := src1Op.Registers[0]
 		reg := uint32(src1RegID)
 		if reg == 66 { // SP
@@ -106,7 +106,7 @@ func (e *ArithmeticExecutor) executeADD(state core.State, instr *disassemble.Ins
 			src1Reg := core.MapRegister(src1RegID)
 			if src1Reg == -1 {
 				return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("invalid source register: %d", reg))
+					inst.Operation.String(), fmt.Sprintf("invalid source register: %d", reg))
 			}
 			val1 = state.GetX(src1Reg)
 		}
@@ -114,7 +114,7 @@ func (e *ArithmeticExecutor) executeADD(state core.State, instr *disassemble.Ins
 
 	// Get second operand (register or immediate)
 	var val2 uint64
-	if len(src2Op.Registers) > 0 {
+	if src2Op.NumRegisters > 0 {
 		src2RegID := src2Op.Registers[0]
 		reg := uint32(src2RegID)
 		if reg == 66 { // SP
@@ -125,14 +125,14 @@ func (e *ArithmeticExecutor) executeADD(state core.State, instr *disassemble.Ins
 			src2Reg := core.MapRegister(src2RegID)
 			if src2Reg == -1 {
 				return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("invalid second source register: %d", reg))
+					inst.Operation.String(), fmt.Sprintf("invalid second source register: %d", reg))
 			}
 			val2 = state.GetX(src2Reg)
 		}
 	} else {
 		// Immediate operand - check for optional LSL #12 shift
 		val2 = uint64(src2Op.Immediate)
-		if (instr.Raw>>22)&1 == 1 { // Check the 'sh' bit
+		if (inst.Raw>>22)&1 == 1 { // Check the 'sh' bit
 			val2 <<= 12
 		}
 	}
@@ -143,19 +143,19 @@ func (e *ArithmeticExecutor) executeADD(state core.State, instr *disassemble.Ins
 		val2, err = applyShift(val2, src2Op)
 		if err != nil {
 			return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("shift error: %v", err))
+				inst.Operation.String(), fmt.Sprintf("shift error: %v", err))
 		}
 	}
 
 	// Handle optional shift/extend in 4th operand (for extended registers)
-	if len(instr.Operands) > 3 {
-		shiftOp := instr.Operands[3]
+	if int(inst.NumOps) > 3 {
+		shiftOp := inst.Operands[3]
 		if shiftOp.ShiftValueUsed {
 			var err error
 			val2, err = applyShift(val2, shiftOp)
 			if err != nil {
 				return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("shift error: %v", err))
+					inst.Operation.String(), fmt.Sprintf("shift error: %v", err))
 			}
 		}
 	}
@@ -164,7 +164,7 @@ func (e *ArithmeticExecutor) executeADD(state core.State, instr *disassemble.Ins
 	result := val1 + val2
 
 	// Handle 32-bit vs 64-bit operations
-	if len(dstOp.Registers) > 0 && uint32(dstOp.Registers[0]) <= 31 {
+	if dstOp.NumRegisters > 0 && uint32(dstOp.Registers[0]) <= 31 {
 		// W register (32-bit operation)
 		result = uint64(uint32(result))
 	}
@@ -175,19 +175,19 @@ func (e *ArithmeticExecutor) executeADD(state core.State, instr *disassemble.Ins
 	return nil
 }
 
-func (e *ArithmeticExecutor) executeADDS(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) < 3 {
+func (e *ArithmeticExecutor) executeADDS(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) < 3 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "ADDS requires at least 3 operands")
+			inst.Operation.String(), "ADDS requires at least 3 operands")
 	}
 
-	dstOp := instr.Operands[0]
-	src1Op := instr.Operands[1]
-	src2Op := instr.Operands[2]
+	dstOp := inst.Operands[0]
+	src1Op := inst.Operands[1]
+	src2Op := inst.Operands[2]
 
 	// Get destination register
 	var setDstRegister func(uint64)
-	if len(dstOp.Registers) > 0 {
+	if dstOp.NumRegisters > 0 {
 		dstRegID := dstOp.Registers[0]
 		if uint32(dstRegID) == 31 { // Register 31 can be SP or XZR depending on context
 			// In ADDS, if destination is 31, it's XZR (discard result)
@@ -196,18 +196,18 @@ func (e *ArithmeticExecutor) executeADDS(state core.State, instr *disassemble.In
 			dstReg := core.MapRegister(dstRegID)
 			if dstReg == -1 {
 				return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), "invalid destination register")
+					inst.Operation.String(), "invalid destination register")
 			}
 			setDstRegister = func(val uint64) { state.SetX(dstReg, val) }
 		}
 	} else {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "no destination register")
+			inst.Operation.String(), "no destination register")
 	}
 
 	// Get first operand value
 	var val1 uint64
-	if len(src1Op.Registers) > 0 {
+	if src1Op.NumRegisters > 0 {
 		src1RegID := src1Op.Registers[0]
 		if uint32(src1RegID) == 31 { // Register 31 can be SP or XZR depending on context
 			val1 = 0 // XZR reads as zero
@@ -215,7 +215,7 @@ func (e *ArithmeticExecutor) executeADDS(state core.State, instr *disassemble.In
 			src1Reg := core.MapRegister(src1RegID)
 			if src1Reg == -1 {
 				return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), "invalid source register")
+					inst.Operation.String(), "invalid source register")
 			}
 			val1 = state.GetX(src1Reg)
 		}
@@ -223,7 +223,7 @@ func (e *ArithmeticExecutor) executeADDS(state core.State, instr *disassemble.In
 
 	// Get second operand (register or immediate)
 	var val2 uint64
-	if len(src2Op.Registers) > 0 {
+	if src2Op.NumRegisters > 0 {
 		src2RegID := src2Op.Registers[0]
 		if uint32(src2RegID) == 31 { // Register 31 can be SP or XZR depending on context
 			val2 = 0 // XZR reads as zero
@@ -231,14 +231,14 @@ func (e *ArithmeticExecutor) executeADDS(state core.State, instr *disassemble.In
 			src2Reg := core.MapRegister(src2RegID)
 			if src2Reg == -1 {
 				return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), "invalid second source register")
+					inst.Operation.String(), "invalid second source register")
 			}
 			val2 = state.GetX(src2Reg)
 		}
 	} else {
 		// Immediate operand - check for optional LSL #12 shift
 		val2 = uint64(src2Op.Immediate)
-		if (instr.Raw>>22)&1 == 1 { // Check the 'sh' bit
+		if (inst.Raw>>22)&1 == 1 { // Check the 'sh' bit
 			val2 <<= 12
 		}
 	}
@@ -249,19 +249,19 @@ func (e *ArithmeticExecutor) executeADDS(state core.State, instr *disassemble.In
 		val2, err = applyShift(val2, src2Op)
 		if err != nil {
 			return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("shift error: %v", err))
+				inst.Operation.String(), fmt.Sprintf("shift error: %v", err))
 		}
 	}
 
 	// Handle optional shift/extend in 4th operand (for extended registers)
-	if len(instr.Operands) > 3 {
-		shiftOp := instr.Operands[3]
+	if int(inst.NumOps) > 3 {
+		shiftOp := inst.Operands[3]
 		if shiftOp.ShiftValueUsed {
 			var err error
 			val2, err = applyShift(val2, shiftOp)
 			if err != nil {
 				return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("shift error: %v", err))
+					inst.Operation.String(), fmt.Sprintf("shift error: %v", err))
 			}
 		}
 	}
@@ -270,7 +270,7 @@ func (e *ArithmeticExecutor) executeADDS(state core.State, instr *disassemble.In
 	result, carry, overflow := addWithFlags(val1, val2)
 
 	// Handle 32-bit vs 64-bit operations
-	if len(dstOp.Registers) > 0 && uint32(dstOp.Registers[0]) <= 31 {
+	if dstOp.NumRegisters > 0 && uint32(dstOp.Registers[0]) <= 31 {
 		// W register (32-bit operation)
 		result = uint64(uint32(result))
 		// Recalculate flags for 32-bit result
@@ -290,19 +290,19 @@ func (e *ArithmeticExecutor) executeADDS(state core.State, instr *disassemble.In
 	return nil
 }
 
-func (e *ArithmeticExecutor) executeSUB(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) < 3 {
+func (e *ArithmeticExecutor) executeSUB(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) < 3 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "SUB requires at least 3 operands")
+			inst.Operation.String(), "SUB requires at least 3 operands")
 	}
 
-	dstOp := instr.Operands[0]
-	src1Op := instr.Operands[1]
-	src2Op := instr.Operands[2]
+	dstOp := inst.Operands[0]
+	src1Op := inst.Operands[1]
+	src2Op := inst.Operands[2]
 
 	// Get destination register
 	var setDstRegister func(uint64)
-	if len(dstOp.Registers) > 0 {
+	if dstOp.NumRegisters > 0 {
 		dstRegID := dstOp.Registers[0]
 		reg := uint32(dstRegID)
 		if reg == 66 { // SP
@@ -313,18 +313,18 @@ func (e *ArithmeticExecutor) executeSUB(state core.State, instr *disassemble.Ins
 			dstReg := core.MapRegister(dstRegID)
 			if dstReg == -1 {
 				return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("invalid destination register: %d", reg))
+					inst.Operation.String(), fmt.Sprintf("invalid destination register: %d", reg))
 			}
 			setDstRegister = func(val uint64) { state.SetX(dstReg, val) }
 		}
 	} else {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "no destination register")
+			inst.Operation.String(), "no destination register")
 	}
 
 	// Get first operand value
 	var val1 uint64
-	if len(src1Op.Registers) > 0 {
+	if src1Op.NumRegisters > 0 {
 		src1RegID := src1Op.Registers[0]
 		reg := uint32(src1RegID)
 		if reg == 66 { // SP
@@ -335,7 +335,7 @@ func (e *ArithmeticExecutor) executeSUB(state core.State, instr *disassemble.Ins
 			src1Reg := core.MapRegister(src1RegID)
 			if src1Reg == -1 {
 				return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("invalid source register: %d", reg))
+					inst.Operation.String(), fmt.Sprintf("invalid source register: %d", reg))
 			}
 			val1 = state.GetX(src1Reg)
 		}
@@ -343,7 +343,7 @@ func (e *ArithmeticExecutor) executeSUB(state core.State, instr *disassemble.Ins
 
 	// Get second operand (register or immediate)
 	var val2 uint64
-	if len(src2Op.Registers) > 0 {
+	if src2Op.NumRegisters > 0 {
 		src2RegID := src2Op.Registers[0]
 		reg := uint32(src2RegID)
 		if reg == 66 { // SP
@@ -354,14 +354,14 @@ func (e *ArithmeticExecutor) executeSUB(state core.State, instr *disassemble.Ins
 			src2Reg := core.MapRegister(src2RegID)
 			if src2Reg == -1 {
 				return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("invalid second source register: %d", reg))
+					inst.Operation.String(), fmt.Sprintf("invalid second source register: %d", reg))
 			}
 			val2 = state.GetX(src2Reg)
 		}
 	} else {
 		// Immediate operand - check for optional LSL #12 shift
 		val2 = uint64(src2Op.Immediate)
-		if (instr.Raw>>22)&1 == 1 { // Check the 'sh' bit
+		if (inst.Raw>>22)&1 == 1 { // Check the 'sh' bit
 			val2 <<= 12
 		}
 	}
@@ -372,19 +372,19 @@ func (e *ArithmeticExecutor) executeSUB(state core.State, instr *disassemble.Ins
 		val2, err = applyShift(val2, src2Op)
 		if err != nil {
 			return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("shift error: %v", err))
+				inst.Operation.String(), fmt.Sprintf("shift error: %v", err))
 		}
 	}
 
 	// Handle optional shift/extend in 4th operand (for extended registers)
-	if len(instr.Operands) > 3 {
-		shiftOp := instr.Operands[3]
+	if int(inst.NumOps) > 3 {
+		shiftOp := inst.Operands[3]
 		if shiftOp.ShiftValueUsed {
 			var err error
 			val2, err = applyShift(val2, shiftOp)
 			if err != nil {
 				return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("shift error: %v", err))
+					inst.Operation.String(), fmt.Sprintf("shift error: %v", err))
 			}
 		}
 	}
@@ -393,7 +393,7 @@ func (e *ArithmeticExecutor) executeSUB(state core.State, instr *disassemble.Ins
 	result := val1 - val2
 
 	// Handle 32-bit vs 64-bit operations
-	if len(dstOp.Registers) > 0 && uint32(dstOp.Registers[0]) <= 31 {
+	if dstOp.NumRegisters > 0 && uint32(dstOp.Registers[0]) <= 31 {
 		// W register (32-bit operation)
 		result = uint64(uint32(result))
 	}
@@ -404,19 +404,19 @@ func (e *ArithmeticExecutor) executeSUB(state core.State, instr *disassemble.Ins
 	return nil
 }
 
-func (e *ArithmeticExecutor) executeSUBS(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) < 3 {
+func (e *ArithmeticExecutor) executeSUBS(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) < 3 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "SUBS requires at least 3 operands")
+			inst.Operation.String(), "SUBS requires at least 3 operands")
 	}
 
-	dstOp := instr.Operands[0]
-	src1Op := instr.Operands[1]
-	src2Op := instr.Operands[2]
+	dstOp := inst.Operands[0]
+	src1Op := inst.Operands[1]
+	src2Op := inst.Operands[2]
 
 	// Get destination register
 	var setDstRegister func(uint64)
-	if len(dstOp.Registers) > 0 {
+	if dstOp.NumRegisters > 0 {
 		dstRegID := dstOp.Registers[0]
 		if uint32(dstRegID) == 31 { // Register 31 can be SP or XZR depending on context
 			// In SUBS, if destination is 31, it's XZR (discard result)
@@ -425,18 +425,18 @@ func (e *ArithmeticExecutor) executeSUBS(state core.State, instr *disassemble.In
 			dstReg := core.MapRegister(dstRegID)
 			if dstReg == -1 {
 				return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), "invalid destination register")
+					inst.Operation.String(), "invalid destination register")
 			}
 			setDstRegister = func(val uint64) { state.SetX(dstReg, val) }
 		}
 	} else {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "no destination register")
+			inst.Operation.String(), "no destination register")
 	}
 
 	// Get first operand value
 	var val1 uint64
-	if len(src1Op.Registers) > 0 {
+	if src1Op.NumRegisters > 0 {
 		src1RegID := src1Op.Registers[0]
 		if uint32(src1RegID) == 31 { // Register 31 can be SP or XZR depending on context
 			val1 = 0 // XZR reads as zero
@@ -444,7 +444,7 @@ func (e *ArithmeticExecutor) executeSUBS(state core.State, instr *disassemble.In
 			src1Reg := core.MapRegister(src1RegID)
 			if src1Reg == -1 {
 				return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), "invalid source register")
+					inst.Operation.String(), "invalid source register")
 			}
 			val1 = state.GetX(src1Reg)
 		}
@@ -452,7 +452,7 @@ func (e *ArithmeticExecutor) executeSUBS(state core.State, instr *disassemble.In
 
 	// Get second operand (register or immediate)
 	var val2 uint64
-	if len(src2Op.Registers) > 0 {
+	if src2Op.NumRegisters > 0 {
 		src2RegID := src2Op.Registers[0]
 		if uint32(src2RegID) == 31 { // Register 31 can be SP or XZR depending on context
 			val2 = 0 // XZR reads as zero
@@ -460,14 +460,14 @@ func (e *ArithmeticExecutor) executeSUBS(state core.State, instr *disassemble.In
 			src2Reg := core.MapRegister(src2RegID)
 			if src2Reg == -1 {
 				return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), "invalid second source register")
+					inst.Operation.String(), "invalid second source register")
 			}
 			val2 = state.GetX(src2Reg)
 		}
 	} else {
 		// Immediate operand - check for optional LSL #12 shift
 		val2 = uint64(src2Op.Immediate)
-		if (instr.Raw>>22)&1 == 1 { // Check the 'sh' bit
+		if (inst.Raw>>22)&1 == 1 { // Check the 'sh' bit
 			val2 <<= 12
 		}
 	}
@@ -478,19 +478,19 @@ func (e *ArithmeticExecutor) executeSUBS(state core.State, instr *disassemble.In
 		val2, err = applyShift(val2, src2Op)
 		if err != nil {
 			return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("shift error: %v", err))
+				inst.Operation.String(), fmt.Sprintf("shift error: %v", err))
 		}
 	}
 
 	// Handle optional shift/extend in 4th operand (for extended registers)
-	if len(instr.Operands) > 3 {
-		shiftOp := instr.Operands[3]
+	if int(inst.NumOps) > 3 {
+		shiftOp := inst.Operands[3]
 		if shiftOp.ShiftValueUsed {
 			var err error
 			val2, err = applyShift(val2, shiftOp)
 			if err != nil {
 				return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("shift error: %v", err))
+					inst.Operation.String(), fmt.Sprintf("shift error: %v", err))
 			}
 		}
 	}
@@ -499,7 +499,7 @@ func (e *ArithmeticExecutor) executeSUBS(state core.State, instr *disassemble.In
 	result, carry, overflow := subWithFlags(val1, val2)
 
 	// Handle 32-bit vs 64-bit operations
-	if len(dstOp.Registers) > 0 && uint32(dstOp.Registers[0]) <= 31 {
+	if dstOp.NumRegisters > 0 && uint32(dstOp.Registers[0]) <= 31 {
 		// W register (32-bit operation)
 		result = uint64(uint32(result))
 		// Recalculate flags for 32-bit result
@@ -519,15 +519,15 @@ func (e *ArithmeticExecutor) executeSUBS(state core.State, instr *disassemble.In
 	return nil
 }
 
-func (e *ArithmeticExecutor) executeMUL(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) != 3 {
+func (e *ArithmeticExecutor) executeMUL(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) != 3 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "MUL requires exactly 3 operands")
+			inst.Operation.String(), "MUL requires exactly 3 operands")
 	}
 
-	dstOp := instr.Operands[0]
-	src1Op := instr.Operands[1]
-	src2Op := instr.Operands[2]
+	dstOp := inst.Operands[0]
+	src1Op := inst.Operands[1]
+	src2Op := inst.Operands[2]
 
 	// Get register indices
 	dstReg := core.MapRegister(dstOp.Registers[0])
@@ -536,7 +536,7 @@ func (e *ArithmeticExecutor) executeMUL(state core.State, instr *disassemble.Ins
 
 	if dstReg == -1 || src1Reg == -1 || src2Reg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid register in MUL")
+			inst.Operation.String(), "invalid register in MUL")
 	}
 
 	// Handle XZR (zero register) - reads as 0
@@ -571,15 +571,15 @@ func (e *ArithmeticExecutor) executeMUL(state core.State, instr *disassemble.Ins
 	return nil
 }
 
-func (e *ArithmeticExecutor) executeUDIV(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) != 3 {
+func (e *ArithmeticExecutor) executeUDIV(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) != 3 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "UDIV requires exactly 3 operands")
+			inst.Operation.String(), "UDIV requires exactly 3 operands")
 	}
 
-	dstOp := instr.Operands[0]
-	src1Op := instr.Operands[1]
-	src2Op := instr.Operands[2]
+	dstOp := inst.Operands[0]
+	src1Op := inst.Operands[1]
+	src2Op := inst.Operands[2]
 
 	// Get register indices
 	dstReg := core.MapRegister(dstOp.Registers[0])
@@ -588,7 +588,7 @@ func (e *ArithmeticExecutor) executeUDIV(state core.State, instr *disassemble.In
 
 	if dstReg == -1 || src1Reg == -1 || src2Reg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid register in UDIV")
+			inst.Operation.String(), "invalid register in UDIV")
 	}
 
 	val1 := state.GetX(src1Reg)
@@ -617,15 +617,15 @@ func (e *ArithmeticExecutor) executeUDIV(state core.State, instr *disassemble.In
 	return nil
 }
 
-func (e *ArithmeticExecutor) executeSDIV(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) != 3 {
+func (e *ArithmeticExecutor) executeSDIV(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) != 3 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "SDIV requires exactly 3 operands")
+			inst.Operation.String(), "SDIV requires exactly 3 operands")
 	}
 
-	dstOp := instr.Operands[0]
-	src1Op := instr.Operands[1]
-	src2Op := instr.Operands[2]
+	dstOp := inst.Operands[0]
+	src1Op := inst.Operands[1]
+	src2Op := inst.Operands[2]
 
 	// Get register indices
 	dstReg := core.MapRegister(dstOp.Registers[0])
@@ -634,7 +634,7 @@ func (e *ArithmeticExecutor) executeSDIV(state core.State, instr *disassemble.In
 
 	if dstReg == -1 || src1Reg == -1 || src2Reg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid register in SDIV")
+			inst.Operation.String(), "invalid register in SDIV")
 	}
 
 	val1 := int64(state.GetX(src1Reg))
@@ -663,16 +663,16 @@ func (e *ArithmeticExecutor) executeSDIV(state core.State, instr *disassemble.In
 	return nil
 }
 
-func (e *ArithmeticExecutor) executeMADD(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) != 4 {
+func (e *ArithmeticExecutor) executeMADD(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) != 4 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "MADD requires exactly 4 operands")
+			inst.Operation.String(), "MADD requires exactly 4 operands")
 	}
 
-	dstOp := instr.Operands[0]
-	src1Op := instr.Operands[1]   // Rn
-	src2Op := instr.Operands[2]   // Rm
-	addendOp := instr.Operands[3] // Ra
+	dstOp := inst.Operands[0]
+	src1Op := inst.Operands[1]   // Rn
+	src2Op := inst.Operands[2]   // Rm
+	addendOp := inst.Operands[3] // Ra
 
 	// Get register indices
 	dstReg := core.MapRegister(dstOp.Registers[0])
@@ -682,7 +682,7 @@ func (e *ArithmeticExecutor) executeMADD(state core.State, instr *disassemble.In
 
 	if dstReg == -1 || src1Reg == -1 || src2Reg == -1 || addendReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid register in MADD")
+			inst.Operation.String(), "invalid register in MADD")
 	}
 
 	// Handle XZR (zero register) - reads as 0
@@ -724,16 +724,16 @@ func (e *ArithmeticExecutor) executeMADD(state core.State, instr *disassemble.In
 	return nil
 }
 
-func (e *ArithmeticExecutor) executeMSUB(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) != 4 {
+func (e *ArithmeticExecutor) executeMSUB(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) != 4 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "MSUB requires exactly 4 operands")
+			inst.Operation.String(), "MSUB requires exactly 4 operands")
 	}
 
-	dstOp := instr.Operands[0]
-	src1Op := instr.Operands[1]    // Rn
-	src2Op := instr.Operands[2]    // Rm
-	minuendOp := instr.Operands[3] // Ra
+	dstOp := inst.Operands[0]
+	src1Op := inst.Operands[1]    // Rn
+	src2Op := inst.Operands[2]    // Rm
+	minuendOp := inst.Operands[3] // Ra
 
 	// Get register indices
 	dstReg := core.MapRegister(dstOp.Registers[0])
@@ -743,7 +743,7 @@ func (e *ArithmeticExecutor) executeMSUB(state core.State, instr *disassemble.In
 
 	if dstReg == -1 || src1Reg == -1 || src2Reg == -1 || minuendReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid register in MSUB")
+			inst.Operation.String(), "invalid register in MSUB")
 	}
 
 	// Handle XZR (zero register) - reads as 0
@@ -785,15 +785,15 @@ func (e *ArithmeticExecutor) executeMSUB(state core.State, instr *disassemble.In
 	return nil
 }
 
-func (e *ArithmeticExecutor) executeSMULL(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) != 3 {
+func (e *ArithmeticExecutor) executeSMULL(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) != 3 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "SMULL requires exactly 3 operands")
+			inst.Operation.String(), "SMULL requires exactly 3 operands")
 	}
 
-	dstOp := instr.Operands[0]
-	src1Op := instr.Operands[1]
-	src2Op := instr.Operands[2]
+	dstOp := inst.Operands[0]
+	src1Op := inst.Operands[1]
+	src2Op := inst.Operands[2]
 
 	// Get register indices
 	dstReg := core.MapRegister(dstOp.Registers[0])
@@ -802,7 +802,7 @@ func (e *ArithmeticExecutor) executeSMULL(state core.State, instr *disassemble.I
 
 	if dstReg == -1 || src1Reg == -1 || src2Reg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid register in SMULL")
+			inst.Operation.String(), "invalid register in SMULL")
 	}
 
 	// SMULL multiplies two 32-bit signed values to produce 64-bit result
@@ -814,15 +814,15 @@ func (e *ArithmeticExecutor) executeSMULL(state core.State, instr *disassemble.I
 	return nil
 }
 
-func (e *ArithmeticExecutor) executeUMULL(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) != 3 {
+func (e *ArithmeticExecutor) executeUMULL(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) != 3 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "UMULL requires exactly 3 operands")
+			inst.Operation.String(), "UMULL requires exactly 3 operands")
 	}
 
-	dstOp := instr.Operands[0]
-	src1Op := instr.Operands[1]
-	src2Op := instr.Operands[2]
+	dstOp := inst.Operands[0]
+	src1Op := inst.Operands[1]
+	src2Op := inst.Operands[2]
 
 	// Get register indices
 	dstReg := core.MapRegister(dstOp.Registers[0])
@@ -831,7 +831,7 @@ func (e *ArithmeticExecutor) executeUMULL(state core.State, instr *disassemble.I
 
 	if dstReg == -1 || src1Reg == -1 || src2Reg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid register in UMULL")
+			inst.Operation.String(), "invalid register in UMULL")
 	}
 
 	// UMULL multiplies two 32-bit unsigned values to produce 64-bit result
@@ -843,14 +843,14 @@ func (e *ArithmeticExecutor) executeUMULL(state core.State, instr *disassemble.I
 	return nil
 }
 
-func (e *ArithmeticExecutor) executeNEG(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) != 2 {
+func (e *ArithmeticExecutor) executeNEG(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) != 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "NEG requires exactly 2 operands")
+			inst.Operation.String(), "NEG requires exactly 2 operands")
 	}
 
-	dstOp := instr.Operands[0]
-	srcOp := instr.Operands[1]
+	dstOp := inst.Operands[0]
+	srcOp := inst.Operands[1]
 
 	// Get register indices
 	dstReg := core.MapRegister(dstOp.Registers[0])
@@ -858,7 +858,7 @@ func (e *ArithmeticExecutor) executeNEG(state core.State, instr *disassemble.Ins
 
 	if dstReg == -1 || srcReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid register in NEG")
+			inst.Operation.String(), "invalid register in NEG")
 	}
 
 	val := state.GetX(srcReg)
@@ -874,14 +874,14 @@ func (e *ArithmeticExecutor) executeNEG(state core.State, instr *disassemble.Ins
 	return nil
 }
 
-func (e *ArithmeticExecutor) executeNEGS(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) != 2 {
+func (e *ArithmeticExecutor) executeNEGS(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) != 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "NEGS requires exactly 2 operands")
+			inst.Operation.String(), "NEGS requires exactly 2 operands")
 	}
 
-	dstOp := instr.Operands[0]
-	srcOp := instr.Operands[1]
+	dstOp := inst.Operands[0]
+	srcOp := inst.Operands[1]
 
 	// Get register indices
 	dstReg := core.MapRegister(dstOp.Registers[0])
@@ -889,7 +889,7 @@ func (e *ArithmeticExecutor) executeNEGS(state core.State, instr *disassemble.In
 
 	if dstReg == -1 || srcReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid register in NEGS")
+			inst.Operation.String(), "invalid register in NEGS")
 	}
 
 	val := state.GetX(srcReg)
@@ -953,7 +953,7 @@ func subWithFlags(a, b uint64) (result uint64, carry bool, overflow bool) {
 }
 
 // applyShift applies shift operations to a value
-func applyShift(value uint64, shiftOp disassemble.Operand) (uint64, error) {
+func applyShift(value uint64, shiftOp disassemble.Op) (uint64, error) {
 	if !shiftOp.ShiftValueUsed {
 		return value, nil
 	}
@@ -990,8 +990,8 @@ func applyShift(value uint64, shiftOp disassemble.Operand) (uint64, error) {
 
 // executeADDG executes ADDG (Add with Tag Generation) instructions
 // For our purposes, we treat it as regular ADD since we're not implementing full memory tagging
-func (e *ArithmeticExecutor) executeADDG(state core.State, instr *disassemble.Instruction) error {
-	return e.executeADD(state, instr)
+func (e *ArithmeticExecutor) executeADDG(state core.State, inst *disassemble.Inst) error {
+	return e.executeADD(state, inst)
 }
 
 // RegisterArithmeticInstructions registers all arithmetic instructions

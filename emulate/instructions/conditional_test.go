@@ -94,12 +94,13 @@ func TestConditionalExecutor_CSEL(t *testing.T) {
 			s.SetX(2, tt.src2Val) // X2
 
 			// Create mock instruction
-			instr := &disassemble.Instruction{
+			instr := &disassemble.Inst{
 				Operation: disassemble.ARM64_CSEL,
-				Operands: []disassemble.Operand{
-					{Registers: []disassemble.Register{disassemble.Register(34)}}, // X0
-					{Registers: []disassemble.Register{disassemble.Register(35)}}, // X1
-					{Registers: []disassemble.Register{disassemble.Register(36)}}, // X2
+				NumOps:    3,
+				Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(34)}}, // X0
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(35)}}, // X1
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(36)}}, // X2
 				},
 			}
 
@@ -158,12 +159,13 @@ func TestConditionalExecutor_CSINC(t *testing.T) {
 			s.SetX(1, tt.src1Val)
 			s.SetX(2, tt.src2Val)
 
-			instr := &disassemble.Instruction{
+			instr := &disassemble.Inst{
 				Operation: disassemble.ARM64_CSINC,
-				Operands: []disassemble.Operand{
-					{Registers: []disassemble.Register{disassemble.Register(34)}}, // X0
-					{Registers: []disassemble.Register{disassemble.Register(35)}}, // X1
-					{Registers: []disassemble.Register{disassemble.Register(36)}}, // X2
+				NumOps:    3,
+				Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(34)}}, // X0
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(35)}}, // X1
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(36)}}, // X2
 				},
 			}
 
@@ -222,12 +224,13 @@ func TestConditionalExecutor_CSINV(t *testing.T) {
 			s.SetX(1, tt.src1Val)
 			s.SetX(2, tt.src2Val)
 
-			instr := &disassemble.Instruction{
+			instr := &disassemble.Inst{
 				Operation: disassemble.ARM64_CSINV,
-				Operands: []disassemble.Operand{
-					{Registers: []disassemble.Register{disassemble.Register(34)}}, // X0
-					{Registers: []disassemble.Register{disassemble.Register(35)}}, // X1
-					{Registers: []disassemble.Register{disassemble.Register(36)}}, // X2
+				NumOps:    3,
+				Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(34)}}, // X0
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(35)}}, // X1
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(36)}}, // X2
 				},
 			}
 
@@ -286,12 +289,13 @@ func TestConditionalExecutor_CSNEG(t *testing.T) {
 			s.SetX(1, tt.src1Val)
 			s.SetX(2, tt.src2Val)
 
-			instr := &disassemble.Instruction{
+			instr := &disassemble.Inst{
 				Operation: disassemble.ARM64_CSNEG,
-				Operands: []disassemble.Operand{
-					{Registers: []disassemble.Register{disassemble.Register(34)}}, // X0
-					{Registers: []disassemble.Register{disassemble.Register(35)}}, // X1
-					{Registers: []disassemble.Register{disassemble.Register(36)}}, // X2
+				NumOps:    3,
+				Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(34)}}, // X0
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(35)}}, // X1
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(36)}}, // X2
 				},
 			}
 
@@ -359,10 +363,11 @@ func TestConditionalExecutor_CSET(t *testing.T) {
 				}
 			}
 
-			instr := &disassemble.Instruction{
+			instr := &disassemble.Inst{
 				Operation: disassemble.ARM64_CSET,
-				Operands: []disassemble.Operand{
-					{Registers: []disassemble.Register{disassemble.Register(34)}}, // X0
+				NumOps:    1,
+				Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(34)}}, // X0
 				},
 			}
 
@@ -412,10 +417,11 @@ func TestConditionalExecutor_CSETM(t *testing.T) {
 				}
 			}
 
-			instr := &disassemble.Instruction{
+			instr := &disassemble.Inst{
 				Operation: disassemble.ARM64_CSETM,
-				Operands: []disassemble.Operand{
-					{Registers: []disassemble.Register{disassemble.Register(34)}}, // X0
+				NumOps:    1,
+				Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(34)}}, // X0
 				},
 			}
 
@@ -508,11 +514,12 @@ func TestConditionalExecutor_CCMP(t *testing.T) {
 			s.SetX(1, tt.src1Val)
 			s.SetX(2, tt.src2Val)
 
-			instr := &disassemble.Instruction{
+			instr := &disassemble.Inst{
 				Operation: disassemble.ARM64_CCMP,
-				Operands: []disassemble.Operand{
-					{Registers: []disassemble.Register{disassemble.Register(35)}}, // X1
-					{Registers: []disassemble.Register{disassemble.Register(36)}}, // X2
+				NumOps:    3,
+				Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(35)}}, // X1
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(36)}}, // X2
 					{Immediate: tt.flagsImm},
 				},
 			}
@@ -548,12 +555,13 @@ func TestConditionalExecutor_32BitOperations(t *testing.T) {
 	s.SetX(1, 0x123456789ABCDEF0)
 	s.SetX(2, 0xFEDCBA9876543210)
 
-	instr := &disassemble.Instruction{
+	instr := &disassemble.Inst{
 		Operation: disassemble.ARM64_CSEL,
-		Operands: []disassemble.Operand{
-			{Registers: []disassemble.Register{disassemble.Register(1)}}, // W0
-			{Registers: []disassemble.Register{disassemble.Register(2)}}, // W1
-			{Registers: []disassemble.Register{disassemble.Register(3)}}, // W2
+		NumOps:    3,
+		Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(1)}}, // W0
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(2)}}, // W1
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(3)}}, // W2
 		},
 	}
 
@@ -683,11 +691,12 @@ func TestConditionalExecutor_ErrorHandling(t *testing.T) {
 	executor := NewConditionalExecutor("CSEL", "Conditional select")
 
 	// Test insufficient operands
-	instr := &disassemble.Instruction{
+	instr := &disassemble.Inst{
 		Operation: disassemble.ARM64_CSEL,
-		Operands: []disassemble.Operand{
-			{Registers: []disassemble.Register{disassemble.Register(34)}}, // X0
-			{Registers: []disassemble.Register{disassemble.Register(35)}}, // X1
+		NumOps:    2,
+		Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(34)}}, // X0
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(35)}}, // X1
 		},
 	}
 
@@ -697,12 +706,13 @@ func TestConditionalExecutor_ErrorHandling(t *testing.T) {
 	}
 
 	// Test invalid register
-	instr = &disassemble.Instruction{
+	instr = &disassemble.Inst{
 		Operation: disassemble.ARM64_CSEL,
-		Operands: []disassemble.Operand{
-			{Registers: []disassemble.Register{disassemble.Register(999)}}, // Invalid register
-			{Registers: []disassemble.Register{disassemble.Register(35)}},  // X1
-			{Registers: []disassemble.Register{disassemble.Register(36)}},  // X2
+		NumOps:    3,
+		Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(999)}}, // Invalid register
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(35)}},  // X1
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(36)}},  // X2
 		},
 	}
 

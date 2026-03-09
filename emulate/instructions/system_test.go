@@ -85,56 +85,56 @@ func (s *MockSystemState) Clone() core.State                                   {
 func (s *MockSystemState) Reset()                                              {}
 
 // Helper function to create a mock system instruction
-func createMockSystemInstruction(operation string, operands []disassemble.Operand) *disassemble.Instruction {
+func createMockSystemInstruction(operation string, numOps uint8, operands [disassemble.MAX_OPERANDS]disassemble.Op) *disassemble.Inst {
 	switch operation {
 	case "NOP":
-		return &disassemble.Instruction{Operation: disassemble.ARM64_NOP, Operands: operands}
+		return &disassemble.Inst{Operation: disassemble.ARM64_NOP, NumOps: numOps, Operands: operands}
 	case "MRS":
-		return &disassemble.Instruction{Operation: disassemble.ARM64_MRS, Operands: operands}
+		return &disassemble.Inst{Operation: disassemble.ARM64_MRS, NumOps: numOps, Operands: operands}
 	case "MSR":
-		return &disassemble.Instruction{Operation: disassemble.ARM64_MSR, Operands: operands}
+		return &disassemble.Inst{Operation: disassemble.ARM64_MSR, NumOps: numOps, Operands: operands}
 	case "HLT":
-		return &disassemble.Instruction{Operation: disassemble.ARM64_HLT, Operands: operands}
+		return &disassemble.Inst{Operation: disassemble.ARM64_HLT, NumOps: numOps, Operands: operands}
 	case "HINT":
-		return &disassemble.Instruction{Operation: disassemble.ARM64_HINT, Operands: operands}
+		return &disassemble.Inst{Operation: disassemble.ARM64_HINT, NumOps: numOps, Operands: operands}
 	case "ISB":
-		return &disassemble.Instruction{Operation: disassemble.ARM64_ISB, Operands: operands}
+		return &disassemble.Inst{Operation: disassemble.ARM64_ISB, NumOps: numOps, Operands: operands}
 	case "DSB":
-		return &disassemble.Instruction{Operation: disassemble.ARM64_DSB, Operands: operands}
+		return &disassemble.Inst{Operation: disassemble.ARM64_DSB, NumOps: numOps, Operands: operands}
 	case "DMB":
-		return &disassemble.Instruction{Operation: disassemble.ARM64_DMB, Operands: operands}
+		return &disassemble.Inst{Operation: disassemble.ARM64_DMB, NumOps: numOps, Operands: operands}
 	case "YIELD":
-		return &disassemble.Instruction{Operation: disassemble.ARM64_YIELD, Operands: operands}
+		return &disassemble.Inst{Operation: disassemble.ARM64_YIELD, NumOps: numOps, Operands: operands}
 	case "WFE":
-		return &disassemble.Instruction{Operation: disassemble.ARM64_WFE, Operands: operands}
+		return &disassemble.Inst{Operation: disassemble.ARM64_WFE, NumOps: numOps, Operands: operands}
 	case "WFI":
-		return &disassemble.Instruction{Operation: disassemble.ARM64_WFI, Operands: operands}
+		return &disassemble.Inst{Operation: disassemble.ARM64_WFI, NumOps: numOps, Operands: operands}
 	case "SEV":
-		return &disassemble.Instruction{Operation: disassemble.ARM64_SEV, Operands: operands}
+		return &disassemble.Inst{Operation: disassemble.ARM64_SEV, NumOps: numOps, Operands: operands}
 	case "SEVL":
-		return &disassemble.Instruction{Operation: disassemble.ARM64_SEVL, Operands: operands}
+		return &disassemble.Inst{Operation: disassemble.ARM64_SEVL, NumOps: numOps, Operands: operands}
 	case "SYS":
-		return &disassemble.Instruction{Operation: disassemble.ARM64_SYS, Operands: operands}
+		return &disassemble.Inst{Operation: disassemble.ARM64_SYS, NumOps: numOps, Operands: operands}
 	case "SYSL":
-		return &disassemble.Instruction{Operation: disassemble.ARM64_SYSL, Operands: operands}
+		return &disassemble.Inst{Operation: disassemble.ARM64_SYSL, NumOps: numOps, Operands: operands}
 	case "XPACLRI":
-		return &disassemble.Instruction{Operation: disassemble.ARM64_XPACLRI, Operands: operands}
+		return &disassemble.Inst{Operation: disassemble.ARM64_XPACLRI, NumOps: numOps, Operands: operands}
 	case "PACIBSP":
-		return &disassemble.Instruction{Operation: disassemble.ARM64_PACIBSP, Operands: operands}
+		return &disassemble.Inst{Operation: disassemble.ARM64_PACIBSP, NumOps: numOps, Operands: operands}
 	case "PACIASP":
-		return &disassemble.Instruction{Operation: disassemble.ARM64_PACIASP, Operands: operands}
+		return &disassemble.Inst{Operation: disassemble.ARM64_PACIASP, NumOps: numOps, Operands: operands}
 	case "PACIAZ":
-		return &disassemble.Instruction{Operation: disassemble.ARM64_PACIAZ, Operands: operands}
+		return &disassemble.Inst{Operation: disassemble.ARM64_PACIAZ, NumOps: numOps, Operands: operands}
 	case "PACIBZ":
-		return &disassemble.Instruction{Operation: disassemble.ARM64_PACIBZ, Operands: operands}
+		return &disassemble.Inst{Operation: disassemble.ARM64_PACIBZ, NumOps: numOps, Operands: operands}
 	case "AUTIBSP":
-		return &disassemble.Instruction{Operation: disassemble.ARM64_AUTIBSP, Operands: operands}
+		return &disassemble.Inst{Operation: disassemble.ARM64_AUTIBSP, NumOps: numOps, Operands: operands}
 	case "SB":
-		return &disassemble.Instruction{Operation: disassemble.ARM64_SB, Operands: operands}
+		return &disassemble.Inst{Operation: disassemble.ARM64_SB, NumOps: numOps, Operands: operands}
 	case "ADD":
-		return &disassemble.Instruction{Operation: disassemble.ARM64_ADD, Operands: operands}
+		return &disassemble.Inst{Operation: disassemble.ARM64_ADD, NumOps: numOps, Operands: operands}
 	default:
-		return &disassemble.Instruction{Operation: disassemble.ARM64_ERROR, Operands: operands}
+		return &disassemble.Inst{Operation: disassemble.ARM64_ERROR, NumOps: numOps, Operands: operands}
 	}
 }
 
@@ -143,7 +143,7 @@ func TestSystemExecutor_NOP(t *testing.T) {
 	state := NewMockSystemState()
 
 	// Create a mock instruction for NOP
-	instr := createMockSystemInstruction("NOP", nil)
+	instr := createMockSystemInstruction("NOP", 0, [disassemble.MAX_OPERANDS]disassemble.Op{})
 
 	// Execute NOP
 	err := executor.Execute(state, instr)
@@ -168,9 +168,10 @@ func TestSystemExecutor_MRS_NZCV(t *testing.T) {
 	state.SetV(false)
 
 	// Create a mock instruction for MRS X0, NZCV
-	instr := createMockSystemInstruction("MRS", []disassemble.Operand{
+	instr := createMockSystemInstruction("MRS", 2, [disassemble.MAX_OPERANDS]disassemble.Op{
 		{
-			Registers: []disassemble.Register{disassemble.Register(34)}, // X0
+			NumRegisters: 1,
+			Registers:    [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(34)}, // X0
 		},
 		{
 			// System register operand - we'll rely on string parsing
@@ -205,9 +206,10 @@ func TestSystemExecutor_MRS_StringBased(t *testing.T) {
 	state.SetV(false)
 
 	// Create mock instruction for MRS (will fallback to NZCV behavior)
-	instr := createMockSystemInstruction("MRS", []disassemble.Operand{
+	instr := createMockSystemInstruction("MRS", 2, [disassemble.MAX_OPERANDS]disassemble.Op{
 		{
-			Registers: []disassemble.Register{disassemble.Register(35)}, // X1
+			NumRegisters: 1,
+			Registers:    [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(35)}, // X1
 		},
 		{
 			// System register operand - empty for testing
@@ -236,12 +238,13 @@ func TestSystemExecutor_MSR_NZCV(t *testing.T) {
 	state.SetX(0, flagValue)
 
 	// Create a mock instruction for MSR NZCV, X0
-	instr := createMockSystemInstruction("MSR", []disassemble.Operand{
+	instr := createMockSystemInstruction("MSR", 2, [disassemble.MAX_OPERANDS]disassemble.Op{
 		{
 			// System register operand - we'll rely on string parsing
 		},
 		{
-			Registers: []disassemble.Register{disassemble.Register(34)}, // X0
+			NumRegisters: 1,
+			Registers:    [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(34)}, // X0
 		},
 	})
 
@@ -271,7 +274,7 @@ func TestSystemExecutor_MSR_Immediate(t *testing.T) {
 	state := NewMockSystemState()
 
 	// Create a mock instruction for MSR NZCV, #0xC0000000 (N=1, Z=1)
-	instr := createMockSystemInstruction("MSR", []disassemble.Operand{
+	instr := createMockSystemInstruction("MSR", 2, [disassemble.MAX_OPERANDS]disassemble.Op{
 		{
 			// System register operand - we'll rely on string parsing
 		},
@@ -306,7 +309,7 @@ func TestSystemExecutor_HLT(t *testing.T) {
 	state := NewMockSystemState()
 
 	// Create a mock instruction for HLT
-	instr := createMockSystemInstruction("HLT", nil)
+	instr := createMockSystemInstruction("HLT", 0, [disassemble.MAX_OPERANDS]disassemble.Op{})
 
 	// Execute HLT - should return an error indicating halt
 	err := executor.Execute(state, instr)
@@ -341,7 +344,7 @@ func TestSystemExecutor_MemoryBarriers(t *testing.T) {
 			state := NewMockSystemState()
 
 			// Create a mock instruction
-			instr := createMockSystemInstruction(tc.mnemonic, nil)
+			instr := createMockSystemInstruction(tc.mnemonic, 0, [disassemble.MAX_OPERANDS]disassemble.Op{})
 
 			// Execute barrier instruction - should be NOP
 			err := executor.Execute(state, instr)
@@ -376,7 +379,7 @@ func TestSystemExecutor_PowerManagement(t *testing.T) {
 			state := NewMockSystemState()
 
 			// Create a mock instruction
-			instr := createMockSystemInstruction(tc.mnemonic, nil)
+			instr := createMockSystemInstruction(tc.mnemonic, 0, [disassemble.MAX_OPERANDS]disassemble.Op{})
 
 			// Execute power management instruction - should be NOP
 			err := executor.Execute(state, instr)
@@ -408,18 +411,21 @@ func TestSystemExecutor_SYS_SYSL(t *testing.T) {
 			executor := NewSystemExecutor(tc.mnemonic, tc.description)
 			state := NewMockSystemState()
 
-			var operands []disassemble.Operand
+			var numOps uint8
+			var operands [disassemble.MAX_OPERANDS]disassemble.Op
 			if tc.hasResult {
 				// SYSL has a destination register
-				operands = []disassemble.Operand{
+				numOps = 1
+				operands = [disassemble.MAX_OPERANDS]disassemble.Op{
 					{
-						Registers: []disassemble.Register{disassemble.Register(34)}, // X0
+						NumRegisters: 1,
+						Registers:    [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(34)}, // X0
 					},
 				}
 			}
 
 			// Create a mock instruction
-			instr := createMockSystemInstruction(tc.mnemonic, operands)
+			instr := createMockSystemInstruction(tc.mnemonic, numOps, operands)
 
 			// Execute system instruction
 			err := executor.Execute(state, instr)
@@ -440,7 +446,7 @@ func TestSystemExecutor_HINT(t *testing.T) {
 	state := NewMockSystemState()
 
 	// Create a mock instruction for HINT
-	instr := createMockSystemInstruction("HINT", nil)
+	instr := createMockSystemInstruction("HINT", 0, [disassemble.MAX_OPERANDS]disassemble.Op{})
 
 	// Execute HINT - should be NOP
 	err := executor.Execute(state, instr)
@@ -481,7 +487,7 @@ func TestSystemExecutor_XPACLRI_SB(t *testing.T) {
 			state := NewMockSystemState()
 
 			// Create a mock instruction
-			instr := createMockSystemInstruction(tc.mnemonic, nil)
+			instr := createMockSystemInstruction(tc.mnemonic, 0, [disassemble.MAX_OPERANDS]disassemble.Op{})
 
 			// Execute instruction - should be NOP
 			err := executor.Execute(state, instr)
@@ -504,7 +510,7 @@ func TestSystemExecutor_AUTIBSP(t *testing.T) {
 	state.SetX(30, baseLR)
 
 	pacExecutor := NewSystemExecutor("PACIBSP", "Pointer authenticate LR using SP")
-	if err := pacExecutor.Execute(state, createMockSystemInstruction("PACIBSP", nil)); err != nil {
+	if err := pacExecutor.Execute(state, createMockSystemInstruction("PACIBSP", 0, [disassemble.MAX_OPERANDS]disassemble.Op{})); err != nil {
 		t.Fatalf("PACIBSP execution failed: %v", err)
 	}
 
@@ -514,7 +520,7 @@ func TestSystemExecutor_AUTIBSP(t *testing.T) {
 	}
 
 	autExecutor := NewSystemExecutor("AUTIBSP", "Authenticate LR using SP (B-key)")
-	if err := autExecutor.Execute(state, createMockSystemInstruction("AUTIBSP", nil)); err != nil {
+	if err := autExecutor.Execute(state, createMockSystemInstruction("AUTIBSP", 0, [disassemble.MAX_OPERANDS]disassemble.Op{})); err != nil {
 		t.Fatalf("AUTIBSP execution failed: %v", err)
 	}
 
@@ -523,7 +529,7 @@ func TestSystemExecutor_AUTIBSP(t *testing.T) {
 	}
 
 	state.SetX(30, uint64(0xAA)<<56|0x0000000000003333)
-	if err := autExecutor.Execute(state, createMockSystemInstruction("AUTIBSP", nil)); err != nil {
+	if err := autExecutor.Execute(state, createMockSystemInstruction("AUTIBSP", 0, [disassemble.MAX_OPERANDS]disassemble.Op{})); err != nil {
 		t.Fatalf("AUTIBSP execution failed on invalid PAC: %v", err)
 	}
 
@@ -537,7 +543,7 @@ func TestSystemExecutor_UnsupportedInstruction(t *testing.T) {
 	state := NewMockSystemState()
 
 	// Create an instruction that doesn't match the executor
-	instr := createMockSystemInstruction("ADD", nil)
+	instr := createMockSystemInstruction("ADD", 0, [disassemble.MAX_OPERANDS]disassemble.Op{})
 
 	// Should fail validation
 	err := executor.Execute(state, instr)

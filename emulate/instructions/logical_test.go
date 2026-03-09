@@ -31,15 +31,15 @@ func TestLogicalExecutor_AND(t *testing.T) {
 			executor := NewLogicalExecutor("AND", "Bitwise AND")
 
 			// Create mock instruction
-			var instr *disassemble.Instruction
+			var instr *disassemble.Inst
 			if tt.is32bit {
-				instr = createMockInstruction("AND", []disassemble.Operand{
+				instr = createMockInstruction("AND", []disassemble.Op{
 					createRegisterOperand(disassemble.REG_W0),
 					createRegisterOperand(disassemble.REG_W1),
 					createRegisterOperand(disassemble.REG_W2),
 				})
 			} else {
-				instr = createMockInstruction("AND", []disassemble.Operand{
+				instr = createMockInstruction("AND", []disassemble.Op{
 					createRegisterOperand(disassemble.REG_X0),
 					createRegisterOperand(disassemble.REG_X1),
 					createRegisterOperand(disassemble.REG_X2),
@@ -91,15 +91,15 @@ func TestLogicalExecutor_ANDS(t *testing.T) {
 			executor := NewLogicalExecutor("ANDS", "Bitwise AND and set flags")
 
 			// Create mock instruction
-			var instr *disassemble.Instruction
+			var instr *disassemble.Inst
 			if tt.is32bit {
-				instr = createMockInstruction("ANDS", []disassemble.Operand{
+				instr = createMockInstruction("ANDS", []disassemble.Op{
 					createRegisterOperand(disassemble.REG_W0),
 					createRegisterOperand(disassemble.REG_W1),
 					createRegisterOperand(disassemble.REG_W2),
 				})
 			} else {
-				instr = createMockInstruction("ANDS", []disassemble.Operand{
+				instr = createMockInstruction("ANDS", []disassemble.Op{
 					createRegisterOperand(disassemble.REG_X0),
 					createRegisterOperand(disassemble.REG_X1),
 					createRegisterOperand(disassemble.REG_X2),
@@ -163,7 +163,7 @@ func TestLogicalExecutor_ORR(t *testing.T) {
 
 			executor := NewLogicalExecutor("ORR", "Bitwise OR")
 
-			instr := createMockInstruction("ORR", []disassemble.Operand{
+			instr := createMockInstruction("ORR", []disassemble.Op{
 				createRegisterOperand(disassemble.REG_X0),
 				createRegisterOperand(disassemble.REG_X1),
 				createRegisterOperand(disassemble.REG_X2),
@@ -203,7 +203,7 @@ func TestLogicalExecutor_EOR(t *testing.T) {
 
 			executor := NewLogicalExecutor("EOR", "Bitwise exclusive OR")
 
-			instr := createMockInstruction("EOR", []disassemble.Operand{
+			instr := createMockInstruction("EOR", []disassemble.Op{
 				createRegisterOperand(disassemble.REG_X0),
 				createRegisterOperand(disassemble.REG_X1),
 				createRegisterOperand(disassemble.REG_X2),
@@ -243,7 +243,7 @@ func TestLogicalExecutor_BIC(t *testing.T) {
 
 			executor := NewLogicalExecutor("BIC", "Bit clear")
 
-			instr := createMockInstruction("BIC", []disassemble.Operand{
+			instr := createMockInstruction("BIC", []disassemble.Op{
 				createRegisterOperand(disassemble.REG_X0),
 				createRegisterOperand(disassemble.REG_X1),
 				createRegisterOperand(disassemble.REG_X2),
@@ -286,14 +286,14 @@ func TestLogicalExecutor_TST(t *testing.T) {
 
 			executor := NewLogicalExecutor("TST", "Test bits")
 
-			var instr *disassemble.Instruction
+			var instr *disassemble.Inst
 			if tt.is32bit {
-				instr = createMockInstruction("TST", []disassemble.Operand{
+				instr = createMockInstruction("TST", []disassemble.Op{
 					createRegisterOperand(disassemble.REG_W1),
 					createRegisterOperand(disassemble.REG_W2),
 				})
 			} else {
-				instr = createMockInstruction("TST", []disassemble.Operand{
+				instr = createMockInstruction("TST", []disassemble.Op{
 					createRegisterOperand(disassemble.REG_X1),
 					createRegisterOperand(disassemble.REG_X2),
 				})
@@ -330,7 +330,7 @@ func TestLogicalExecutor_WithImmediate(t *testing.T) {
 
 	executor := NewLogicalExecutor("AND", "Bitwise AND")
 
-	instr := createMockInstruction("AND", []disassemble.Operand{
+	instr := createMockInstruction("AND", []disassemble.Op{
 		createRegisterOperand(disassemble.REG_X0),
 		createRegisterOperand(disassemble.REG_X1),
 		createImmediateOperand(0xFF00FF00FF00FF00),
@@ -357,7 +357,7 @@ func TestBitfieldExecutor_BFM(t *testing.T) {
 
 	// Mock instruction with encoding for BFM X0, X1, #0, #7
 	// This should insert bits 0-7 from X1 into X0
-	instr := createMockInstruction("BFM", []disassemble.Operand{
+	instr := createMockInstruction("BFM", []disassemble.Op{
 		createRegisterOperand(disassemble.REG_X0),
 		createRegisterOperand(disassemble.REG_X1),
 	})
@@ -384,7 +384,7 @@ func TestBitfieldExecutor_UBFM(t *testing.T) {
 
 	// Mock instruction with encoding for UBFX X0, X1, #8, #8
 	// This should extract 8 bits starting at bit 8
-	instr := createMockInstruction("UBFM", []disassemble.Operand{
+	instr := createMockInstruction("UBFM", []disassemble.Op{
 		createRegisterOperand(disassemble.REG_X0),
 		createRegisterOperand(disassemble.REG_X1),
 	})
@@ -411,7 +411,7 @@ func TestBitfieldExecutor_SBFM(t *testing.T) {
 
 	// Mock instruction with encoding for SBFX X0, X1, #4, #4
 	// This should extract 4 bits starting at bit 4 with sign extension
-	instr := createMockInstruction("SBFM", []disassemble.Operand{
+	instr := createMockInstruction("SBFM", []disassemble.Op{
 		createRegisterOperand(disassemble.REG_X0),
 		createRegisterOperand(disassemble.REG_X1),
 	})
@@ -465,7 +465,7 @@ func TestLogicalExecutor_ErrorHandling(t *testing.T) {
 	executor := NewLogicalExecutor("AND", "Bitwise AND")
 
 	// Test with insufficient operands
-	instr := createMockInstruction("AND", []disassemble.Operand{
+	instr := createMockInstruction("AND", []disassemble.Op{
 		createRegisterOperand(disassemble.REG_X0),
 	})
 
@@ -475,8 +475,8 @@ func TestLogicalExecutor_ErrorHandling(t *testing.T) {
 	}
 
 	// Test with invalid register
-	instr = createMockInstruction("AND", []disassemble.Operand{
-		{Registers: []disassemble.Register{disassemble.Register(999)}},
+	instr = createMockInstruction("AND", []disassemble.Op{
+		{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(999)}},
 		createRegisterOperand(disassemble.REG_X1),
 		createRegisterOperand(disassemble.REG_X2),
 	})

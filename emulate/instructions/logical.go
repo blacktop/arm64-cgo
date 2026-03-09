@@ -125,63 +125,63 @@ func NewLogicalExecutor(mnemonic, description string) *LogicalExecutor {
 }
 
 // Execute executes logical instructions
-func (e *LogicalExecutor) Execute(state core.State, instr *disassemble.Instruction) error {
-	if err := e.ValidateInstruction(instr); err != nil {
+func (e *LogicalExecutor) Execute(state core.State, inst *disassemble.Inst) error {
+	if err := e.ValidateInstruction(inst); err != nil {
 		return err
 	}
 
 	switch e.mnemonic {
 	case "AND":
-		return e.executeLogicalOp(state, instr, func(a, b uint64) uint64 { return a & b }, false)
+		return e.executeLogicalOp(state, inst, func(a, b uint64) uint64 { return a & b }, false)
 	case "ANDS":
-		return e.executeLogicalOp(state, instr, func(a, b uint64) uint64 { return a & b }, true)
+		return e.executeLogicalOp(state, inst, func(a, b uint64) uint64 { return a & b }, true)
 	case "ORR":
-		return e.executeLogicalOp(state, instr, func(a, b uint64) uint64 { return a | b }, false)
+		return e.executeLogicalOp(state, inst, func(a, b uint64) uint64 { return a | b }, false)
 	case "EOR":
-		return e.executeLogicalOp(state, instr, func(a, b uint64) uint64 { return a ^ b }, false)
+		return e.executeLogicalOp(state, inst, func(a, b uint64) uint64 { return a ^ b }, false)
 	case "BIC":
-		return e.executeLogicalOp(state, instr, func(a, b uint64) uint64 { return a &^ b }, false)
+		return e.executeLogicalOp(state, inst, func(a, b uint64) uint64 { return a &^ b }, false)
 	case "BICS":
-		return e.executeLogicalOp(state, instr, func(a, b uint64) uint64 { return a &^ b }, true)
+		return e.executeLogicalOp(state, inst, func(a, b uint64) uint64 { return a &^ b }, true)
 	case "TST":
-		return e.executeTST(state, instr)
+		return e.executeTST(state, inst)
 	default:
 		return core.NewEmulationError(core.ErrUnsupportedFeature, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("logical instruction %s not implemented", e.mnemonic))
+			inst.Operation.String(), fmt.Sprintf("logical instruction %s not implemented", e.mnemonic))
 	}
 }
 
 // executeLogicalOp performs a generic logical operation
-func (e *LogicalExecutor) executeLogicalOp(state core.State, instr *disassemble.Instruction, op func(uint64, uint64) uint64, setFlags bool) error {
-	if len(instr.Operands) < 3 {
+func (e *LogicalExecutor) executeLogicalOp(state core.State, inst *disassemble.Inst, op func(uint64, uint64) uint64, setFlags bool) error {
+	if int(inst.NumOps) < 3 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "logical operation requires at least 3 operands")
+			inst.Operation.String(), "logical operation requires at least 3 operands")
 	}
 
-	dstOp := instr.Operands[0]
-	src1Op := instr.Operands[1]
-	src2Op := instr.Operands[2]
+	dstOp := inst.Operands[0]
+	src1Op := inst.Operands[1]
+	src2Op := inst.Operands[2]
 
-	if len(dstOp.Registers) == 0 || len(src1Op.Registers) == 0 {
+	if dstOp.NumRegisters == 0 || src1Op.NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "missing destination or source register")
+			inst.Operation.String(), "missing destination or source register")
 	}
 
 	dstReg := core.MapRegister(dstOp.Registers[0])
 	src1Reg := core.MapRegister(src1Op.Registers[0])
 	if dstReg == -1 || src1Reg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid register")
+			inst.Operation.String(), "invalid register")
 	}
 
 	val1 := state.GetX(src1Reg)
 	var val2 uint64
 
-	if len(src2Op.Registers) > 0 {
+	if src2Op.NumRegisters > 0 {
 		src2Reg := core.MapRegister(src2Op.Registers[0])
 		if src2Reg == -1 {
 			return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), "invalid second source register")
+				inst.Operation.String(), "invalid second source register")
 		}
 		val2 = state.GetX(src2Reg)
 		// Apply optional shift to register operand
@@ -221,15 +221,15 @@ func (e *LogicalExecutor) executeLogicalOp(state core.State, instr *disassemble.
 		// If operand explicitly provides an immediate (unit tests), use it directly.
 		if src2Op.Class == disassemble.IMM32 || src2Op.Class == disassemble.IMM64 || src2Op.SignedImm || src2Op.Immediate != 0 {
 			val2 = uint64(src2Op.Immediate)
-		} else if instr.Raw != 0 { // try to decode logical-immediate mask from encoding
+		} else if inst.Raw != 0 { // try to decode logical-immediate mask from encoding
 			is32Bit := uint32(dstOp.Registers[0]) >= 1 && uint32(dstOp.Registers[0]) <= 31
 			sf := uint32(0)
 			if !is32Bit {
 				sf = 1
 			}
-			n := (instr.Raw >> 22) & 1
-			immr := (instr.Raw >> 16) & 0x3f
-			imms := (instr.Raw >> 10) & 0x3f
+			n := (inst.Raw >> 22) & 1
+			immr := (inst.Raw >> 16) & 0x3f
+			imms := (inst.Raw >> 10) & 0x3f
 			if wmask, _, ok := decodeBitMasks(n, imms, immr, sf); ok {
 				val2 = wmask
 			} else {
@@ -268,32 +268,32 @@ func (e *LogicalExecutor) executeLogicalOp(state core.State, instr *disassemble.
 	return nil
 }
 
-func (e *LogicalExecutor) executeTST(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) < 2 {
+func (e *LogicalExecutor) executeTST(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) < 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "TST requires 2 operands")
+			inst.Operation.String(), "TST requires 2 operands")
 	}
 
-	src1Op := instr.Operands[0]
-	src2Op := instr.Operands[1]
+	src1Op := inst.Operands[0]
+	src2Op := inst.Operands[1]
 
-	if len(src1Op.Registers) == 0 {
+	if src1Op.NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "missing source register")
+			inst.Operation.String(), "missing source register")
 	}
 	src1Reg := core.MapRegister(src1Op.Registers[0])
 	if src1Reg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid source register")
+			inst.Operation.String(), "invalid source register")
 	}
 
 	val1 := state.GetX(src1Reg)
 	var val2 uint64
-	if len(src2Op.Registers) > 0 {
+	if src2Op.NumRegisters > 0 {
 		src2Reg := core.MapRegister(src2Op.Registers[0])
 		if src2Reg == -1 {
 			return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), "invalid second source register")
+				inst.Operation.String(), "invalid second source register")
 		}
 		val2 = state.GetX(src2Reg)
 	} else {
@@ -306,13 +306,13 @@ func (e *LogicalExecutor) executeTST(state core.State, instr *disassemble.Instru
 			if !is32Bit {
 				sf = 1
 			}
-			n := (instr.Raw >> 22) & 1
-			immr := (instr.Raw >> 16) & 0x3f
-			imms := (instr.Raw >> 10) & 0x3f
+			n := (inst.Raw >> 22) & 1
+			immr := (inst.Raw >> 16) & 0x3f
+			imms := (inst.Raw >> 10) & 0x3f
 			wmask, _, ok := decodeBitMasks(n, imms, immr, sf)
 			if !ok {
 				return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), "invalid logical immediate encoding")
+					inst.Operation.String(), "invalid logical immediate encoding")
 			}
 			val2 = wmask
 		}
@@ -345,46 +345,46 @@ func NewBitfieldExecutor(mnemonic, description string) *BitfieldExecutor {
 }
 
 // Execute executes bitfield instructions
-func (e *BitfieldExecutor) Execute(state core.State, instr *disassemble.Instruction) error {
-	if err := e.ValidateInstruction(instr); err != nil {
+func (e *BitfieldExecutor) Execute(state core.State, inst *disassemble.Inst) error {
+	if err := e.ValidateInstruction(inst); err != nil {
 		return err
 	}
 
-	instrValue := instr.Raw
+	instrValue := inst.Raw
 
 	switch e.mnemonic {
 	case "BFM":
-		return e.executeBFM(state, instr, instrValue)
+		return e.executeBFM(state, inst, instrValue)
 	case "BFI":
-		return e.executeBFI(state, instr)
+		return e.executeBFI(state, inst)
 	case "BFXIL":
-		return e.executeBFXIL(state, instr)
+		return e.executeBFXIL(state, inst)
 	case "SBFM", "SBFIZ", "SBFX":
-		return e.executeSBFM(state, instr, instrValue)
+		return e.executeSBFM(state, inst, instrValue)
 	case "UBFM":
-		return e.executeUBFM(state, instr, instrValue)
+		return e.executeUBFM(state, inst, instrValue)
 	case "UBFIZ":
-		return e.executeUBFIZ(state, instr)
+		return e.executeUBFIZ(state, inst)
 	case "UBFX":
-		return e.executeUBFX(state, instr)
+		return e.executeUBFX(state, inst)
 	case "LSL":
-		return e.executeLSL(state, instr)
+		return e.executeLSL(state, inst)
 	case "LSR":
-		return e.executeLSR(state, instr)
+		return e.executeLSR(state, inst)
 	case "ASR":
-		return e.executeASR(state, instr)
+		return e.executeASR(state, inst)
 	case "UXTB":
 		// Zero extend byte
-		if len(instr.Operands) < 2 {
-			return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(), fmt.Sprintf("%v", instr.Operation), "UXTB requires dst, src")
+		if int(inst.NumOps) < 2 {
+			return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(), inst.Operation.String(), "UXTB requires dst, src")
 		}
-		dst := core.MapRegister(instr.Operands[0].Registers[0])
-		src := core.MapRegister(instr.Operands[1].Registers[0])
+		dst := core.MapRegister(inst.Operands[0].Registers[0])
+		src := core.MapRegister(inst.Operands[1].Registers[0])
 		if dst == -1 || src == -1 {
-			return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(), fmt.Sprintf("%v", instr.Operation), "invalid register")
+			return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(), inst.Operation.String(), "invalid register")
 		}
 		val := state.GetX(src) & 0xFF
-		if is32bitOp(instr.Operands[0]) {
+		if is32bitOp(inst.Operands[0]) {
 			state.SetW(dst, uint32(val))
 		} else {
 			state.SetX(dst, val)
@@ -392,16 +392,16 @@ func (e *BitfieldExecutor) Execute(state core.State, instr *disassemble.Instruct
 		return nil
 	case "UXTH":
 		// Zero extend halfword
-		if len(instr.Operands) < 2 {
-			return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(), fmt.Sprintf("%v", instr.Operation), "UXTH requires dst, src")
+		if int(inst.NumOps) < 2 {
+			return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(), inst.Operation.String(), "UXTH requires dst, src")
 		}
-		dst := core.MapRegister(instr.Operands[0].Registers[0])
-		src := core.MapRegister(instr.Operands[1].Registers[0])
+		dst := core.MapRegister(inst.Operands[0].Registers[0])
+		src := core.MapRegister(inst.Operands[1].Registers[0])
 		if dst == -1 || src == -1 {
-			return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(), fmt.Sprintf("%v", instr.Operation), "invalid register")
+			return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(), inst.Operation.String(), "invalid register")
 		}
 		val := state.GetX(src) & 0xFFFF
-		if is32bitOp(instr.Operands[0]) {
+		if is32bitOp(inst.Operands[0]) {
 			state.SetW(dst, uint32(val))
 		} else {
 			state.SetX(dst, val)
@@ -409,74 +409,74 @@ func (e *BitfieldExecutor) Execute(state core.State, instr *disassemble.Instruct
 		return nil
 	case "SXTB":
 		// Sign extend byte
-		if len(instr.Operands) < 2 {
-			return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(), fmt.Sprintf("%v", instr.Operation), "SXTB requires dst, src")
+		if int(inst.NumOps) < 2 {
+			return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(), inst.Operation.String(), "SXTB requires dst, src")
 		}
-		dst := core.MapRegister(instr.Operands[0].Registers[0])
-		src := core.MapRegister(instr.Operands[1].Registers[0])
+		dst := core.MapRegister(inst.Operands[0].Registers[0])
+		src := core.MapRegister(inst.Operands[1].Registers[0])
 		if dst == -1 || src == -1 {
-			return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(), fmt.Sprintf("%v", instr.Operation), "invalid register")
+			return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(), inst.Operation.String(), "invalid register")
 		}
 		b := int8(state.GetX(src) & 0xFF)
 		state.SetX(dst, uint64(int64(b)))
 		return nil
 	case "SXTH":
 		// Sign extend halfword
-		if len(instr.Operands) < 2 {
-			return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(), fmt.Sprintf("%v", instr.Operation), "SXTH requires dst, src")
+		if int(inst.NumOps) < 2 {
+			return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(), inst.Operation.String(), "SXTH requires dst, src")
 		}
-		dst := core.MapRegister(instr.Operands[0].Registers[0])
-		src := core.MapRegister(instr.Operands[1].Registers[0])
+		dst := core.MapRegister(inst.Operands[0].Registers[0])
+		src := core.MapRegister(inst.Operands[1].Registers[0])
 		if dst == -1 || src == -1 {
-			return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(), fmt.Sprintf("%v", instr.Operation), "invalid register")
+			return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(), inst.Operation.String(), "invalid register")
 		}
 		h := int16(state.GetX(src) & 0xFFFF)
 		state.SetX(dst, uint64(int64(h)))
 		return nil
 	case "SXTW":
 		// Sign extend word
-		if len(instr.Operands) < 2 {
-			return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(), fmt.Sprintf("%v", instr.Operation), "SXTW requires dst, src")
+		if int(inst.NumOps) < 2 {
+			return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(), inst.Operation.String(), "SXTW requires dst, src")
 		}
-		dst := core.MapRegister(instr.Operands[0].Registers[0])
-		src := core.MapRegister(instr.Operands[1].Registers[0])
+		dst := core.MapRegister(inst.Operands[0].Registers[0])
+		src := core.MapRegister(inst.Operands[1].Registers[0])
 		if dst == -1 || src == -1 {
-			return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(), fmt.Sprintf("%v", instr.Operation), "invalid register")
+			return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(), inst.Operation.String(), "invalid register")
 		}
 		w := int32(state.GetX(src) & 0xFFFFFFFF)
 		state.SetX(dst, uint64(int64(w)))
 		return nil
 	default:
 		return core.NewEmulationError(core.ErrUnsupportedFeature, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("bitfield instruction %s not implemented", e.mnemonic))
+			inst.Operation.String(), fmt.Sprintf("bitfield instruction %s not implemented", e.mnemonic))
 	}
 }
 
 // helpers for alias ops
-func getDstSrcRegs(state core.State, instr *disassemble.Instruction) (int, int, bool) {
-	if len(instr.Operands) < 2 {
+func getDstSrcRegs(state core.State, inst *disassemble.Inst) (int, int, bool) {
+	if int(inst.NumOps) < 2 {
 		return -1, -1, false
 	}
-	dst := core.MapRegister(instr.Operands[0].Registers[0])
-	src := core.MapRegister(instr.Operands[1].Registers[0])
+	dst := core.MapRegister(inst.Operands[0].Registers[0])
+	src := core.MapRegister(inst.Operands[1].Registers[0])
 	if dst == -1 || src == -1 {
 		return -1, -1, false
 	}
 	return dst, src, true
 }
 
-func is32bitOp(op disassemble.Operand) bool {
+func is32bitOp(op disassemble.Op) bool {
 	reg := uint32(op.Registers[0])
 	return reg >= 1 && reg <= 31
 }
 
-func immOf(op disassemble.Operand) uint64 {
+func immOf(op disassemble.Op) uint64 {
 	return uint64(op.Immediate)
 }
 
-func (e *BitfieldExecutor) executeBFM(state core.State, instr *disassemble.Instruction, instrValue uint32) error {
-	dstReg := core.MapRegister(instr.Operands[0].Registers[0])
-	srcReg := core.MapRegister(instr.Operands[1].Registers[0])
+func (e *BitfieldExecutor) executeBFM(state core.State, inst *disassemble.Inst, instrValue uint32) error {
+	dstReg := core.MapRegister(inst.Operands[0].Registers[0])
+	srcReg := core.MapRegister(inst.Operands[1].Registers[0])
 
 	sf := (instrValue >> 31) & 1
 	immr := (instrValue >> 16) & 0x3f
@@ -512,24 +512,24 @@ func (e *BitfieldExecutor) executeBFM(state core.State, instr *disassemble.Instr
 	return nil
 }
 
-func (e *BitfieldExecutor) executeBFI(state core.State, instr *disassemble.Instruction) error {
-	dst, src, ok := getDstSrcRegs(state, instr)
-	if !ok || len(instr.Operands) < 4 {
+func (e *BitfieldExecutor) executeBFI(state core.State, inst *disassemble.Inst) error {
+	dst, src, ok := getDstSrcRegs(state, inst)
+	if !ok || int(inst.NumOps) < 4 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "BFI requires dst, src, lsb, width")
+			inst.Operation.String(), "BFI requires dst, src, lsb, width")
 	}
-	lsb := uint(immOf(instr.Operands[2]))
-	width := uint(immOf(instr.Operands[3]))
+	lsb := uint(immOf(inst.Operands[2]))
+	width := uint(immOf(inst.Operands[3]))
 	if width == 0 || width > 64 || lsb >= 64 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid lsb/width")
+			inst.Operation.String(), "invalid lsb/width")
 	}
 	mask := ((uint64(1) << width) - 1) << lsb
 	srcVal := state.GetX(src)
 	insert := (srcVal & ((uint64(1) << width) - 1)) << lsb
 	dstVal := state.GetX(dst)
 	dstVal = (dstVal & ^mask) | (insert & mask)
-	if is32bitOp(instr.Operands[0]) {
+	if is32bitOp(inst.Operands[0]) {
 		state.SetW(dst, uint32(dstVal))
 	} else {
 		state.SetX(dst, dstVal)
@@ -537,24 +537,24 @@ func (e *BitfieldExecutor) executeBFI(state core.State, instr *disassemble.Instr
 	return nil
 }
 
-func (e *BitfieldExecutor) executeBFXIL(state core.State, instr *disassemble.Instruction) error {
-	dst, src, ok := getDstSrcRegs(state, instr)
-	if !ok || len(instr.Operands) < 4 {
+func (e *BitfieldExecutor) executeBFXIL(state core.State, inst *disassemble.Inst) error {
+	dst, src, ok := getDstSrcRegs(state, inst)
+	if !ok || int(inst.NumOps) < 4 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "BFXIL requires dst, src, lsb, width")
+			inst.Operation.String(), "BFXIL requires dst, src, lsb, width")
 	}
-	lsb := uint(immOf(instr.Operands[2]))
-	width := uint(immOf(instr.Operands[3]))
+	lsb := uint(immOf(inst.Operands[2]))
+	width := uint(immOf(inst.Operands[3]))
 	if width == 0 || width > 64 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid width")
+			inst.Operation.String(), "invalid width")
 	}
 	mask := uint64((uint64(1) << width) - 1)
 	srcVal := state.GetX(src)
 	insert := (srcVal >> lsb) & mask
 	dstVal := state.GetX(dst)
 	dstVal = (dstVal & ^mask) | insert
-	if is32bitOp(instr.Operands[0]) {
+	if is32bitOp(inst.Operands[0]) {
 		state.SetW(dst, uint32(dstVal))
 	} else {
 		state.SetX(dst, dstVal)
@@ -562,9 +562,9 @@ func (e *BitfieldExecutor) executeBFXIL(state core.State, instr *disassemble.Ins
 	return nil
 }
 
-func (e *BitfieldExecutor) executeSBFM(state core.State, instr *disassemble.Instruction, instrValue uint32) error {
-	dstReg := core.MapRegister(instr.Operands[0].Registers[0])
-	srcReg := core.MapRegister(instr.Operands[1].Registers[0])
+func (e *BitfieldExecutor) executeSBFM(state core.State, inst *disassemble.Inst, instrValue uint32) error {
+	dstReg := core.MapRegister(inst.Operands[0].Registers[0])
+	srcReg := core.MapRegister(inst.Operands[1].Registers[0])
 
 	sf := (instrValue >> 31) & 1
 	immr := (instrValue >> 16) & 0x3f
@@ -603,9 +603,9 @@ func (e *BitfieldExecutor) executeSBFM(state core.State, instr *disassemble.Inst
 	return nil
 }
 
-func (e *BitfieldExecutor) executeUBFM(state core.State, instr *disassemble.Instruction, instrValue uint32) error {
-	dstReg := core.MapRegister(instr.Operands[0].Registers[0])
-	srcReg := core.MapRegister(instr.Operands[1].Registers[0])
+func (e *BitfieldExecutor) executeUBFM(state core.State, inst *disassemble.Inst, instrValue uint32) error {
+	dstReg := core.MapRegister(inst.Operands[0].Registers[0])
+	srcReg := core.MapRegister(inst.Operands[1].Registers[0])
 
 	sf := (instrValue >> 31) & 1
 	immr := (instrValue >> 16) & 0x3f
@@ -637,22 +637,22 @@ func (e *BitfieldExecutor) executeUBFM(state core.State, instr *disassemble.Inst
 	return nil
 }
 
-func (e *BitfieldExecutor) executeUBFIZ(state core.State, instr *disassemble.Instruction) error {
-	dst, src, ok := getDstSrcRegs(state, instr)
-	if !ok || len(instr.Operands) < 4 {
+func (e *BitfieldExecutor) executeUBFIZ(state core.State, inst *disassemble.Inst) error {
+	dst, src, ok := getDstSrcRegs(state, inst)
+	if !ok || int(inst.NumOps) < 4 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "UBFIZ requires dst, src, lsb, width")
+			inst.Operation.String(), "UBFIZ requires dst, src, lsb, width")
 	}
-	lsb := uint(immOf(instr.Operands[2]))
-	width := uint(immOf(instr.Operands[3]))
+	lsb := uint(immOf(inst.Operands[2]))
+	width := uint(immOf(inst.Operands[3]))
 	if width == 0 || width > 64 || lsb >= 64 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid lsb/width")
+			inst.Operation.String(), "invalid lsb/width")
 	}
 	mask := (uint64(1) << width) - 1
 	srcVal := state.GetX(src)
 	result := (srcVal & mask) << lsb
-	if is32bitOp(instr.Operands[0]) {
+	if is32bitOp(inst.Operands[0]) {
 		state.SetW(dst, uint32(result))
 	} else {
 		state.SetX(dst, result)
@@ -660,22 +660,22 @@ func (e *BitfieldExecutor) executeUBFIZ(state core.State, instr *disassemble.Ins
 	return nil
 }
 
-func (e *BitfieldExecutor) executeUBFX(state core.State, instr *disassemble.Instruction) error {
-	dst, src, ok := getDstSrcRegs(state, instr)
-	if !ok || len(instr.Operands) < 4 {
+func (e *BitfieldExecutor) executeUBFX(state core.State, inst *disassemble.Inst) error {
+	dst, src, ok := getDstSrcRegs(state, inst)
+	if !ok || int(inst.NumOps) < 4 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "UBFX requires dst, src, lsb, width")
+			inst.Operation.String(), "UBFX requires dst, src, lsb, width")
 	}
-	lsb := uint(immOf(instr.Operands[2]))
-	width := uint(immOf(instr.Operands[3]))
+	lsb := uint(immOf(inst.Operands[2]))
+	width := uint(immOf(inst.Operands[3]))
 	if width == 0 || width > 64 || lsb >= 64 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid lsb/width")
+			inst.Operation.String(), "invalid lsb/width")
 	}
 	mask := (uint64(1) << width) - 1
 	srcVal := state.GetX(src)
 	result := (srcVal >> lsb) & mask
-	if is32bitOp(instr.Operands[0]) {
+	if is32bitOp(inst.Operands[0]) {
 		state.SetW(dst, uint32(result))
 	} else {
 		state.SetX(dst, result)
@@ -683,16 +683,16 @@ func (e *BitfieldExecutor) executeUBFX(state core.State, instr *disassemble.Inst
 	return nil
 }
 
-func (e *BitfieldExecutor) executeLSL(state core.State, instr *disassemble.Instruction) error {
-	dst, src, ok := getDstSrcRegs(state, instr)
-	if !ok || len(instr.Operands) < 3 {
+func (e *BitfieldExecutor) executeLSL(state core.State, inst *disassemble.Inst) error {
+	dst, src, ok := getDstSrcRegs(state, inst)
+	if !ok || int(inst.NumOps) < 3 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "LSL requires dst, src, shift")
+			inst.Operation.String(), "LSL requires dst, src, shift")
 	}
-	shift := uint(immOf(instr.Operands[2]))
+	shift := uint(immOf(inst.Operands[2]))
 	srcVal := state.GetX(src)
 	var result uint64
-	if is32bitOp(instr.Operands[0]) {
+	if is32bitOp(inst.Operands[0]) {
 		shift &= 31
 		result = uint64(uint32(srcVal) << shift)
 		state.SetW(dst, uint32(result))
@@ -704,16 +704,16 @@ func (e *BitfieldExecutor) executeLSL(state core.State, instr *disassemble.Instr
 	return nil
 }
 
-func (e *BitfieldExecutor) executeLSR(state core.State, instr *disassemble.Instruction) error {
-	dst, src, ok := getDstSrcRegs(state, instr)
-	if !ok || len(instr.Operands) < 3 {
+func (e *BitfieldExecutor) executeLSR(state core.State, inst *disassemble.Inst) error {
+	dst, src, ok := getDstSrcRegs(state, inst)
+	if !ok || int(inst.NumOps) < 3 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "LSR requires dst, src, shift")
+			inst.Operation.String(), "LSR requires dst, src, shift")
 	}
-	shift := uint(immOf(instr.Operands[2]))
+	shift := uint(immOf(inst.Operands[2]))
 	srcVal := state.GetX(src)
 	var result uint64
-	if is32bitOp(instr.Operands[0]) {
+	if is32bitOp(inst.Operands[0]) {
 		shift &= 31
 		result = uint64(uint32(srcVal) >> shift)
 		state.SetW(dst, uint32(result))
@@ -725,16 +725,16 @@ func (e *BitfieldExecutor) executeLSR(state core.State, instr *disassemble.Instr
 	return nil
 }
 
-func (e *BitfieldExecutor) executeASR(state core.State, instr *disassemble.Instruction) error {
-	dst, src, ok := getDstSrcRegs(state, instr)
-	if !ok || len(instr.Operands) < 3 {
+func (e *BitfieldExecutor) executeASR(state core.State, inst *disassemble.Inst) error {
+	dst, src, ok := getDstSrcRegs(state, inst)
+	if !ok || int(inst.NumOps) < 3 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "ASR requires dst, src, shift")
+			inst.Operation.String(), "ASR requires dst, src, shift")
 	}
-	shift := uint(immOf(instr.Operands[2]))
+	shift := uint(immOf(inst.Operands[2]))
 	srcVal := state.GetX(src)
 	var result uint64
-	if is32bitOp(instr.Operands[0]) {
+	if is32bitOp(inst.Operands[0]) {
 		shift &= 31
 		result = uint64(int32(uint32(srcVal)) >> shift)
 		state.SetW(dst, uint32(result))

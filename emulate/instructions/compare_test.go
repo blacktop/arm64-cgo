@@ -96,10 +96,11 @@ func TestCompareExecutor_CMP(t *testing.T) {
 				reg1 = disassemble.Register(35) // X1
 			}
 
-			instr := &disassemble.Instruction{
-				Operands: []disassemble.Operand{
-					{Registers: []disassemble.Register{reg0}},
-					{Registers: []disassemble.Register{reg1}},
+			instr := &disassemble.Inst{
+				NumOps: 2,
+				Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{reg0}},
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{reg1}},
 				},
 			}
 
@@ -134,9 +135,10 @@ func TestCompareExecutor_CMP_Immediate(t *testing.T) {
 	state.SetX(0, 15)
 
 	// Create instruction: CMP X0, #10
-	instr := &disassemble.Instruction{
-		Operands: []disassemble.Operand{
-			{Registers: []disassemble.Register{disassemble.Register(34)}}, // X0
+	instr := &disassemble.Inst{
+		NumOps: 2,
+		Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(34)}}, // X0
 			{Immediate: 10},
 		},
 	}
@@ -230,10 +232,11 @@ func TestCompareExecutor_CMN(t *testing.T) {
 				reg1 = disassemble.Register(35) // X1
 			}
 
-			instr := &disassemble.Instruction{
-				Operands: []disassemble.Operand{
-					{Registers: []disassemble.Register{reg0}},
-					{Registers: []disassemble.Register{reg1}},
+			instr := &disassemble.Inst{
+				NumOps: 2,
+				Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{reg0}},
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{reg1}},
 				},
 			}
 
@@ -327,10 +330,11 @@ func TestCompareExecutor_TST(t *testing.T) {
 				reg1 = disassemble.Register(35) // X1
 			}
 
-			instr := &disassemble.Instruction{
-				Operands: []disassemble.Operand{
-					{Registers: []disassemble.Register{reg0}},
-					{Registers: []disassemble.Register{reg1}},
+			instr := &disassemble.Inst{
+				NumOps: 2,
+				Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{reg0}},
+					{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{reg1}},
 				},
 			}
 
@@ -359,9 +363,10 @@ func TestCompareExecutor_TST_Immediate(t *testing.T) {
 	state.SetX(0, 0xFF00FF00FF00FF00)
 
 	// Create instruction: TST X0, #0x00FF00FF00FF00FF
-	instr := &disassemble.Instruction{
-		Operands: []disassemble.Operand{
-			{Registers: []disassemble.Register{disassemble.Register(34)}}, // X0
+	instr := &disassemble.Inst{
+		NumOps: 2,
+		Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(34)}}, // X0
 			{Immediate: 0x00FF00FF00FF00FF},
 		},
 	}
@@ -393,10 +398,11 @@ func TestCompareExecutor_CCMP(t *testing.T) {
 	state.SetZ(false)
 
 	// Create instruction: CCMP X0, X1, #0, AL
-	instr := &disassemble.Instruction{
-		Operands: []disassemble.Operand{
-			{Registers: []disassemble.Register{disassemble.Register(34)}}, // X0
-			{Registers: []disassemble.Register{disassemble.Register(35)}}, // X1
+	instr := &disassemble.Inst{
+		NumOps: 4,
+		Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(34)}}, // X0
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(35)}}, // X1
 			{Immediate: 0}, // NZCV immediate
 			{},             // Condition placeholder
 		},
@@ -436,10 +442,11 @@ func TestCompareExecutor_CCMN(t *testing.T) {
 	state.SetZ(false)
 
 	// Create instruction: CCMN X0, X1, #0, AL
-	instr := &disassemble.Instruction{
-		Operands: []disassemble.Operand{
-			{Registers: []disassemble.Register{disassemble.Register(34)}}, // X0
-			{Registers: []disassemble.Register{disassemble.Register(35)}}, // X1
+	instr := &disassemble.Inst{
+		NumOps: 4,
+		Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(34)}}, // X0
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(35)}}, // X1
 			{Immediate: 0}, // NZCV immediate
 			{},             // Condition placeholder
 		},
@@ -472,9 +479,10 @@ func TestCompareExecutor_InvalidOperands(t *testing.T) {
 	state := state.NewState()
 
 	// Test with insufficient operands
-	instr := &disassemble.Instruction{
-		Operands: []disassemble.Operand{
-			{Registers: []disassemble.Register{disassemble.Register(34)}}, // X0
+	instr := &disassemble.Inst{
+		NumOps: 1,
+		Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(34)}}, // X0
 		},
 	}
 
@@ -496,10 +504,11 @@ func TestCompareExecutor_UnsupportedInstruction(t *testing.T) {
 	executor := NewCompareExecutor("INVALID", "Invalid instruction")
 	state := state.NewState()
 
-	instr := &disassemble.Instruction{
-		Operands: []disassemble.Operand{
-			{Registers: []disassemble.Register{disassemble.Register(34)}}, // X0
-			{Registers: []disassemble.Register{disassemble.Register(35)}}, // X1
+	instr := &disassemble.Inst{
+		NumOps: 2,
+		Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(34)}}, // X0
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(35)}}, // X1
 		},
 	}
 
@@ -545,10 +554,11 @@ func BenchmarkCompareExecutor_CMP(b *testing.B) {
 	state.SetX(0, 100)
 	state.SetX(1, 50)
 
-	instr := &disassemble.Instruction{
-		Operands: []disassemble.Operand{
-			{Registers: []disassemble.Register{disassemble.Register(34)}}, // X0
-			{Registers: []disassemble.Register{disassemble.Register(35)}}, // X1
+	instr := &disassemble.Inst{
+		NumOps: 2,
+		Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(34)}}, // X0
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(35)}}, // X1
 		},
 	}
 
@@ -564,10 +574,11 @@ func BenchmarkCompareExecutor_TST(b *testing.B) {
 	state.SetX(0, 0xFF00FF00FF00FF00)
 	state.SetX(1, 0x00FF00FF00FF00FF)
 
-	instr := &disassemble.Instruction{
-		Operands: []disassemble.Operand{
-			{Registers: []disassemble.Register{disassemble.Register(34)}}, // X0
-			{Registers: []disassemble.Register{disassemble.Register(35)}}, // X1
+	instr := &disassemble.Inst{
+		NumOps: 2,
+		Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(34)}}, // X0
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(35)}}, // X1
 		},
 	}
 

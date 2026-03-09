@@ -219,7 +219,7 @@ func TestRegistryThreadSafety(t *testing.T) {
 		defer func() { done <- true }()
 
 		for i := 0; i < 100; i++ {
-			executor := NewExecutorFunc("TEST", func(state core.State, instr *disassemble.Instruction) error {
+			executor := NewExecutorFunc("TEST", func(state core.State, instr *disassemble.Inst) error {
 				return nil
 			})
 			registry.Register("TEST", executor)
@@ -252,7 +252,7 @@ func TestRegistryErrorHandling(t *testing.T) {
 	registry := NewRegistry()
 
 	t.Run("Empty Mnemonic", func(t *testing.T) {
-		executor := NewExecutorFunc("", func(state core.State, instr *disassemble.Instruction) error {
+		executor := NewExecutorFunc("", func(state core.State, instr *disassemble.Inst) error {
 			return nil
 		})
 
@@ -288,6 +288,13 @@ func BenchmarkRegistryOperations(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			registry.Get("ADD")
+		}
+	})
+
+	b.Run("GetByOp", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			registry.GetByOp(disassemble.ARM64_ADD)
 		}
 	})
 

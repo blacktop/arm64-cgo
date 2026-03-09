@@ -21,8 +21,8 @@ func NewBranchExecutor(mnemonic, description string) *BranchExecutor {
 }
 
 // ValidateInstruction performs basic validation for branch instructions
-func (e *BranchExecutor) ValidateInstruction(instr *disassemble.Instruction) error {
-	if instr == nil {
+func (e *BranchExecutor) ValidateInstruction(inst *disassemble.Inst) error {
+	if inst == nil {
 		return core.NewEmulationError(core.ErrInvalidInstruction, 0, e.mnemonic, "nil instruction")
 	}
 	// For branch instructions, we don't validate against the operation string
@@ -31,49 +31,49 @@ func (e *BranchExecutor) ValidateInstruction(instr *disassemble.Instruction) err
 }
 
 // Execute executes branch instructions
-func (e *BranchExecutor) Execute(state core.State, instr *disassemble.Instruction) error {
-	if err := e.ValidateInstruction(instr); err != nil {
+func (e *BranchExecutor) Execute(state core.State, inst *disassemble.Inst) error {
+	if err := e.ValidateInstruction(inst); err != nil {
 		return err
 	}
 
 	switch e.mnemonic {
 	case "B":
-		return e.executeB(state, instr)
+		return e.executeB(state, inst)
 	case "BL":
-		return e.executeBL(state, instr)
+		return e.executeBL(state, inst)
 	case "BLR":
-		return e.executeBLR(state, instr)
+		return e.executeBLR(state, inst)
 	case "BR":
-		return e.executeBR(state, instr)
+		return e.executeBR(state, inst)
 	case "RET":
-		return e.executeRET(state, instr)
+		return e.executeRET(state, inst)
 	case "CBZ":
-		return e.executeCBZ(state, instr)
+		return e.executeCBZ(state, inst)
 	case "CBNZ":
-		return e.executeCBNZ(state, instr)
+		return e.executeCBNZ(state, inst)
 	case "TBZ":
-		return e.executeTBZ(state, instr)
+		return e.executeTBZ(state, inst)
 	case "TBNZ":
-		return e.executeTBNZ(state, instr)
+		return e.executeTBNZ(state, inst)
 	// Conditional branches
 	case "B.EQ", "B.NE", "B.CS", "B.CC", "B.MI", "B.PL", "B.VS", "B.VC",
 		"B.HI", "B.LS", "B.GE", "B.LT", "B.GT", "B.LE", "B.AL", "B.NV":
-		return e.executeConditionalBranch(state, instr)
+		return e.executeConditionalBranch(state, inst)
 	default:
 		return core.NewEmulationError(core.ErrUnsupportedFeature, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("branch instruction %s not implemented", e.mnemonic))
+			inst.Operation.String(), fmt.Sprintf("branch instruction %s not implemented", e.mnemonic))
 	}
 }
 
 // B - Unconditional branch
-func (e *BranchExecutor) executeB(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) < 1 {
+func (e *BranchExecutor) executeB(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) < 1 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "B requires target address")
+			inst.Operation.String(), "B requires target address")
 	}
 
 	// Calculate target address
-	target, err := e.calculateBranchTarget(state, instr.Operands[0])
+	target, err := e.calculateBranchTarget(state, inst.Operands[0])
 	if err != nil {
 		return err
 	}
@@ -83,10 +83,10 @@ func (e *BranchExecutor) executeB(state core.State, instr *disassemble.Instructi
 }
 
 // BL - Branch with link
-func (e *BranchExecutor) executeBL(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) < 1 {
+func (e *BranchExecutor) executeBL(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) < 1 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "BL requires target address")
+			inst.Operation.String(), "BL requires target address")
 	}
 
 	// Save return address in link register (X30)
@@ -94,7 +94,7 @@ func (e *BranchExecutor) executeBL(state core.State, instr *disassemble.Instruct
 	state.SetX(30, returnAddr)
 
 	// Calculate target address
-	target, err := e.calculateBranchTarget(state, instr.Operands[0])
+	target, err := e.calculateBranchTarget(state, inst.Operands[0])
 	if err != nil {
 		return err
 	}
@@ -104,10 +104,10 @@ func (e *BranchExecutor) executeBL(state core.State, instr *disassemble.Instruct
 }
 
 // BLR - Branch with link to register
-func (e *BranchExecutor) executeBLR(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) < 1 {
+func (e *BranchExecutor) executeBLR(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) < 1 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "BLR requires target register")
+			inst.Operation.String(), "BLR requires target register")
 	}
 
 	// Save return address in link register (X30)
@@ -115,15 +115,15 @@ func (e *BranchExecutor) executeBLR(state core.State, instr *disassemble.Instruc
 	state.SetX(30, returnAddr)
 
 	// Get target address from register
-	if len(instr.Operands[0].Registers) == 0 {
+	if inst.Operands[0].NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "BLR requires register operand")
+			inst.Operation.String(), "BLR requires register operand")
 	}
 
-	targetReg := core.MapRegister(instr.Operands[0].Registers[0])
+	targetReg := core.MapRegister(inst.Operands[0].Registers[0])
 	if targetReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid target register")
+			inst.Operation.String(), "invalid target register")
 	}
 
 	target := state.GetX(targetReg)
@@ -132,22 +132,22 @@ func (e *BranchExecutor) executeBLR(state core.State, instr *disassemble.Instruc
 }
 
 // BR - Branch to register
-func (e *BranchExecutor) executeBR(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) < 1 {
+func (e *BranchExecutor) executeBR(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) < 1 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "BR requires target register")
+			inst.Operation.String(), "BR requires target register")
 	}
 
 	// Get target address from register
-	if len(instr.Operands[0].Registers) == 0 {
+	if inst.Operands[0].NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "BR requires register operand")
+			inst.Operation.String(), "BR requires register operand")
 	}
 
-	targetReg := core.MapRegister(instr.Operands[0].Registers[0])
+	targetReg := core.MapRegister(inst.Operands[0].Registers[0])
 	if targetReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid target register")
+			inst.Operation.String(), "invalid target register")
 	}
 
 	target := state.GetX(targetReg)
@@ -156,14 +156,14 @@ func (e *BranchExecutor) executeBR(state core.State, instr *disassemble.Instruct
 }
 
 // RET - Return from subroutine
-func (e *BranchExecutor) executeRET(state core.State, instr *disassemble.Instruction) error {
+func (e *BranchExecutor) executeRET(state core.State, inst *disassemble.Inst) error {
 	var targetReg int
-	if len(instr.Operands) > 0 && len(instr.Operands[0].Registers) > 0 {
+	if int(inst.NumOps) > 0 && inst.Operands[0].NumRegisters > 0 {
 		// RET with specific register
-		targetReg = core.MapRegister(instr.Operands[0].Registers[0])
+		targetReg = core.MapRegister(inst.Operands[0].Registers[0])
 		if targetReg == -1 {
 			return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), "invalid return register")
+				inst.Operation.String(), "invalid return register")
 		}
 	} else {
 		// Default RET uses X30 (link register)
@@ -176,35 +176,35 @@ func (e *BranchExecutor) executeRET(state core.State, instr *disassemble.Instruc
 }
 
 // CBZ - Compare and branch if zero
-func (e *BranchExecutor) executeCBZ(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) < 2 {
+func (e *BranchExecutor) executeCBZ(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) < 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "CBZ requires register and target")
+			inst.Operation.String(), "CBZ requires register and target")
 	}
 
 	// Get register value
-	if len(instr.Operands[0].Registers) == 0 {
+	if inst.Operands[0].NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "CBZ requires register operand")
+			inst.Operation.String(), "CBZ requires register operand")
 	}
 
-	testReg := core.MapRegister(instr.Operands[0].Registers[0])
+	testReg := core.MapRegister(inst.Operands[0].Registers[0])
 	if testReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid test register")
+			inst.Operation.String(), "invalid test register")
 	}
 
 	value := state.GetX(testReg)
 
 	// Check if this is a 32-bit operation (W register)
 	// W registers are 1-31, X registers are 34-64 in the disassemble package
-	if uint32(instr.Operands[0].Registers[0]) >= 1 && uint32(instr.Operands[0].Registers[0]) <= 31 {
+	if uint32(inst.Operands[0].Registers[0]) >= 1 && uint32(inst.Operands[0].Registers[0]) <= 31 {
 		value = uint64(state.GetW(testReg))
 	}
 
 	// Branch if zero
 	if value == 0 {
-		target, err := e.calculateBranchTarget(state, instr.Operands[1])
+		target, err := e.calculateBranchTarget(state, inst.Operands[1])
 		if err != nil {
 			return err
 		}
@@ -218,35 +218,35 @@ func (e *BranchExecutor) executeCBZ(state core.State, instr *disassemble.Instruc
 }
 
 // CBNZ - Compare and branch if not zero
-func (e *BranchExecutor) executeCBNZ(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) < 2 {
+func (e *BranchExecutor) executeCBNZ(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) < 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "CBNZ requires register and target")
+			inst.Operation.String(), "CBNZ requires register and target")
 	}
 
 	// Get register value
-	if len(instr.Operands[0].Registers) == 0 {
+	if inst.Operands[0].NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "CBNZ requires register operand")
+			inst.Operation.String(), "CBNZ requires register operand")
 	}
 
-	testReg := core.MapRegister(instr.Operands[0].Registers[0])
+	testReg := core.MapRegister(inst.Operands[0].Registers[0])
 	if testReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid test register")
+			inst.Operation.String(), "invalid test register")
 	}
 
 	value := state.GetX(testReg)
 
 	// Check if this is a 32-bit operation (W register)
 	// W registers are 1-31, X registers are 34-64 in the disassemble package
-	if uint32(instr.Operands[0].Registers[0]) >= 1 && uint32(instr.Operands[0].Registers[0]) <= 31 {
+	if uint32(inst.Operands[0].Registers[0]) >= 1 && uint32(inst.Operands[0].Registers[0]) <= 31 {
 		value = uint64(state.GetW(testReg))
 	}
 
 	// Branch if not zero
 	if value != 0 {
-		target, err := e.calculateBranchTarget(state, instr.Operands[1])
+		target, err := e.calculateBranchTarget(state, inst.Operands[1])
 		if err != nil {
 			return err
 		}
@@ -260,36 +260,36 @@ func (e *BranchExecutor) executeCBNZ(state core.State, instr *disassemble.Instru
 }
 
 // TBZ - Test bit and branch if zero
-func (e *BranchExecutor) executeTBZ(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) < 3 {
+func (e *BranchExecutor) executeTBZ(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) < 3 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "TBZ requires register, bit position, and target")
+			inst.Operation.String(), "TBZ requires register, bit position, and target")
 	}
 
 	// Get register value
-	if len(instr.Operands[0].Registers) == 0 {
+	if inst.Operands[0].NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "TBZ requires register operand")
+			inst.Operation.String(), "TBZ requires register operand")
 	}
 
-	testReg := core.MapRegister(instr.Operands[0].Registers[0])
+	testReg := core.MapRegister(inst.Operands[0].Registers[0])
 	if testReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid test register")
+			inst.Operation.String(), "invalid test register")
 	}
 
 	value := state.GetX(testReg)
-	bitPos := uint64(instr.Operands[1].Immediate)
+	bitPos := uint64(inst.Operands[1].Immediate)
 
 	// Validate bit position
 	if bitPos >= 64 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid bit position")
+			inst.Operation.String(), "invalid bit position")
 	}
 
 	// Test bit and branch if zero
 	if (value & (1 << bitPos)) == 0 {
-		target, err := e.calculateBranchTarget(state, instr.Operands[2])
+		target, err := e.calculateBranchTarget(state, inst.Operands[2])
 		if err != nil {
 			return err
 		}
@@ -303,36 +303,36 @@ func (e *BranchExecutor) executeTBZ(state core.State, instr *disassemble.Instruc
 }
 
 // TBNZ - Test bit and branch if not zero
-func (e *BranchExecutor) executeTBNZ(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) < 3 {
+func (e *BranchExecutor) executeTBNZ(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) < 3 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "TBNZ requires register, bit position, and target")
+			inst.Operation.String(), "TBNZ requires register, bit position, and target")
 	}
 
 	// Get register value
-	if len(instr.Operands[0].Registers) == 0 {
+	if inst.Operands[0].NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "TBNZ requires register operand")
+			inst.Operation.String(), "TBNZ requires register operand")
 	}
 
-	testReg := core.MapRegister(instr.Operands[0].Registers[0])
+	testReg := core.MapRegister(inst.Operands[0].Registers[0])
 	if testReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid test register")
+			inst.Operation.String(), "invalid test register")
 	}
 
 	value := state.GetX(testReg)
-	bitPos := uint64(instr.Operands[1].Immediate)
+	bitPos := uint64(inst.Operands[1].Immediate)
 
 	// Validate bit position
 	if bitPos >= 64 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid bit position")
+			inst.Operation.String(), "invalid bit position")
 	}
 
 	// Test bit and branch if not zero
 	if (value & (1 << bitPos)) != 0 {
-		target, err := e.calculateBranchTarget(state, instr.Operands[2])
+		target, err := e.calculateBranchTarget(state, inst.Operands[2])
 		if err != nil {
 			return err
 		}
@@ -346,10 +346,10 @@ func (e *BranchExecutor) executeTBNZ(state core.State, instr *disassemble.Instru
 }
 
 // executeConditionalBranch handles conditional branch instructions
-func (e *BranchExecutor) executeConditionalBranch(state core.State, instr *disassemble.Instruction) error {
-	if len(instr.Operands) < 1 {
+func (e *BranchExecutor) executeConditionalBranch(state core.State, inst *disassemble.Inst) error {
+	if int(inst.NumOps) < 1 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "conditional branch requires target address")
+			inst.Operation.String(), "conditional branch requires target address")
 	}
 
 	// Extract condition code from mnemonic (e.g., "B.EQ" -> EQ)
@@ -357,7 +357,7 @@ func (e *BranchExecutor) executeConditionalBranch(state core.State, instr *disas
 
 	// Evaluate condition
 	if e.evaluateCondition(state, condition) {
-		target, err := e.calculateBranchTarget(state, instr.Operands[0])
+		target, err := e.calculateBranchTarget(state, inst.Operands[0])
 		if err != nil {
 			return err
 		}
@@ -373,9 +373,9 @@ func (e *BranchExecutor) executeConditionalBranch(state core.State, instr *disas
 // Helper methods
 
 // calculateBranchTarget calculates the target address for a branch
-func (e *BranchExecutor) calculateBranchTarget(state core.State, operand disassemble.Operand) (uint64, error) {
+func (e *BranchExecutor) calculateBranchTarget(state core.State, operand disassemble.Op) (uint64, error) {
 	// Check if this is a register operand first
-	if len(operand.Registers) > 0 {
+	if operand.NumRegisters > 0 {
 		// Register indirect branch
 		regIdx := core.MapRegister(operand.Registers[0])
 		if regIdx == -1 {
@@ -575,11 +575,11 @@ func IsRegisterBranch(mnemonic string) bool {
 // Enum-based helpers (prefer these in new code to avoid string matching costs)
 
 // IsReturnOp returns true if the instruction is any return-like instruction.
-func IsReturnOp(instr *disassemble.Instruction) bool {
-	if instr == nil {
+func IsReturnOp(inst *disassemble.Inst) bool {
+	if inst == nil {
 		return false
 	}
-	switch instr.Operation {
+	switch inst.Operation {
 	case disassemble.ARM64_RET, disassemble.ARM64_RETAA, disassemble.ARM64_RETAB,
 		disassemble.ARM64_ERET, disassemble.ARM64_ERETAA, disassemble.ARM64_ERETAB:
 		return true
@@ -599,11 +599,11 @@ func IsReturnMnemonic(mnemonic string) bool {
 }
 
 // IsConditionalBranchOp returns true for conditional B.<cc> operations.
-func IsConditionalBranchOp(instr *disassemble.Instruction) bool {
-	if instr == nil {
+func IsConditionalBranchOp(inst *disassemble.Inst) bool {
+	if inst == nil {
 		return false
 	}
-	switch instr.Operation {
+	switch inst.Operation {
 	case disassemble.ARM64_B_AL, disassemble.ARM64_B_CC, disassemble.ARM64_B_CS,
 		disassemble.ARM64_B_EQ, disassemble.ARM64_B_GE, disassemble.ARM64_B_GT,
 		disassemble.ARM64_B_HI, disassemble.ARM64_B_LE, disassemble.ARM64_B_LS,
@@ -617,11 +617,11 @@ func IsConditionalBranchOp(instr *disassemble.Instruction) bool {
 }
 
 // IsUnconditionalBranchOp returns true for non-return unconditional branches.
-func IsUnconditionalBranchOp(instr *disassemble.Instruction) bool {
-	if instr == nil {
+func IsUnconditionalBranchOp(inst *disassemble.Inst) bool {
+	if inst == nil {
 		return false
 	}
-	switch instr.Operation {
+	switch inst.Operation {
 	case disassemble.ARM64_B, disassemble.ARM64_BL, disassemble.ARM64_BLR, disassemble.ARM64_BR:
 		return true
 	default:
@@ -630,16 +630,16 @@ func IsUnconditionalBranchOp(instr *disassemble.Instruction) bool {
 }
 
 // IsBranchOp returns true for any branch-like operation including returns.
-func IsBranchOp(instr *disassemble.Instruction) bool {
-	if IsUnconditionalBranchOp(instr) || IsConditionalBranchOp(instr) {
+func IsBranchOp(inst *disassemble.Inst) bool {
+	if IsUnconditionalBranchOp(inst) || IsConditionalBranchOp(inst) {
 		return true
 	}
-	if instr == nil {
+	if inst == nil {
 		return false
 	}
-	switch instr.Operation {
+	switch inst.Operation {
 	case disassemble.ARM64_CBZ, disassemble.ARM64_CBNZ, disassemble.ARM64_TBZ, disassemble.ARM64_TBNZ:
 		return true
 	}
-	return IsReturnOp(instr)
+	return IsReturnOp(inst)
 }

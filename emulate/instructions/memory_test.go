@@ -45,11 +45,12 @@ func TestMemoryExecutor_LDR_Simple(t *testing.T) {
 	state.SetX(1, testAddr)
 
 	// Create instruction: LDR X0, [X1]
-	instr := &disassemble.Instruction{
+	instr := &disassemble.Inst{
 		Operation: disassemble.ARM64_LDR,
-		Operands: []disassemble.Operand{
-			{Registers: []disassemble.Register{X0_REG}}, // X0
-			{Registers: []disassemble.Register{X1_REG}}, // X1
+		NumOps:    2,
+		Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{X0_REG}}, // X0
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{X1_REG}}, // X1
 		},
 	}
 
@@ -77,11 +78,12 @@ func TestMemoryExecutor_STR_Simple(t *testing.T) {
 	state.SetX(1, testAddr)
 
 	// Create instruction: STR X0, [X1]
-	instr := &disassemble.Instruction{
+	instr := &disassemble.Inst{
 		Operation: disassemble.ARM64_STR,
-		Operands: []disassemble.Operand{
-			{Registers: []disassemble.Register{X0_REG}}, // X0
-			{Registers: []disassemble.Register{X1_REG}}, // X1
+		NumOps:    2,
+		Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{X0_REG}}, // X0
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{X1_REG}}, // X1
 		},
 	}
 
@@ -113,11 +115,12 @@ func TestMemoryExecutor_LDRB_Simple(t *testing.T) {
 	state.SetX(1, testAddr)
 
 	// Create instruction: LDRB W0, [X1]
-	instr := &disassemble.Instruction{
+	instr := &disassemble.Inst{
 		Operation: disassemble.ARM64_LDRB,
-		Operands: []disassemble.Operand{
-			{Registers: []disassemble.Register{W0_REG}}, // W0
-			{Registers: []disassemble.Register{X1_REG}}, // X1
+		NumOps:    2,
+		Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{W0_REG}}, // W0
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{X1_REG}}, // X1
 		},
 	}
 
@@ -148,12 +151,13 @@ func TestMemoryExecutor_LDP_Simple(t *testing.T) {
 	state.SetX(2, testAddr)
 
 	// Create instruction: LDP X0, X1, [X2]
-	instr := &disassemble.Instruction{
+	instr := &disassemble.Inst{
 		Operation: disassemble.ARM64_LDP,
-		Operands: []disassemble.Operand{
-			{Registers: []disassemble.Register{X0_REG}}, // X0
-			{Registers: []disassemble.Register{X1_REG}}, // X1
-			{Registers: []disassemble.Register{X2_REG}}, // X2
+		NumOps:    3,
+		Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{X0_REG}}, // X0
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{X1_REG}}, // X1
+			{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{X2_REG}}, // X2
 		},
 	}
 
@@ -186,12 +190,13 @@ func TestMemoryExecutor_LDADDA(t *testing.T) {
 		state.SetX(2, addr)
 		state.SetW(1, addend)
 
-		instr := &disassemble.Instruction{
+		instr := &disassemble.Inst{
 			Operation: disassemble.ARM64_LDADDA,
-			Operands: []disassemble.Operand{
-				{Registers: []disassemble.Register{W0_REG}},
-				{Registers: []disassemble.Register{W1_REG}},
-				{Registers: []disassemble.Register{X2_REG}},
+			NumOps:    3,
+			Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+				{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{W0_REG}},
+				{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{W1_REG}},
+				{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{X2_REG}},
 			},
 		}
 
@@ -224,12 +229,13 @@ func TestMemoryExecutor_LDADDA(t *testing.T) {
 		state.SetX(2, addr)
 		state.SetX(1, addend)
 
-		instr := &disassemble.Instruction{
+		instr := &disassemble.Inst{
 			Operation: disassemble.ARM64_LDADDA,
-			Operands: []disassemble.Operand{
-				{Registers: []disassemble.Register{X0_REG}},
-				{Registers: []disassemble.Register{X1_REG}},
-				{Registers: []disassemble.Register{X2_REG}},
+			NumOps:    3,
+			Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+				{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{X0_REG}},
+				{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{X1_REG}},
+				{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{X2_REG}},
 			},
 		}
 

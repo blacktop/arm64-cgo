@@ -45,12 +45,12 @@ func TestBranchExecutor_B(t *testing.T) {
 			state := state.NewState()
 			state.SetPC(tt.initialPC)
 
-			instr := &disassemble.Instruction{
+			instr := &disassemble.Inst{
 				Operation: disassemble.ARM64_B,
-				Operands: []disassemble.Operand{
+				NumOps:    1,
+				Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
 					{
-						Immediate: uint64(tt.targetOffset),
-						SignedImm: tt.signedImm,
+						Immediate: tt.expectedPC,
 					},
 				},
 			}
@@ -78,12 +78,12 @@ func TestBranchExecutor_BL(t *testing.T) {
 
 	state.SetPC(initialPC)
 
-	instr := &disassemble.Instruction{
+	instr := &disassemble.Inst{
 		Operation: disassemble.ARM64_BL,
-		Operands: []disassemble.Operand{
+		NumOps:    1,
+		Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
 			{
-				Immediate: targetOffset,
-				SignedImm: false,
+				Immediate: expectedPC,
 			},
 		},
 	}
@@ -113,11 +113,13 @@ func TestBranchExecutor_BR(t *testing.T) {
 	state.SetPC(initialPC)
 	state.SetX(targetReg, targetAddr)
 
-	instr := &disassemble.Instruction{
+	instr := &disassemble.Inst{
 		Operation: disassemble.ARM64_BR,
-		Operands: []disassemble.Operand{
+		NumOps:    1,
+		Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
 			{
-				Registers: []disassemble.Register{disassemble.Register(34 + targetReg)}, // X5
+				NumRegisters: 1,
+				Registers:    [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(34 + targetReg)}, // X5
 			},
 		},
 	}
@@ -144,11 +146,13 @@ func TestBranchExecutor_BLR(t *testing.T) {
 	state.SetPC(initialPC)
 	state.SetX(targetReg, targetAddr)
 
-	instr := &disassemble.Instruction{
+	instr := &disassemble.Inst{
 		Operation: disassemble.ARM64_BLR,
-		Operands: []disassemble.Operand{
+		NumOps:    1,
+		Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
 			{
-				Registers: []disassemble.Register{disassemble.Register(34 + targetReg)}, // X5
+				NumRegisters: 1,
+				Registers:    [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(34 + targetReg)}, // X5
 			},
 		},
 	}
@@ -197,14 +201,16 @@ func TestBranchExecutor_RET(t *testing.T) {
 			state.SetPC(initialPC)
 			state.SetX(tt.retReg, tt.retAddr)
 
-			instr := &disassemble.Instruction{
+			instr := &disassemble.Inst{
 				Operation: disassemble.ARM64_RET,
 			}
 
 			if tt.hasOperand {
-				instr.Operands = []disassemble.Operand{
+				instr.NumOps = 1
+				instr.Operands = [disassemble.MAX_OPERANDS]disassemble.Op{
 					{
-						Registers: []disassemble.Register{disassemble.Register(34 + tt.retReg)},
+						NumRegisters: 1,
+						Registers:    [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(34 + tt.retReg)},
 					},
 				}
 			}
@@ -276,15 +282,16 @@ func TestBranchExecutor_CBZ(t *testing.T) {
 				regID = disassemble.Register(34 + testReg) // X5
 			}
 
-			instr := &disassemble.Instruction{
+			instr := &disassemble.Inst{
 				Operation: disassemble.ARM64_CBZ,
-				Operands: []disassemble.Operand{
+				NumOps:    2,
+				Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
 					{
-						Registers: []disassemble.Register{regID},
+						NumRegisters: 1,
+						Registers:    [disassemble.MAX_REGISTERS]disassemble.Register{regID},
 					},
 					{
-						Immediate: tt.targetOffset,
-						SignedImm: false,
+						Immediate: initialPC + tt.targetOffset,
 					},
 				},
 			}
@@ -363,15 +370,16 @@ func TestBranchExecutor_CBNZ(t *testing.T) {
 				regID = disassemble.Register(34 + testReg) // X5
 			}
 
-			instr := &disassemble.Instruction{
+			instr := &disassemble.Inst{
 				Operation: disassemble.ARM64_CBNZ,
-				Operands: []disassemble.Operand{
+				NumOps:    2,
+				Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
 					{
-						Registers: []disassemble.Register{regID},
+						NumRegisters: 1,
+						Registers:    [disassemble.MAX_REGISTERS]disassemble.Register{regID},
 					},
 					{
-						Immediate: tt.targetOffset,
-						SignedImm: false,
+						Immediate: initialPC + tt.targetOffset,
 					},
 				},
 			}
@@ -450,18 +458,19 @@ func TestBranchExecutor_TBZ(t *testing.T) {
 			state.SetPC(initialPC)
 			state.SetX(testReg, tt.regValue)
 
-			instr := &disassemble.Instruction{
+			instr := &disassemble.Inst{
 				Operation: disassemble.ARM64_TBZ,
-				Operands: []disassemble.Operand{
+				NumOps:    3,
+				Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
 					{
-						Registers: []disassemble.Register{disassemble.Register(34 + testReg)}, // X5
+						NumRegisters: 1,
+						Registers:    [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(34 + testReg)}, // X5
 					},
 					{
 						Immediate: tt.bitPos,
 					},
 					{
-						Immediate: tt.targetOffset,
-						SignedImm: false,
+						Immediate: initialPC + tt.targetOffset,
 					},
 				},
 			}
@@ -533,18 +542,19 @@ func TestBranchExecutor_TBNZ(t *testing.T) {
 			state.SetPC(initialPC)
 			state.SetX(testReg, tt.regValue)
 
-			instr := &disassemble.Instruction{
+			instr := &disassemble.Inst{
 				Operation: disassemble.ARM64_TBNZ,
-				Operands: []disassemble.Operand{
+				NumOps:    3,
+				Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
 					{
-						Registers: []disassemble.Register{disassemble.Register(34 + testReg)}, // X5
+						NumRegisters: 1,
+						Registers:    [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(34 + testReg)}, // X5
 					},
 					{
 						Immediate: tt.bitPos,
 					},
 					{
-						Immediate: tt.targetOffset,
-						SignedImm: false,
+						Immediate: initialPC + tt.targetOffset,
 					},
 				},
 			}
@@ -725,12 +735,12 @@ func TestBranchExecutor_ConditionalBranch(t *testing.T) {
 			state.SetC(tt.flags.c)
 			state.SetV(tt.flags.v)
 
-			instr := &disassemble.Instruction{
+			instr := &disassemble.Inst{
 				Operation: disassemble.ARM64_B_EQ, // Use a generic conditional branch operation
-				Operands: []disassemble.Operand{
+				NumOps:    1,
+				Operands: [disassemble.MAX_OPERANDS]disassemble.Op{
 					{
-						Immediate: tt.targetOffset,
-						SignedImm: false,
+						Immediate: initialPC + tt.targetOffset,
 					},
 				},
 			}
@@ -758,38 +768,46 @@ func TestBranchExecutor_InvalidInstructions(t *testing.T) {
 	tests := []struct {
 		name        string
 		mnemonic    string
-		operands    []disassemble.Operand
+		numOps      uint8
+		operands    [disassemble.MAX_OPERANDS]disassemble.Op
 		expectError bool
 	}{
 		{
 			name:        "B with no operands",
 			mnemonic:    "B",
-			operands:    []disassemble.Operand{},
+			numOps:      0,
+			operands:    [disassemble.MAX_OPERANDS]disassemble.Op{},
 			expectError: true,
 		},
 		{
 			name:        "BL with no operands",
 			mnemonic:    "BL",
-			operands:    []disassemble.Operand{},
+			numOps:      0,
+			operands:    [disassemble.MAX_OPERANDS]disassemble.Op{},
 			expectError: true,
 		},
 		{
 			name:        "BR with no operands",
 			mnemonic:    "BR",
-			operands:    []disassemble.Operand{},
+			numOps:      0,
+			operands:    [disassemble.MAX_OPERANDS]disassemble.Op{},
 			expectError: true,
 		},
 		{
-			name:        "CBZ with only one operand",
-			mnemonic:    "CBZ",
-			operands:    []disassemble.Operand{{Registers: []disassemble.Register{disassemble.Register(34)}}},
+			name:     "CBZ with only one operand",
+			mnemonic: "CBZ",
+			numOps:   1,
+			operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+				{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(34)}},
+			},
 			expectError: true,
 		},
 		{
 			name:     "TBZ with invalid bit position",
 			mnemonic: "TBZ",
-			operands: []disassemble.Operand{
-				{Registers: []disassemble.Register{disassemble.Register(34)}},
+			numOps:   3,
+			operands: [disassemble.MAX_OPERANDS]disassemble.Op{
+				{NumRegisters: 1, Registers: [disassemble.MAX_REGISTERS]disassemble.Register{disassemble.Register(34)}},
 				{Immediate: 64}, // Invalid bit position
 				{Immediate: 0x100},
 			},
@@ -803,8 +821,9 @@ func TestBranchExecutor_InvalidInstructions(t *testing.T) {
 			state := state.NewState()
 			state.SetPC(0x1000)
 
-			instr := &disassemble.Instruction{
+			instr := &disassemble.Inst{
 				Operation: disassemble.ARM64_B, // Use a generic operation for error testing
+				NumOps:    tt.numOps,
 				Operands:  tt.operands,
 			}
 

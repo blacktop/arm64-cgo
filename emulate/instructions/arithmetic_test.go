@@ -129,7 +129,7 @@ func (s *MockState) Clone() core.State                                          
 func (s *MockState) Reset()                                                       {}
 
 // Helper function to create a mock instruction
-func createMockInstruction(operation string, operands []disassemble.Operand) *disassemble.Instruction {
+func createMockInstruction(operation string, operands []disassemble.Op) *disassemble.Inst {
 	// For testing, we'll create a minimal instruction with the operation as a string
 	// The actual operation field will be set to a valid operation constant
 	var op = disassemble.ARM64_ADD // Default to ADD
@@ -177,22 +177,29 @@ func createMockInstruction(operation string, operands []disassemble.Operand) *di
 		op = disassemble.ARM64_ERROR // Use error for invalid operations
 	}
 
-	return &disassemble.Instruction{
+	inst := &disassemble.Inst{
 		Operation: op,
-		Operands:  operands,
+		NumOps:    uint8(len(operands)),
 	}
+	for i, operand := range operands {
+		if i < len(inst.Operands) {
+			inst.Operands[i] = operand
+		}
+	}
+	return inst
 }
 
 // Helper function to create register operand
-func createRegisterOperand(regID disassemble.Register) disassemble.Operand {
-	return disassemble.Operand{
-		Registers: []disassemble.Register{regID},
+func createRegisterOperand(regID disassemble.Register) disassemble.Op {
+	return disassemble.Op{
+		Registers:    [disassemble.MAX_REGISTERS]disassemble.Register{regID},
+		NumRegisters: 1,
 	}
 }
 
 // Helper function to create immediate operand
-func createImmediateOperand(value uint64) disassemble.Operand {
-	return disassemble.Operand{
+func createImmediateOperand(value uint64) disassemble.Op {
+	return disassemble.Op{
 		Immediate: value,
 	}
 }
@@ -206,7 +213,7 @@ func TestArithmeticExecutor_ADD(t *testing.T) {
 	state.SetX(2, 5)  // X2 = 5
 
 	// Test ADD X0, X1, X2 (X0 = X1 + X2 = 15)
-	instr := createMockInstruction("ADD", []disassemble.Operand{
+	instr := createMockInstruction("ADD", []disassemble.Op{
 		createRegisterOperand(disassemble.REG_X0),
 		createRegisterOperand(disassemble.REG_X1),
 		createRegisterOperand(disassemble.REG_X2),
@@ -232,7 +239,7 @@ func TestArithmeticExecutor_ADD_Immediate(t *testing.T) {
 	state.SetX(1, 10) // X1 = 10
 
 	// Test ADD X0, X1, #5 (X0 = X1 + 5 = 15)
-	instr := createMockInstruction("ADD", []disassemble.Operand{
+	instr := createMockInstruction("ADD", []disassemble.Op{
 		createRegisterOperand(disassemble.REG_X0),
 		createRegisterOperand(disassemble.REG_X1),
 		createImmediateOperand(5),
@@ -259,7 +266,7 @@ func TestArithmeticExecutor_SUB(t *testing.T) {
 	state.SetX(2, 3)  // X2 = 3
 
 	// Test SUB X0, X1, X2 (X0 = X1 - X2 = 7)
-	instr := createMockInstruction("SUB", []disassemble.Operand{
+	instr := createMockInstruction("SUB", []disassemble.Op{
 		createRegisterOperand(disassemble.REG_X0),
 		createRegisterOperand(disassemble.REG_X1),
 		createRegisterOperand(disassemble.REG_X2),
@@ -286,7 +293,7 @@ func TestArithmeticExecutor_MUL(t *testing.T) {
 	state.SetX(2, 7) // X2 = 7
 
 	// Test MUL X0, X1, X2 (X0 = X1 * X2 = 42)
-	instr := createMockInstruction("MUL", []disassemble.Operand{
+	instr := createMockInstruction("MUL", []disassemble.Op{
 		createRegisterOperand(disassemble.REG_X0),
 		createRegisterOperand(disassemble.REG_X1),
 		createRegisterOperand(disassemble.REG_X2),
@@ -313,7 +320,7 @@ func TestArithmeticExecutor_UDIV(t *testing.T) {
 	state.SetX(2, 4)  // X2 = 4
 
 	// Test UDIV X0, X1, X2 (X0 = X1 / X2 = 5)
-	instr := createMockInstruction("UDIV", []disassemble.Operand{
+	instr := createMockInstruction("UDIV", []disassemble.Op{
 		createRegisterOperand(disassemble.REG_X0),
 		createRegisterOperand(disassemble.REG_X1),
 		createRegisterOperand(disassemble.REG_X2),
@@ -340,7 +347,7 @@ func TestArithmeticExecutor_UDIV_DivisionByZero(t *testing.T) {
 	state.SetX(2, 0)  // X2 = 0
 
 	// Test UDIV X0, X1, X2 (X0 = X1 / X2 = 0, ARM64 behavior)
-	instr := createMockInstruction("UDIV", []disassemble.Operand{
+	instr := createMockInstruction("UDIV", []disassemble.Op{
 		createRegisterOperand(disassemble.REG_X0),
 		createRegisterOperand(disassemble.REG_X1),
 		createRegisterOperand(disassemble.REG_X2),
@@ -368,7 +375,7 @@ func TestArithmeticExecutor_MADD(t *testing.T) {
 	state.SetX(3, 10) // X3 = 10 (Ra)
 
 	// Test MADD X0, X1, X2, X3 (X0 = X3 + (X1 * X2) = 10 + (3 * 4) = 22)
-	instr := createMockInstruction("MADD", []disassemble.Operand{
+	instr := createMockInstruction("MADD", []disassemble.Op{
 		createRegisterOperand(disassemble.REG_X0),
 		createRegisterOperand(disassemble.REG_X1),
 		createRegisterOperand(disassemble.REG_X2),
@@ -392,7 +399,7 @@ func TestArithmeticExecutor_InvalidInstruction(t *testing.T) {
 	state := NewMockState()
 
 	// Test with unsupported instruction
-	instr := createMockInstruction("INVALID", []disassemble.Operand{})
+	instr := createMockInstruction("INVALID", []disassemble.Op{})
 
 	err := executor.Execute(state, instr)
 	if err == nil {
@@ -410,7 +417,7 @@ func TestArithmeticExecutor_InsufficientOperands(t *testing.T) {
 	state := NewMockState()
 
 	// Test ADD with insufficient operands
-	instr := createMockInstruction("ADD", []disassemble.Operand{
+	instr := createMockInstruction("ADD", []disassemble.Op{
 		createRegisterOperand(disassemble.REG_X0),
 		createRegisterOperand(disassemble.REG_X1),
 		// Missing third operand
@@ -464,7 +471,7 @@ func TestSubWithFlags(t *testing.T) {
 
 func TestApplyShift(t *testing.T) {
 	// Test LSL (Logical Shift Left)
-	shiftOp := disassemble.Operand{
+	shiftOp := disassemble.Op{
 		ShiftValueUsed: true,
 		ShiftType:      disassemble.SHIFT_TYPE_LSL,
 		ShiftValue:     2,

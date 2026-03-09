@@ -24,71 +24,71 @@ func NewMemoryExecutor(mnemonic, description string) *MemoryExecutor {
 }
 
 // Execute executes memory instructions
-func (e *MemoryExecutor) Execute(state core.State, instr *disassemble.Instruction) error {
-	if err := e.ValidateInstruction(instr); err != nil {
+func (e *MemoryExecutor) Execute(state core.State, inst *disassemble.Inst) error {
+	if err := e.ValidateInstruction(inst); err != nil {
 		return err
 	}
 
 	// Get the actual instruction mnemonic from the disassembler
-	instrMnemonic := strings.ToUpper(instr.Operation.String())
+	instrMnemonic := strings.ToUpper(inst.Operation.String())
 
 	switch instrMnemonic {
 	case "LDR":
-		return e.executeLDR(state, instr)
+		return e.executeLDR(state, inst)
 	case "LDRB":
-		return e.executeLDRB(state, instr)
+		return e.executeLDRB(state, inst)
 	case "LDRH":
-		return e.executeLDRH(state, instr)
+		return e.executeLDRH(state, inst)
 	case "LDRSB":
-		return e.executeLDRSB(state, instr)
+		return e.executeLDRSB(state, inst)
 	case "LDRSH":
-		return e.executeLDRSH(state, instr)
+		return e.executeLDRSH(state, inst)
 	case "LDRSW":
-		return e.executeLDRSW(state, instr)
+		return e.executeLDRSW(state, inst)
 	case "LDADDA":
-		return e.executeLDADDA(state, instr)
+		return e.executeLDADDA(state, inst)
 	case "STR":
-		return e.executeSTR(state, instr)
+		return e.executeSTR(state, inst)
 	case "STRB":
-		return e.executeSTRB(state, instr)
+		return e.executeSTRB(state, inst)
 	case "STRH":
-		return e.executeSTRH(state, instr)
+		return e.executeSTRH(state, inst)
 	case "LDP":
-		return e.executeLDP(state, instr)
+		return e.executeLDP(state, inst)
 	case "STP":
-		return e.executeSTP(state, instr)
+		return e.executeSTP(state, inst)
 	case "LDUR":
-		return e.executeLDUR(state, instr)
+		return e.executeLDUR(state, inst)
 	case "STUR":
-		return e.executeSTUR(state, instr)
+		return e.executeSTUR(state, inst)
 	default:
 		return core.NewEmulationError(core.ErrUnsupportedFeature, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory instruction %s not implemented", instrMnemonic))
+			inst.Operation.String(), fmt.Sprintf("memory instruction %s not implemented", instrMnemonic))
 	}
 }
 
 // LDR - Load register (64-bit)
-func (e *MemoryExecutor) executeLDR(state core.State, instr *disassemble.Instruction) error {
-	ops := instr.Operands
-	if len(ops) < 2 {
+func (e *MemoryExecutor) executeLDR(state core.State, inst *disassemble.Inst) error {
+	ops := inst.Operands
+	if int(inst.NumOps) < 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "LDR requires at least 2 operands")
+			inst.Operation.String(), "LDR requires at least 2 operands")
 	}
 
 	// Check destination register
-	if len(ops[0].Registers) == 0 {
+	if ops[0].NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "no destination register")
+			inst.Operation.String(), "no destination register")
 	}
 
 	dstReg := core.MapRegister(ops[0].Registers[0])
 	if dstReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid destination register")
+			inst.Operation.String(), "invalid destination register")
 	}
 
 	// Calculate address
-	calc, err := addressing.CalculateAddress(state, ops[1])
+	calc, err := addressing.CalculateAddress(state, ops[1].ToOperand())
 	if err != nil {
 		return err
 	}
@@ -106,10 +106,10 @@ func (e *MemoryExecutor) executeLDR(state core.State, instr *disassemble.Instruc
 		if err != nil {
 			if errors.Is(err, core.ErrUnmappedMemory) {
 				return core.NewEmulationError(core.ErrUnmappedMemory, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
+					inst.Operation.String(), fmt.Sprintf("memory read failed: %v", err))
 			}
 			return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
+				inst.Operation.String(), fmt.Sprintf("memory read failed: %v", err))
 		}
 		state.SetW(dstReg, value)
 	} else {
@@ -118,10 +118,10 @@ func (e *MemoryExecutor) executeLDR(state core.State, instr *disassemble.Instruc
 		if err != nil {
 			if errors.Is(err, core.ErrUnmappedMemory) {
 				return core.NewEmulationError(core.ErrUnmappedMemory, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
+					inst.Operation.String(), fmt.Sprintf("memory read failed: %v", err))
 			}
 			return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
+				inst.Operation.String(), fmt.Sprintf("memory read failed: %v", err))
 		}
 		state.SetX(dstReg, value)
 	}
@@ -138,20 +138,20 @@ func (e *MemoryExecutor) executeLDR(state core.State, instr *disassemble.Instruc
 }
 
 // LDRB - Load register byte (8-bit, zero-extended)
-func (e *MemoryExecutor) executeLDRB(state core.State, instr *disassemble.Instruction) error {
-	ops := instr.Operands
-	if len(ops) < 2 {
+func (e *MemoryExecutor) executeLDRB(state core.State, inst *disassemble.Inst) error {
+	ops := inst.Operands
+	if int(inst.NumOps) < 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "LDRB requires at least 2 operands")
+			inst.Operation.String(), "LDRB requires at least 2 operands")
 	}
 
 	dstReg := core.MapRegister(ops[0].Registers[0])
 	if dstReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid destination register")
+			inst.Operation.String(), "invalid destination register")
 	}
 
-	calc, err := addressing.CalculateAddress(state, ops[1])
+	calc, err := addressing.CalculateAddress(state, ops[1].ToOperand())
 	if err != nil {
 		return err
 	}
@@ -166,10 +166,10 @@ func (e *MemoryExecutor) executeLDRB(state core.State, instr *disassemble.Instru
 	if err != nil {
 		if errors.Is(err, core.ErrUnmappedMemory) {
 			return core.NewEmulationError(core.ErrUnmappedMemory, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
+				inst.Operation.String(), fmt.Sprintf("memory read failed: %v", err))
 		}
 		return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
+			inst.Operation.String(), fmt.Sprintf("memory read failed: %v", err))
 	}
 
 	// Zero-extend to 64-bit
@@ -180,20 +180,20 @@ func (e *MemoryExecutor) executeLDRB(state core.State, instr *disassemble.Instru
 }
 
 // LDRH - Load register halfword (16-bit, zero-extended)
-func (e *MemoryExecutor) executeLDRH(state core.State, instr *disassemble.Instruction) error {
-	ops := instr.Operands
-	if len(ops) < 2 {
+func (e *MemoryExecutor) executeLDRH(state core.State, inst *disassemble.Inst) error {
+	ops := inst.Operands
+	if int(inst.NumOps) < 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "LDRH requires at least 2 operands")
+			inst.Operation.String(), "LDRH requires at least 2 operands")
 	}
 
 	dstReg := core.MapRegister(ops[0].Registers[0])
 	if dstReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid destination register")
+			inst.Operation.String(), "invalid destination register")
 	}
 
-	calc, err := addressing.CalculateAddress(state, ops[1])
+	calc, err := addressing.CalculateAddress(state, ops[1].ToOperand())
 	if err != nil {
 		return err
 	}
@@ -208,10 +208,10 @@ func (e *MemoryExecutor) executeLDRH(state core.State, instr *disassemble.Instru
 	if err != nil {
 		if errors.Is(err, core.ErrUnmappedMemory) {
 			return core.NewEmulationError(core.ErrUnmappedMemory, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
+				inst.Operation.String(), fmt.Sprintf("memory read failed: %v", err))
 		}
 		return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
+			inst.Operation.String(), fmt.Sprintf("memory read failed: %v", err))
 	}
 
 	// Zero-extend to 64-bit
@@ -222,20 +222,20 @@ func (e *MemoryExecutor) executeLDRH(state core.State, instr *disassemble.Instru
 }
 
 // LDRSB - Load register signed byte (8-bit, sign-extended)
-func (e *MemoryExecutor) executeLDRSB(state core.State, instr *disassemble.Instruction) error {
-	ops := instr.Operands
-	if len(ops) < 2 {
+func (e *MemoryExecutor) executeLDRSB(state core.State, inst *disassemble.Inst) error {
+	ops := inst.Operands
+	if int(inst.NumOps) < 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "LDRSB requires at least 2 operands")
+			inst.Operation.String(), "LDRSB requires at least 2 operands")
 	}
 
 	dstReg := core.MapRegister(ops[0].Registers[0])
 	if dstReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid destination register")
+			inst.Operation.String(), "invalid destination register")
 	}
 
-	calc, err := addressing.CalculateAddress(state, ops[1])
+	calc, err := addressing.CalculateAddress(state, ops[1].ToOperand())
 	if err != nil {
 		return err
 	}
@@ -250,10 +250,10 @@ func (e *MemoryExecutor) executeLDRSB(state core.State, instr *disassemble.Instr
 	if err != nil {
 		if errors.Is(err, core.ErrUnmappedMemory) {
 			return core.NewEmulationError(core.ErrUnmappedMemory, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
+				inst.Operation.String(), fmt.Sprintf("memory read failed: %v", err))
 		}
 		return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
+			inst.Operation.String(), fmt.Sprintf("memory read failed: %v", err))
 	}
 
 	// Sign-extend to 64-bit
@@ -272,20 +272,20 @@ func (e *MemoryExecutor) executeLDRSB(state core.State, instr *disassemble.Instr
 }
 
 // LDRSH - Load register signed halfword (16-bit, sign-extended)
-func (e *MemoryExecutor) executeLDRSH(state core.State, instr *disassemble.Instruction) error {
-	ops := instr.Operands
-	if len(ops) < 2 {
+func (e *MemoryExecutor) executeLDRSH(state core.State, inst *disassemble.Inst) error {
+	ops := inst.Operands
+	if int(inst.NumOps) < 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "LDRSH requires at least 2 operands")
+			inst.Operation.String(), "LDRSH requires at least 2 operands")
 	}
 
 	dstReg := core.MapRegister(ops[0].Registers[0])
 	if dstReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid destination register")
+			inst.Operation.String(), "invalid destination register")
 	}
 
-	calc, err := addressing.CalculateAddress(state, ops[1])
+	calc, err := addressing.CalculateAddress(state, ops[1].ToOperand())
 	if err != nil {
 		return err
 	}
@@ -300,10 +300,10 @@ func (e *MemoryExecutor) executeLDRSH(state core.State, instr *disassemble.Instr
 	if err != nil {
 		if errors.Is(err, core.ErrUnmappedMemory) {
 			return core.NewEmulationError(core.ErrUnmappedMemory, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
+				inst.Operation.String(), fmt.Sprintf("memory read failed: %v", err))
 		}
 		return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
+			inst.Operation.String(), fmt.Sprintf("memory read failed: %v", err))
 	}
 
 	// Sign-extend to 64-bit
@@ -314,20 +314,20 @@ func (e *MemoryExecutor) executeLDRSH(state core.State, instr *disassemble.Instr
 }
 
 // LDRSW - Load register signed word (32-bit, sign-extended)
-func (e *MemoryExecutor) executeLDRSW(state core.State, instr *disassemble.Instruction) error {
-	ops := instr.Operands
-	if len(ops) < 2 {
+func (e *MemoryExecutor) executeLDRSW(state core.State, inst *disassemble.Inst) error {
+	ops := inst.Operands
+	if int(inst.NumOps) < 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "LDRSW requires at least 2 operands")
+			inst.Operation.String(), "LDRSW requires at least 2 operands")
 	}
 
 	dstReg := core.MapRegister(ops[0].Registers[0])
 	if dstReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid destination register")
+			inst.Operation.String(), "invalid destination register")
 	}
 
-	calc, err := addressing.CalculateAddress(state, ops[1])
+	calc, err := addressing.CalculateAddress(state, ops[1].ToOperand())
 	if err != nil {
 		return err
 	}
@@ -342,10 +342,10 @@ func (e *MemoryExecutor) executeLDRSW(state core.State, instr *disassemble.Instr
 	if err != nil {
 		if errors.Is(err, core.ErrUnmappedMemory) {
 			return core.NewEmulationError(core.ErrUnmappedMemory, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
+				inst.Operation.String(), fmt.Sprintf("memory read failed: %v", err))
 		}
 		return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", err))
+			inst.Operation.String(), fmt.Sprintf("memory read failed: %v", err))
 	}
 
 	// Sign-extend to 64-bit
@@ -364,20 +364,20 @@ func (e *MemoryExecutor) executeLDRSW(state core.State, instr *disassemble.Instr
 }
 
 // STR - Store register
-func (e *MemoryExecutor) executeSTR(state core.State, instr *disassemble.Instruction) error {
-	ops := instr.Operands
-	if len(ops) < 2 {
+func (e *MemoryExecutor) executeSTR(state core.State, inst *disassemble.Inst) error {
+	ops := inst.Operands
+	if int(inst.NumOps) < 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "STR requires at least 2 operands")
+			inst.Operation.String(), "STR requires at least 2 operands")
 	}
 
 	srcReg := core.MapRegister(ops[0].Registers[0])
 	if srcReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid source register")
+			inst.Operation.String(), "invalid source register")
 	}
 
-	calc, err := addressing.CalculateAddress(state, ops[1])
+	calc, err := addressing.CalculateAddress(state, ops[1].ToOperand())
 	if err != nil {
 		return err
 	}
@@ -403,37 +403,37 @@ func (e *MemoryExecutor) executeSTR(state core.State, instr *disassemble.Instruc
 }
 
 // LDADDA - Atomic load-add with acquire semantics
-func (e *MemoryExecutor) executeLDADDA(state core.State, instr *disassemble.Instruction) error {
-	ops := instr.Operands
-	if len(ops) < 3 {
+func (e *MemoryExecutor) executeLDADDA(state core.State, inst *disassemble.Inst) error {
+	ops := inst.Operands
+	if int(inst.NumOps) < 3 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "LDADDA requires destination, source, and memory operands")
+			inst.Operation.String(), "LDADDA requires destination, source, and memory operands")
 	}
 
-	if len(ops[0].Registers) == 0 {
+	if ops[0].NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "missing destination register")
+			inst.Operation.String(), "missing destination register")
 	}
-	if len(ops[1].Registers) == 0 {
+	if ops[1].NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "missing source register")
+			inst.Operation.String(), "missing source register")
 	}
 
 	dstReg := core.MapRegister(ops[0].Registers[0])
 	srcReg := core.MapRegister(ops[1].Registers[0])
 	if dstReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid destination register")
+			inst.Operation.String(), "invalid destination register")
 	}
 	if srcReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid source register")
+			inst.Operation.String(), "invalid source register")
 	}
 
-	calc, err := addressing.CalculateAddress(state, ops[2])
+	calc, err := addressing.CalculateAddress(state, ops[2].ToOperand())
 	if err != nil {
 		return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("address calculation failed: %v", err))
+			inst.Operation.String(), fmt.Sprintf("address calculation failed: %v", err))
 	}
 
 	is32Bit := func(regID disassemble.Register) bool {
@@ -446,10 +446,10 @@ func (e *MemoryExecutor) executeLDADDA(state core.State, instr *disassemble.Inst
 		if readErr != nil {
 			if errors.Is(readErr, core.ErrUnmappedMemory) {
 				return core.NewEmulationError(core.ErrUnmappedMemory, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", readErr))
+					inst.Operation.String(), fmt.Sprintf("memory read failed: %v", readErr))
 			}
 			return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", readErr))
+				inst.Operation.String(), fmt.Sprintf("memory read failed: %v", readErr))
 		}
 
 		addend := state.GetW(srcReg)
@@ -461,10 +461,10 @@ func (e *MemoryExecutor) executeLDADDA(state core.State, instr *disassemble.Inst
 		if readErr != nil {
 			if errors.Is(readErr, core.ErrUnmappedMemory) {
 				return core.NewEmulationError(core.ErrUnmappedMemory, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", readErr))
+					inst.Operation.String(), fmt.Sprintf("memory read failed: %v", readErr))
 			}
 			return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("memory read failed: %v", readErr))
+				inst.Operation.String(), fmt.Sprintf("memory read failed: %v", readErr))
 		}
 
 		addend := state.GetX(srcReg)
@@ -475,7 +475,7 @@ func (e *MemoryExecutor) executeLDADDA(state core.State, instr *disassemble.Inst
 
 	if err := addressing.ApplyWriteback(state, calc); err != nil {
 		return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("writeback failed: %v", err))
+			inst.Operation.String(), fmt.Sprintf("writeback failed: %v", err))
 	}
 
 	// Acquire semantics prevent later memory accesses from being reordered before this instruction.
@@ -484,20 +484,20 @@ func (e *MemoryExecutor) executeLDADDA(state core.State, instr *disassemble.Inst
 }
 
 // STRB - Store register byte
-func (e *MemoryExecutor) executeSTRB(state core.State, instr *disassemble.Instruction) error {
-	ops := instr.Operands
-	if len(ops) < 2 {
+func (e *MemoryExecutor) executeSTRB(state core.State, inst *disassemble.Inst) error {
+	ops := inst.Operands
+	if int(inst.NumOps) < 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "STRB requires at least 2 operands")
+			inst.Operation.String(), "STRB requires at least 2 operands")
 	}
 
 	srcReg := core.MapRegister(ops[0].Registers[0])
 	if srcReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid source register")
+			inst.Operation.String(), "invalid source register")
 	}
 
-	calc, err := addressing.CalculateAddress(state, ops[1])
+	calc, err := addressing.CalculateAddress(state, ops[1].ToOperand())
 	if err != nil {
 		return err
 	}
@@ -515,20 +515,20 @@ func (e *MemoryExecutor) executeSTRB(state core.State, instr *disassemble.Instru
 }
 
 // STRH - Store register halfword
-func (e *MemoryExecutor) executeSTRH(state core.State, instr *disassemble.Instruction) error {
-	ops := instr.Operands
-	if len(ops) < 2 {
+func (e *MemoryExecutor) executeSTRH(state core.State, inst *disassemble.Inst) error {
+	ops := inst.Operands
+	if int(inst.NumOps) < 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "STRH requires at least 2 operands")
+			inst.Operation.String(), "STRH requires at least 2 operands")
 	}
 
 	srcReg := core.MapRegister(ops[0].Registers[0])
 	if srcReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid source register")
+			inst.Operation.String(), "invalid source register")
 	}
 
-	calc, err := addressing.CalculateAddress(state, ops[1])
+	calc, err := addressing.CalculateAddress(state, ops[1].ToOperand())
 	if err != nil {
 		return err
 	}
@@ -548,21 +548,21 @@ func (e *MemoryExecutor) executeSTRH(state core.State, instr *disassemble.Instru
 }
 
 // LDP - Load pair of registers
-func (e *MemoryExecutor) executeLDP(state core.State, instr *disassemble.Instruction) error {
-	ops := instr.Operands
-	if len(ops) < 3 {
+func (e *MemoryExecutor) executeLDP(state core.State, inst *disassemble.Inst) error {
+	ops := inst.Operands
+	if int(inst.NumOps) < 3 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "LDP requires at least 3 operands")
+			inst.Operation.String(), "LDP requires at least 3 operands")
 	}
 
 	dst1Reg := core.MapRegister(ops[0].Registers[0])
 	dst2Reg := core.MapRegister(ops[1].Registers[0])
 	if dst1Reg == -1 || dst2Reg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid destination registers")
+			inst.Operation.String(), "invalid destination registers")
 	}
 
-	calc, err := addressing.CalculateAddress(state, ops[2])
+	calc, err := addressing.CalculateAddress(state, ops[2].ToOperand())
 	if err != nil {
 		return err
 	}
@@ -580,19 +580,19 @@ func (e *MemoryExecutor) executeLDP(state core.State, instr *disassemble.Instruc
 		if err != nil {
 			if errors.Is(err, core.ErrUnmappedMemory) {
 				return core.NewEmulationError(core.ErrUnmappedMemory, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("first read failed: %v", err))
+					inst.Operation.String(), fmt.Sprintf("first read failed: %v", err))
 			}
 			return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("first read failed: %v", err))
+				inst.Operation.String(), fmt.Sprintf("first read failed: %v", err))
 		}
 		val2, err := state.ReadUint32(calc.Address + 4)
 		if err != nil {
 			if errors.Is(err, core.ErrUnmappedMemory) {
 				return core.NewEmulationError(core.ErrUnmappedMemory, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("second read failed: %v", err))
+					inst.Operation.String(), fmt.Sprintf("second read failed: %v", err))
 			}
 			return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("second read failed: %v", err))
+				inst.Operation.String(), fmt.Sprintf("second read failed: %v", err))
 		}
 		state.SetW(dst1Reg, val1)
 		state.SetW(dst2Reg, val2)
@@ -602,19 +602,19 @@ func (e *MemoryExecutor) executeLDP(state core.State, instr *disassemble.Instruc
 		if err != nil {
 			if errors.Is(err, core.ErrUnmappedMemory) {
 				return core.NewEmulationError(core.ErrUnmappedMemory, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("first read failed: %v", err))
+					inst.Operation.String(), fmt.Sprintf("first read failed: %v", err))
 			}
 			return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("first read failed: %v", err))
+				inst.Operation.String(), fmt.Sprintf("first read failed: %v", err))
 		}
 		val2, err := state.ReadUint64(calc.Address + 8)
 		if err != nil {
 			if errors.Is(err, core.ErrUnmappedMemory) {
 				return core.NewEmulationError(core.ErrUnmappedMemory, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("second read failed: %v", err))
+					inst.Operation.String(), fmt.Sprintf("second read failed: %v", err))
 			}
 			return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("second read failed: %v", err))
+				inst.Operation.String(), fmt.Sprintf("second read failed: %v", err))
 		}
 		state.SetX(dst1Reg, val1)
 		state.SetX(dst2Reg, val2)
@@ -624,7 +624,7 @@ func (e *MemoryExecutor) executeLDP(state core.State, instr *disassemble.Instruc
 	if shouldWriteback {
 		if err := addressing.ApplyWriteback(state, calc); err != nil {
 			return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("writeback failed: %v", err))
+				inst.Operation.String(), fmt.Sprintf("writeback failed: %v", err))
 		}
 	}
 
@@ -632,21 +632,21 @@ func (e *MemoryExecutor) executeLDP(state core.State, instr *disassemble.Instruc
 }
 
 // STP - Store pair of registers
-func (e *MemoryExecutor) executeSTP(state core.State, instr *disassemble.Instruction) error {
-	ops := instr.Operands
-	if len(ops) < 3 {
+func (e *MemoryExecutor) executeSTP(state core.State, inst *disassemble.Inst) error {
+	ops := inst.Operands
+	if int(inst.NumOps) < 3 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "STP requires at least 3 operands")
+			inst.Operation.String(), "STP requires at least 3 operands")
 	}
 
 	src1Reg := core.MapRegister(ops[0].Registers[0])
 	src2Reg := core.MapRegister(ops[1].Registers[0])
 	if src1Reg == -1 || src2Reg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid source registers")
+			inst.Operation.String(), "invalid source registers")
 	}
 
-	calc, err := addressing.CalculateAddress(state, ops[2])
+	calc, err := addressing.CalculateAddress(state, ops[2].ToOperand())
 	if err != nil {
 		return err
 	}
@@ -676,7 +676,7 @@ func (e *MemoryExecutor) executeSTP(state core.State, instr *disassemble.Instruc
 	if shouldWriteback {
 		if err := addressing.ApplyWriteback(state, calc); err != nil {
 			return core.NewEmulationError(core.ErrMemoryAccess, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("writeback failed: %v", err))
+				inst.Operation.String(), fmt.Sprintf("writeback failed: %v", err))
 		}
 	}
 
@@ -684,17 +684,17 @@ func (e *MemoryExecutor) executeSTP(state core.State, instr *disassemble.Instruc
 }
 
 // LDUR - Load register (unscaled offset)
-func (e *MemoryExecutor) executeLDUR(state core.State, instr *disassemble.Instruction) error {
+func (e *MemoryExecutor) executeLDUR(state core.State, inst *disassemble.Inst) error {
 	// LDUR is similar to LDR but with unscaled immediate offset
 	// For emulation purposes, we can treat it the same as LDR
-	return e.executeLDR(state, instr)
+	return e.executeLDR(state, inst)
 }
 
 // STUR - Store register (unscaled offset)
-func (e *MemoryExecutor) executeSTUR(state core.State, instr *disassemble.Instruction) error {
+func (e *MemoryExecutor) executeSTUR(state core.State, inst *disassemble.Inst) error {
 	// STUR is similar to STR but with unscaled immediate offset
 	// For emulation purposes, we can treat it the same as STR
-	return e.executeSTR(state, instr)
+	return e.executeSTR(state, inst)
 }
 
 // RegisterMemoryInstructions registers all memory instructions

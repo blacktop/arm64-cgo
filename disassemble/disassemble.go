@@ -22,6 +22,16 @@ int disassemble(uint64_t addr, uint32_t instrValue, int len, char *result)
 	return aarch64_disassemble(&instr, result, 1024);
 }
 
+void aarch64_decompose_batch(
+	uint32_t *words, uint64_t *addrs,
+	Instruction *out, int count)
+{
+	for (int i = 0; i < count; i++) {
+		memset(&out[i], 0, sizeof(out[i]));
+		aarch64_decompose(words[i], &out[i], addrs[i]);
+	}
+}
+
 int aarch64_decompose(uint32_t instructionValue, Instruction *instr, uint64_t address);
 int aarch64_disassemble(Instruction *instruction, char *buf, size_t buf_sz);
 */
@@ -30,11 +40,23 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
 	"unsafe"
 )
+
+var errBatchLenMismatch = errors.New(
+	"DecomposeBatch: addrs, words, and out must have equal length",
+)
+
+func decomposeError(instrValue uint32, rc returnCode) error {
+	return fmt.Errorf(
+		"failed to decompose instruction %#x: %s",
+		instrValue, rc.String(),
+	)
+}
 
 const (
 	MAX_REGISTERS = 5
@@ -586,25 +608,18 @@ func Disassemble(addr uint64, instructionValue uint32, results *[1024]byte) (str
 
 // Decompose decomposes an instruction
 func Decompose(addr uint64, instructionValue uint32, results *[1024]byte) (*Instruction, error) {
-
-	var err error
-	var instruction C.Instruction
-
-	if rc := C.aarch64_decompose(
-		C.uint32_t(instructionValue), // uint32_t instructionValue
-		&instruction,                 // Instruction *instr,
-		C.uint64_t(addr),             // uint64_t address
-	); returnCode(rc) != SUCCESS_OK {
-		return nil, fmt.Errorf("failed to decompose instruction %#x: %s", instructionValue, returnCode(rc).String())
+	var inst Inst
+	if err := DecomposeInto(addr, instructionValue, &inst); err != nil {
+		return nil, err
 	}
 
-	i := goInstruction(&instruction)
+	i := inst.ToInstruction()
 
+	var err error
 	i.Disassembly, err = Disassemble(addr, instructionValue, results)
 	if err != nil {
 		return nil, err
 	}
-	i.Address = addr
 
 	return i, nil
 }
@@ -683,63 +698,132 @@ func (intrs Instructions) GetAddressBlock(addr uint64) (Instructions, error) {
 	return nil, fmt.Errorf("failed to find block for address: %#x", addr)
 }
 
-// goInstruction converts the cgo version into Go vesrion
-func goInstruction(instr *C.Instruction) *Instruction {
+// fillInst copies fields from a C Instruction into an Inst with
+// zero heap allocations.
+func fillInst(cInstr *C.Instruction, inst *Inst) {
+	inst.Raw = uint32(cInstr.insword)
+	inst.Encoding = encoding(cInstr.encoding)
+	inst.SetFlags = FlagEffect(cInstr.setflags)
+	inst.Operation = Operation(cInstr.operation)
+	inst.NumOps = 0
 
-	i := &Instruction{
-		Raw:       uint32(instr.insword),
-		Encoding:  encoding(instr.encoding),
-		SetFlags:  FlagEffect(instr.setflags),
-		Operation: Operation(instr.operation),
-	}
+	for idx := 0; idx < MAX_OPERANDS; idx++ {
+		cop := &cInstr.operands[idx]
+		if cop.operandClass == C.OperandClass(NONE) {
+			continue
+		}
 
-	for idx, op := range instr.operands {
-		if op.operandClass != C.OperandClass(NONE) {
-			i.Operands = append(i.Operands, Operand{
-				Class:          operandClass(op.operandClass),
-				ArrSpec:        arrangementSpec(op.arrSpec),
-				Condition:      condition(op.cond),
-				SysReg:         SystemReg(op.sysreg),
-				LaneUsed:       bool(op.laneUsed),
-				Lane:           uint32(op.lane),
-				Immediate:      uint64(op.immediate),
-				ShiftType:      shiftType(op.shiftType),
-				ShiftValueUsed: bool(op.shiftValueUsed),
-				ShiftValue:     uint32(op.shiftValue),
-				Extend:         shiftType(op.extend),
-				SignedImm:      bool(op.signedImm),
-				PredQual:       byte(op.pred_qual),
-				MulVl:          bool(op.mul_vl),
-				Name:           C.GoString(&op.name[0]),
-			})
-			if i.Operands[idx].Class == SME_TILE {
-				i.Operands[idx].Tile = uint16(op.tile)
-				i.Operands[idx].Slice = sliceType(op.slice)
-			} else {
-				i.Operands[idx].Slice = -1 // NOTE: this prevents the Slice from showing up in the JSON output
+		op := &inst.Operands[inst.NumOps]
+		op.Class = operandClass(cop.operandClass)
+		op.ArrSpec = arrangementSpec(cop.arrSpec)
+		op.Condition = condition(cop.cond)
+		op.SysReg = SystemReg(cop.sysreg)
+		op.LaneUsed = bool(cop.laneUsed)
+		op.Lane = uint32(cop.lane)
+		op.Immediate = uint64(cop.immediate)
+		op.ShiftType = shiftType(cop.shiftType)
+		op.ShiftValueUsed = bool(cop.shiftValueUsed)
+		op.ShiftValue = uint32(cop.shiftValue)
+		op.Extend = shiftType(cop.extend)
+		op.SignedImm = bool(cop.signedImm)
+		op.PredQual = byte(cop.pred_qual)
+		op.MulVl = bool(cop.mul_vl)
+
+		if op.Class == SME_TILE {
+			op.Tile = uint16(cop.tile)
+			op.Slice = sliceType(cop.slice)
+		} else {
+			op.Slice = SLICE_NONE
+		}
+
+		// Copy name bytes without C.GoString allocation
+		op.NameLen = 0
+		for k := 0; k < MAX_NAME; k++ {
+			b := byte(cop.name[k])
+			if b == 0 {
+				break
 			}
-			for _, reg := range op.reg {
-				if reg != C.Register(REG_NONE) {
-					i.Operands[idx].Registers = append(i.Operands[idx].Registers, Register(reg))
-				}
-			}
-			if !allZero(op.implspec) {
-				i.Operands[idx].ImplSpec = make([]byte, 5)
-				for k, ispec := range op.implspec {
-					i.Operands[idx].ImplSpec[k] = byte(ispec)
-				}
+			op.Name[k] = b
+			op.NameLen++
+		}
+
+		// Copy registers
+		op.NumRegisters = 0
+		for _, reg := range cop.reg {
+			if reg != C.Register(REG_NONE) {
+				op.Registers[op.NumRegisters] = Register(reg)
+				op.NumRegisters++
 			}
 		}
-	}
 
-	return i
+		// Copy impl spec
+		op.HasImplSpec = false
+		for _, v := range cop.implspec {
+			if v != 0 {
+				op.HasImplSpec = true
+				break
+			}
+		}
+		if op.HasImplSpec {
+			for k, v := range cop.implspec {
+				op.ImplSpec[k] = byte(v)
+			}
+		}
+
+		inst.NumOps++
+	}
 }
 
-func allZero(s [5]C.uchar) bool {
-	for _, v := range s {
-		if v != 0 {
-			return false
-		}
+// DecomposeInto decodes a single instruction into a caller-provided
+// Inst, with zero heap allocations. This is the recommended API for
+// hot paths.
+func DecomposeInto(
+	addr uint64, instrValue uint32, inst *Inst,
+) error {
+	var cInstr C.Instruction
+
+	rc := C.aarch64_decompose(
+		C.uint32_t(instrValue),
+		&cInstr,
+		C.uint64_t(addr),
+	)
+	if returnCode(rc) != SUCCESS_OK {
+		return decomposeError(instrValue, returnCode(rc))
 	}
-	return true
+
+	inst.Address = addr
+	fillInst(&cInstr, inst)
+	return nil
+}
+
+// DecomposeBatch decodes multiple instructions with a single cgo
+// crossing. addrs, words, and out must have the same length.
+// Returns the number of successfully decoded instructions.
+func DecomposeBatch(
+	addrs []uint64, words []uint32, out []Inst,
+) (int, error) {
+	n := len(words)
+	if len(addrs) != n || len(out) != n {
+		return 0, errBatchLenMismatch
+	}
+	if n == 0 {
+		return 0, nil
+	}
+
+	cInstrs := make([]C.Instruction, n)
+
+	C.aarch64_decompose_batch(
+		(*C.uint32_t)(unsafe.Pointer(&words[0])),
+		(*C.uint64_t)(unsafe.Pointer(&addrs[0])),
+		&cInstrs[0],
+		C.int(n),
+	)
+
+	decoded := 0
+	for idx := 0; idx < n; idx++ {
+		out[idx].Address = addrs[idx]
+		fillInst(&cInstrs[idx], &out[idx])
+		decoded++
+	}
+	return decoded, nil
 }

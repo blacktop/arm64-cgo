@@ -2,7 +2,6 @@ package instructions
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/blacktop/arm64-cgo/disassemble"
@@ -34,48 +33,50 @@ func (e *ConditionalExecutor) ClearTestConditionOverride() {
 }
 
 // Execute executes conditional instructions
-func (e *ConditionalExecutor) Execute(state core.State, instr *disassemble.Instruction) error {
-	if err := e.ValidateInstruction(instr); err != nil {
+func (e *ConditionalExecutor) Execute(state core.State, inst *disassemble.Inst) error {
+	if err := e.ValidateInstruction(inst); err != nil {
 		return err
 	}
 
 	switch e.GetMnemonic() {
 	case "CSEL":
-		return e.executeCSEL(state, instr)
+		return e.executeCSEL(state, inst)
 	case "CSINC":
-		return e.executeCSINC(state, instr)
+		return e.executeCSINC(state, inst)
 	case "CSINV":
-		return e.executeCSINV(state, instr)
+		return e.executeCSINV(state, inst)
 	case "CSNEG":
-		return e.executeCSNEG(state, instr)
+		return e.executeCSNEG(state, inst)
 	case "CSET":
-		return e.executeCSET(state, instr)
+		return e.executeCSET(state, inst)
 	case "CSETM":
-		return e.executeCSETM(state, instr)
+		return e.executeCSETM(state, inst)
 	case "CINC":
-		return e.executeCINC(state, instr)
+		return e.executeCINC(state, inst)
 	case "CINV":
-		return e.executeCSINV(state, instr)
+		return e.executeCSINV(state, inst)
 	case "CNEG":
-		return e.executeCSNEG(state, instr)
+		return e.executeCSNEG(state, inst)
+	case "CCMP":
+		return e.executeCCMP(state, inst)
 	default:
 		return core.NewEmulationError(core.ErrUnsupportedFeature, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("conditional instruction %s not implemented", e.GetMnemonic()))
+			inst.Operation.String(), fmt.Sprintf("conditional instruction %s not implemented", e.GetMnemonic()))
 	}
 }
 
 // CSEL - Conditional select
-func (e *ConditionalExecutor) executeCSEL(state core.State, instr *disassemble.Instruction) error {
-	ops := instr.Operands
-	if len(ops) < 3 {
+func (e *ConditionalExecutor) executeCSEL(state core.State, inst *disassemble.Inst) error {
+	ops := inst.Operands
+	if int(inst.NumOps) < 3 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "CSEL requires at least 3 operands")
+			inst.Operation.String(), "CSEL requires at least 3 operands")
 	}
 
 	// Check that each operand has at least one register
-	if len(ops[0].Registers) == 0 || len(ops[1].Registers) == 0 || len(ops[2].Registers) == 0 {
+	if ops[0].NumRegisters == 0 || ops[1].NumRegisters == 0 || ops[2].NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "CSEL operands missing register information")
+			inst.Operation.String(), "CSEL operands missing register information")
 	}
 
 	dstReg := core.MapRegister(ops[0].Registers[0])
@@ -84,11 +85,11 @@ func (e *ConditionalExecutor) executeCSEL(state core.State, instr *disassemble.I
 
 	if dstReg == -1 || src1Reg == -1 || src2Reg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid register")
+			inst.Operation.String(), "invalid register")
 	}
 
 	// Extract condition from instruction
-	condition := e.ExtractCondition(instr)
+	condition := e.ExtractCondition(inst)
 
 	var result uint64
 	if e.evaluateCondition(state, condition) {
@@ -108,22 +109,22 @@ func (e *ConditionalExecutor) executeCSEL(state core.State, instr *disassemble.I
 }
 
 // CSINC - Conditional select increment
-func (e *ConditionalExecutor) executeCSINC(state core.State, instr *disassemble.Instruction) error {
-	ops := instr.Operands
+func (e *ConditionalExecutor) executeCSINC(state core.State, inst *disassemble.Inst) error {
+	ops := inst.Operands
 	// CINC is an alias for CSINC Rd, Rn, Rn, cond. The disassembler might provide fewer operands.
-	if (e.GetMnemonic() == "CINC" && len(ops) < 2) || (e.GetMnemonic() != "CINC" && len(ops) < 3) {
+	if (e.GetMnemonic() == "CINC" && int(inst.NumOps) < 2) || (e.GetMnemonic() != "CINC" && int(inst.NumOps) < 3) {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "CSINC/CINC requires more operands")
+			inst.Operation.String(), "CSINC/CINC requires more operands")
 	}
 
 	// Check that required operands have registers
-	if len(ops[0].Registers) == 0 || len(ops[1].Registers) == 0 {
+	if ops[0].NumRegisters == 0 || ops[1].NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "CSINC/CINC operands missing register information")
+			inst.Operation.String(), "CSINC/CINC operands missing register information")
 	}
-	if e.GetMnemonic() != "CINC" && len(ops[2].Registers) == 0 {
+	if e.GetMnemonic() != "CINC" && ops[2].NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "CSINC non-alias operand missing register information")
+			inst.Operation.String(), "CSINC non-alias operand missing register information")
 	}
 
 	dstReg := core.MapRegister(ops[0].Registers[0])
@@ -137,11 +138,11 @@ func (e *ConditionalExecutor) executeCSINC(state core.State, instr *disassemble.
 
 	if dstReg == -1 || src1Reg == -1 || src2Reg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid register")
+			inst.Operation.String(), "invalid register")
 	}
 
 	// CSINC semantics: if condition true -> Rd = Rn, else -> Rd = Rm + 1
-	condition := e.ExtractCondition(instr)
+	condition := e.ExtractCondition(inst)
 	var result uint64
 	if e.evaluateCondition(state, condition) {
 		result = state.GetX(src1Reg)
@@ -160,21 +161,21 @@ func (e *ConditionalExecutor) executeCSINC(state core.State, instr *disassemble.
 }
 
 // CSINV - Conditional select invert
-func (e *ConditionalExecutor) executeCSINV(state core.State, instr *disassemble.Instruction) error {
-	ops := instr.Operands
-	if (e.GetMnemonic() == "CINV" && len(ops) < 2) || (e.GetMnemonic() != "CINV" && len(ops) < 3) {
+func (e *ConditionalExecutor) executeCSINV(state core.State, inst *disassemble.Inst) error {
+	ops := inst.Operands
+	if (e.GetMnemonic() == "CINV" && int(inst.NumOps) < 2) || (e.GetMnemonic() != "CINV" && int(inst.NumOps) < 3) {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "CSINV/CINV requires more operands")
+			inst.Operation.String(), "CSINV/CINV requires more operands")
 	}
 
 	// Check that required operands have registers
-	if len(ops[0].Registers) == 0 || len(ops[1].Registers) == 0 {
+	if ops[0].NumRegisters == 0 || ops[1].NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "CSINV/CINV operands missing register information")
+			inst.Operation.String(), "CSINV/CINV operands missing register information")
 	}
-	if e.GetMnemonic() != "CINV" && len(ops[2].Registers) == 0 {
+	if e.GetMnemonic() != "CINV" && ops[2].NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "CSINV non-alias operand missing register information")
+			inst.Operation.String(), "CSINV non-alias operand missing register information")
 	}
 
 	dstReg := core.MapRegister(ops[0].Registers[0])
@@ -188,10 +189,10 @@ func (e *ConditionalExecutor) executeCSINV(state core.State, instr *disassemble.
 
 	if dstReg == -1 || src1Reg == -1 || src2Reg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid register")
+			inst.Operation.String(), "invalid register")
 	}
 
-	condition := e.ExtractCondition(instr)
+	condition := e.ExtractCondition(inst)
 	// CINV alias requires inverted condition relative to CSINV semantics
 	if e.GetMnemonic() == "CINV" {
 		condition = e.invertCondition(condition)
@@ -224,17 +225,17 @@ func (e *ConditionalExecutor) executeCSINV(state core.State, instr *disassemble.
 }
 
 // CSNEG - Conditional select negate
-func (e *ConditionalExecutor) executeCSNEG(state core.State, instr *disassemble.Instruction) error {
-	ops := instr.Operands
-	if len(ops) < 3 {
+func (e *ConditionalExecutor) executeCSNEG(state core.State, inst *disassemble.Inst) error {
+	ops := inst.Operands
+	if int(inst.NumOps) < 3 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "CSNEG requires at least 3 operands")
+			inst.Operation.String(), "CSNEG requires at least 3 operands")
 	}
 
 	// Check that each operand has at least one register
-	if len(ops[0].Registers) == 0 || len(ops[1].Registers) == 0 || len(ops[2].Registers) == 0 {
+	if ops[0].NumRegisters == 0 || ops[1].NumRegisters == 0 || ops[2].NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "CSNEG operands missing register information")
+			inst.Operation.String(), "CSNEG operands missing register information")
 	}
 
 	dstReg := core.MapRegister(ops[0].Registers[0])
@@ -243,10 +244,10 @@ func (e *ConditionalExecutor) executeCSNEG(state core.State, instr *disassemble.
 
 	if dstReg == -1 || src1Reg == -1 || src2Reg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid register")
+			inst.Operation.String(), "invalid register")
 	}
 
-	condition := e.ExtractCondition(instr)
+	condition := e.ExtractCondition(inst)
 	// CNEG alias requires inverted condition relative to CSNEG semantics
 	if e.GetMnemonic() == "CNEG" {
 		condition = e.invertCondition(condition)
@@ -272,26 +273,26 @@ func (e *ConditionalExecutor) executeCSNEG(state core.State, instr *disassemble.
 }
 
 // CSET - Conditional set (alias for CSINC with XZR)
-func (e *ConditionalExecutor) executeCSET(state core.State, instr *disassemble.Instruction) error {
-	ops := instr.Operands
-	if len(ops) < 1 {
+func (e *ConditionalExecutor) executeCSET(state core.State, inst *disassemble.Inst) error {
+	ops := inst.Operands
+	if int(inst.NumOps) < 1 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "CSET requires destination register")
+			inst.Operation.String(), "CSET requires destination register")
 	}
 
 	// Check that the operand has at least one register
-	if len(ops[0].Registers) == 0 {
+	if ops[0].NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "CSET operand missing register information")
+			inst.Operation.String(), "CSET operand missing register information")
 	}
 
 	dstReg := core.MapRegister(ops[0].Registers[0])
 	if dstReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid destination register")
+			inst.Operation.String(), "invalid destination register")
 	}
 
-	condition := e.ExtractCondition(instr)
+	condition := e.ExtractCondition(inst)
 
 	var result uint64
 	if e.evaluateCondition(state, condition) {
@@ -311,26 +312,26 @@ func (e *ConditionalExecutor) executeCSET(state core.State, instr *disassemble.I
 }
 
 // CSETM - Conditional set mask (alias for CSINV with XZR)
-func (e *ConditionalExecutor) executeCSETM(state core.State, instr *disassemble.Instruction) error {
-	ops := instr.Operands
-	if len(ops) < 1 {
+func (e *ConditionalExecutor) executeCSETM(state core.State, inst *disassemble.Inst) error {
+	ops := inst.Operands
+	if int(inst.NumOps) < 1 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "CSETM requires destination register")
+			inst.Operation.String(), "CSETM requires destination register")
 	}
 
 	// Check that the operand has at least one register
-	if len(ops[0].Registers) == 0 {
+	if ops[0].NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "CSETM operand missing register information")
+			inst.Operation.String(), "CSETM operand missing register information")
 	}
 
 	dstReg := core.MapRegister(ops[0].Registers[0])
 	if dstReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid destination register")
+			inst.Operation.String(), "invalid destination register")
 	}
 
-	condition := e.ExtractCondition(instr)
+	condition := e.ExtractCondition(inst)
 
 	var result uint64
 	if e.evaluateCondition(state, condition) {
@@ -350,28 +351,28 @@ func (e *ConditionalExecutor) executeCSETM(state core.State, instr *disassemble.
 }
 
 // CINC - Conditional increment (alias for CSINC)
-func (e *ConditionalExecutor) executeCINC(state core.State, instr *disassemble.Instruction) error {
-	ops := instr.Operands
-	if len(ops) < 2 {
+func (e *ConditionalExecutor) executeCINC(state core.State, inst *disassemble.Inst) error {
+	ops := inst.Operands
+	if int(inst.NumOps) < 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "CINC requires at least 2 operands")
+			inst.Operation.String(), "CINC requires at least 2 operands")
 	}
 
 	// dst and src (Rn)
-	if len(ops[0].Registers) == 0 || len(ops[1].Registers) == 0 {
+	if ops[0].NumRegisters == 0 || ops[1].NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "CINC operands missing register information")
+			inst.Operation.String(), "CINC operands missing register information")
 	}
 
 	dstReg := core.MapRegister(ops[0].Registers[0])
 	srcReg := core.MapRegister(ops[1].Registers[0])
 	if dstReg == -1 || srcReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid register")
+			inst.Operation.String(), "invalid register")
 	}
 
 	// CINC semantics: increment if condition is true
-	cond := e.ExtractCondition(instr)
+	cond := e.ExtractCondition(inst)
 	var result uint64
 	if e.evaluateCondition(state, cond) {
 		result = state.GetX(srcReg) + 1
@@ -388,35 +389,35 @@ func (e *ConditionalExecutor) executeCINC(state core.State, instr *disassemble.I
 }
 
 // CINV - Conditional invert (alias for CSINV)
-func (e *ConditionalExecutor) executeCINV(state core.State, instr *disassemble.Instruction) error {
+func (e *ConditionalExecutor) executeCINV(state core.State, inst *disassemble.Inst) error {
 	// CINV is an alias for CSINV where src1 == src2
-	return e.executeCSINV(state, instr)
+	return e.executeCSINV(state, inst)
 }
 
 // CNEG - Conditional negate (alias for CSNEG)
-func (e *ConditionalExecutor) executeCNEG(state core.State, instr *disassemble.Instruction) error {
+func (e *ConditionalExecutor) executeCNEG(state core.State, inst *disassemble.Inst) error {
 	// CNEG is an alias for CSNEG where src1 == src2
-	return e.executeCSNEG(state, instr)
+	return e.executeCSNEG(state, inst)
 }
 
 // CCMP - Conditional compare
-func (e *ConditionalExecutor) executeCCMP(state core.State, instr *disassemble.Instruction) error {
-	ops := instr.Operands
-	if len(ops) < 3 {
+func (e *ConditionalExecutor) executeCCMP(state core.State, inst *disassemble.Inst) error {
+	ops := inst.Operands
+	if int(inst.NumOps) < 3 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "CCMP requires at least 3 operands")
+			inst.Operation.String(), "CCMP requires at least 3 operands")
 	}
 
 	// Check that the first operand has at least one register
-	if len(ops[0].Registers) == 0 {
+	if ops[0].NumRegisters == 0 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "CCMP first operand missing register information")
+			inst.Operation.String(), "CCMP first operand missing register information")
 	}
 
 	src1Reg := core.MapRegister(ops[0].Registers[0])
 	if src1Reg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid source register")
+			inst.Operation.String(), "invalid source register")
 	}
 
 	// Get first operand value
@@ -424,11 +425,11 @@ func (e *ConditionalExecutor) executeCCMP(state core.State, instr *disassemble.I
 
 	// Get second operand value (register or immediate)
 	var val2 uint64
-	if len(ops[1].Registers) > 0 {
+	if ops[1].NumRegisters > 0 {
 		src2Reg := core.MapRegister(ops[1].Registers[0])
 		if src2Reg == -1 {
 			return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), "invalid second source register")
+				inst.Operation.String(), "invalid second source register")
 		}
 		val2 = state.GetX(src2Reg)
 	} else {
@@ -439,7 +440,7 @@ func (e *ConditionalExecutor) executeCCMP(state core.State, instr *disassemble.I
 	flagsImm := uint64(ops[2].Immediate)
 
 	// Extract condition from instruction
-	condition := e.ExtractCondition(instr)
+	condition := e.ExtractCondition(inst)
 
 	if e.evaluateCondition(state, condition) {
 		// Condition is true - perform the compare operation (val1 - val2)
@@ -504,23 +505,56 @@ func (e *ConditionalExecutor) invertCondition(cond core.ConditionCode) core.Cond
 }
 
 // ExtractCondition extracts condition code from instruction
-func (e *ConditionalExecutor) ExtractCondition(instr *disassemble.Instruction) core.ConditionCode {
+func (e *ConditionalExecutor) ExtractCondition(inst *disassemble.Inst) core.ConditionCode {
 	// For testing: check if we have a condition override
 	if e.testConditionOverride != nil {
 		return *e.testConditionOverride
 	}
 
 	// First try to find a structured condition operand
-	for _, operand := range instr.Operands {
-		if operand.Class == disassemble.CONDITION {
-			return e.mapConditionCode(operand.Condition)
+	for i := uint8(0); i < inst.NumOps; i++ {
+		if inst.Operands[i].Class == disassemble.CONDITION {
+			switch inst.Operands[i].Condition {
+			case disassemble.COND_EQ:
+				return core.EQ
+			case disassemble.COND_NE:
+				return core.NE
+			case disassemble.COND_CS:
+				return core.CS
+			case disassemble.COND_CC:
+				return core.CC
+			case disassemble.COND_MI:
+				return core.MI
+			case disassemble.COND_PL:
+				return core.PL
+			case disassemble.COND_VS:
+				return core.VS
+			case disassemble.COND_VC:
+				return core.VC
+			case disassemble.COND_HI:
+				return core.HI
+			case disassemble.COND_LS:
+				return core.LS
+			case disassemble.COND_GE:
+				return core.GE
+			case disassemble.COND_LT:
+				return core.LT
+			case disassemble.COND_GT:
+				return core.GT
+			case disassemble.COND_LE:
+				return core.LE
+			case disassemble.COND_AL:
+				return core.AL
+			case disassemble.COND_NV:
+				return core.NV
+			}
 		}
 	}
 
 	// Try to decode condition from raw encoding for conditional select class
 	// CSEL/CSINC/CSINV/CSNEG and aliases encode cond in bits [15:12]
-	if instr.Raw != 0 {
-		condField := (instr.Raw >> 12) & 0xF
+	if inst.Raw != 0 {
+		condField := (inst.Raw >> 12) & 0xF
 		switch condField {
 		case 0:
 			return core.EQ
@@ -558,108 +592,8 @@ func (e *ConditionalExecutor) ExtractCondition(instr *disassemble.Instruction) c
 	}
 
 	// Fall back to string parsing for compatibility
-	instrStr := fmt.Sprintf("%v", instr.Operation)
+	instrStr := inst.Operation.String()
 	return e.parseConditionFromString(instrStr)
-}
-
-// mapConditionCode maps disassembler condition codes to our condition codes
-func (e *ConditionalExecutor) mapConditionCode(cond any) core.ConditionCode {
-	// Handle string-based condition codes first
-	if condStr, ok := cond.(string); ok {
-		switch strings.ToUpper(condStr) {
-		case "EQ":
-			return core.EQ
-		case "NE":
-			return core.NE
-		case "CS", "HS":
-			return core.CS
-		case "CC", "LO":
-			return core.CC
-		case "MI":
-			return core.MI
-		case "PL":
-			return core.PL
-		case "VS":
-			return core.VS
-		case "VC":
-			return core.VC
-		case "HI":
-			return core.HI
-		case "LS":
-			return core.LS
-		case "GE":
-			return core.GE
-		case "LT":
-			return core.LT
-		case "GT":
-			return core.GT
-		case "LE":
-			return core.LE
-		case "AL":
-			return core.AL
-		case "NV":
-			return core.NV
-		default:
-			return core.AL // Default to always for unknown strings
-		}
-	}
-
-	// Convert numeric condition to integer for evaluation
-	var conditionCode int
-	switch v := cond.(type) {
-	case int:
-		conditionCode = v
-	case uint32:
-		conditionCode = int(v)
-	case uint64:
-		conditionCode = int(v)
-	default:
-		// Try to convert to int using string conversion as last resort
-		// This handles disassemble.condition type (uint32 based)
-		condStr := fmt.Sprintf("%v", cond)
-		if condInt, err := strconv.Atoi(condStr); err == nil {
-			conditionCode = condInt
-		} else {
-			return core.AL // Default to always
-		}
-	}
-
-	switch conditionCode {
-	case 0:
-		return core.EQ
-	case 1:
-		return core.NE
-	case 2:
-		return core.CS
-	case 3:
-		return core.CC
-	case 4:
-		return core.MI
-	case 5:
-		return core.PL
-	case 6:
-		return core.VS
-	case 7:
-		return core.VC
-	case 8:
-		return core.HI
-	case 9:
-		return core.LS
-	case 10:
-		return core.GE
-	case 11:
-		return core.LT
-	case 12:
-		return core.GT
-	case 13:
-		return core.LE
-	case 14:
-		return core.AL
-	case 15:
-		return core.NV
-	default:
-		return core.AL
-	}
 }
 
 // parseConditionFromString provides fallback string-based condition parsing

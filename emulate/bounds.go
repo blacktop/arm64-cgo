@@ -91,7 +91,7 @@ func (g *BoundsGuard) Pre(state core.State, _ core.InstructionInfo) core.HookRes
 // It updates call depth by observing executed branch mnemonics.
 func (g *BoundsGuard) Post(state core.State, info core.InstructionInfo) core.HookResult {
 	// Track calls/returns via operation codes (no string allocations)
-	switch info.Instruction.Operation {
+	switch info.Operation {
 	case disassemble.ARM64_BL, disassemble.ARM64_BLR,
 		disassemble.ARM64_BLRAA, disassemble.ARM64_BLRAAZ,
 		disassemble.ARM64_BLRAB, disassemble.ARM64_BLRABZ:
@@ -121,8 +121,8 @@ func (g *BoundsGuard) Post(state core.State, info core.InstructionInfo) core.Hoo
 
 	case disassemble.ARM64_BR:
 		// Treat BR X30 (LR) as an indirect return
-		if len(info.Instruction.Operands) > 0 && len(info.Instruction.Operands[0].Registers) > 0 {
-			reg := info.Instruction.Operands[0].Registers[0]
+		if info.Inst != nil && info.Inst.NumOps > 0 && info.Inst.Operands[0].NumRegisters > 0 {
+			reg := info.Inst.Operands[0].Registers[0]
 			mapped := core.MapRegister(reg)
 			// Handle both mapped and direct enum checks for robustness.
 			if mapped == 30 || reg == disassemble.REG_X30 {

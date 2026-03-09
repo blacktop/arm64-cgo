@@ -21,8 +21,8 @@ func NewCompareExecutor(mnemonic, description string) *CompareExecutor {
 }
 
 // ValidateInstruction performs basic validation for compare instructions
-func (e *CompareExecutor) ValidateInstruction(instr *disassemble.Instruction) error {
-	if instr == nil {
+func (e *CompareExecutor) ValidateInstruction(inst *disassemble.Inst) error {
+	if inst == nil {
 		return core.NewEmulationError(core.ErrInvalidInstruction, 0, e.mnemonic, "nil instruction")
 	}
 	// For compare instructions, we don't validate against the operation string
@@ -31,53 +31,53 @@ func (e *CompareExecutor) ValidateInstruction(instr *disassemble.Instruction) er
 }
 
 // Execute executes compare instructions
-func (e *CompareExecutor) Execute(state core.State, instr *disassemble.Instruction) error {
-	if err := e.ValidateInstruction(instr); err != nil {
+func (e *CompareExecutor) Execute(state core.State, inst *disassemble.Inst) error {
+	if err := e.ValidateInstruction(inst); err != nil {
 		return err
 	}
 
 	switch e.mnemonic {
 	case "CMP":
-		return e.executeCMP(state, instr)
+		return e.executeCMP(state, inst)
 	case "CMN":
-		return e.executeCMN(state, instr)
+		return e.executeCMN(state, inst)
 	case "TST":
-		return e.executeTST(state, instr)
+		return e.executeTST(state, inst)
 	case "CCMP":
-		return e.executeCCMP(state, instr)
+		return e.executeCCMP(state, inst)
 	case "CCMN":
-		return e.executeCCMN(state, instr)
+		return e.executeCCMN(state, inst)
 	default:
 		return core.NewEmulationError(core.ErrUnsupportedFeature, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("compare instruction %s not implemented", e.mnemonic))
+			inst.Operation.String(), fmt.Sprintf("compare instruction %s not implemented", e.mnemonic))
 	}
 }
 
 // CCMN - Conditional compare negative
-func (e *CompareExecutor) executeCCMN(state core.State, instr *disassemble.Instruction) error {
-	ops := instr.Operands
-	if len(ops) < 4 {
+func (e *CompareExecutor) executeCCMN(state core.State, inst *disassemble.Inst) error {
+	ops := inst.Operands
+	if int(inst.NumOps) < 4 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "CCMN requires 4 operands")
+			inst.Operation.String(), "CCMN requires 4 operands")
 	}
 
 	// Extract condition from encoding or string
-	condition := e.extractConditionFromInstruction(fmt.Sprintf("%v", instr.Operation), instr)
+	condition := e.extractConditionFromInstruction(inst.Operation.String(), inst)
 
 	if e.evaluateCondition(state, condition) {
 		// Perform CMN (add and set flags)
 		src1Reg := core.MapRegister(ops[0].Registers[0])
 		if src1Reg == -1 {
 			return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), "invalid first register")
+				inst.Operation.String(), "invalid first register")
 		}
 		val1 := state.GetX(src1Reg)
 		var val2 uint64
-		if len(ops[1].Registers) > 0 {
+		if ops[1].NumRegisters > 0 {
 			src2Reg := core.MapRegister(ops[1].Registers[0])
 			if src2Reg == -1 {
 				return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), "invalid second register")
+					inst.Operation.String(), "invalid second register")
 			}
 			val2 = state.GetX(src2Reg)
 		} else {
@@ -109,28 +109,28 @@ func (e *CompareExecutor) executeCCMN(state core.State, instr *disassemble.Instr
 }
 
 // CMP - Compare (subtract and set flags but discard result)
-func (e *CompareExecutor) executeCMP(state core.State, instr *disassemble.Instruction) error {
-	ops := instr.Operands
-	if len(ops) < 2 {
+func (e *CompareExecutor) executeCMP(state core.State, inst *disassemble.Inst) error {
+	ops := inst.Operands
+	if int(inst.NumOps) < 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "CMP requires at least 2 operands")
+			inst.Operation.String(), "CMP requires at least 2 operands")
 	}
 
 	src1Reg := core.MapRegister(ops[0].Registers[0])
 	if src1Reg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid first register")
+			inst.Operation.String(), "invalid first register")
 	}
 
 	val1 := state.GetX(src1Reg)
 	var val2 uint64
 
 	// Second operand can be register or immediate
-	if len(ops[1].Registers) > 0 {
+	if ops[1].NumRegisters > 0 {
 		src2Reg := core.MapRegister(ops[1].Registers[0])
 		if src2Reg == -1 {
 			return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), "invalid second register")
+				inst.Operation.String(), "invalid second register")
 		}
 		val2 = state.GetX(src2Reg)
 	} else {
@@ -163,28 +163,28 @@ func (e *CompareExecutor) executeCMP(state core.State, instr *disassemble.Instru
 }
 
 // CMN - Compare negative (add and set flags but discard result)
-func (e *CompareExecutor) executeCMN(state core.State, instr *disassemble.Instruction) error {
-	ops := instr.Operands
-	if len(ops) < 2 {
+func (e *CompareExecutor) executeCMN(state core.State, inst *disassemble.Inst) error {
+	ops := inst.Operands
+	if int(inst.NumOps) < 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "CMN requires at least 2 operands")
+			inst.Operation.String(), "CMN requires at least 2 operands")
 	}
 
 	src1Reg := core.MapRegister(ops[0].Registers[0])
 	if src1Reg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid first register")
+			inst.Operation.String(), "invalid first register")
 	}
 
 	val1 := state.GetX(src1Reg)
 	var val2 uint64
 
 	// Second operand can be register or immediate
-	if len(ops[1].Registers) > 0 {
+	if ops[1].NumRegisters > 0 {
 		src2Reg := core.MapRegister(ops[1].Registers[0])
 		if src2Reg == -1 {
 			return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), "invalid second register")
+				inst.Operation.String(), "invalid second register")
 		}
 		val2 = state.GetX(src2Reg)
 	} else {
@@ -217,28 +217,28 @@ func (e *CompareExecutor) executeCMN(state core.State, instr *disassemble.Instru
 }
 
 // TST - Test bits (AND and set flags but discard result)
-func (e *CompareExecutor) executeTST(state core.State, instr *disassemble.Instruction) error {
-	ops := instr.Operands
-	if len(ops) < 2 {
+func (e *CompareExecutor) executeTST(state core.State, inst *disassemble.Inst) error {
+	ops := inst.Operands
+	if int(inst.NumOps) < 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "TST requires at least 2 operands")
+			inst.Operation.String(), "TST requires at least 2 operands")
 	}
 
 	src1Reg := core.MapRegister(ops[0].Registers[0])
 	if src1Reg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid first register")
+			inst.Operation.String(), "invalid first register")
 	}
 
 	val1 := state.GetX(src1Reg)
 	var val2 uint64
 
 	// Second operand can be register or immediate
-	if len(ops[1].Registers) > 0 {
+	if ops[1].NumRegisters > 0 {
 		src2Reg := core.MapRegister(ops[1].Registers[0])
 		if src2Reg == -1 {
 			return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), "invalid second register")
+				inst.Operation.String(), "invalid second register")
 		}
 		val2 = state.GetX(src2Reg)
 	} else {
@@ -270,34 +270,34 @@ func (e *CompareExecutor) executeTST(state core.State, instr *disassemble.Instru
 }
 
 // CCMP - Conditional compare
-func (e *CompareExecutor) executeCCMP(state core.State, instr *disassemble.Instruction) error {
-	ops := instr.Operands
-	if len(ops) < 4 {
+func (e *CompareExecutor) executeCCMP(state core.State, inst *disassemble.Inst) error {
+	ops := inst.Operands
+	if int(inst.NumOps) < 4 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "CCMP requires 4 operands")
+			inst.Operation.String(), "CCMP requires 4 operands")
 	}
 
 	// Extract condition from encoding or string
-	condition := e.extractConditionFromInstruction(fmt.Sprintf("%v", instr.Operation), instr)
+	condition := e.extractConditionFromInstruction(inst.Operation.String(), inst)
 
 	// Check if condition is met
 	if e.evaluateCondition(state, condition) {
-		// Condition met: perform normal CMN
+		// Condition met: perform normal CMP
 		src1Reg := core.MapRegister(ops[0].Registers[0])
 		if src1Reg == -1 {
 			return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-				fmt.Sprintf("%v", instr.Operation), "invalid first register")
+				inst.Operation.String(), "invalid first register")
 		}
 
 		val1 := state.GetX(src1Reg)
 		var val2 uint64
 
 		// Second operand can be register or immediate
-		if len(ops[1].Registers) > 0 {
+		if ops[1].NumRegisters > 0 {
 			src2Reg := core.MapRegister(ops[1].Registers[0])
 			if src2Reg == -1 {
 				return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), "invalid second register")
+					inst.Operation.String(), "invalid second register")
 			}
 			val2 = state.GetX(src2Reg)
 		} else {
@@ -313,8 +313,8 @@ func (e *CompareExecutor) executeCCMP(state core.State, instr *disassemble.Instr
 			val2 = uint64(uint32(val2))
 		}
 
-		// Perform comparison (addition)
-		result, carry, overflow := e.addWithFlags(val1, val2, is32Bit)
+		// Perform comparison (subtraction)
+		result, carry, overflow := e.subWithFlags(val1, val2, is32Bit)
 
 		// Update flags
 		if is32Bit {
@@ -400,10 +400,11 @@ func (e *CompareExecutor) subWithFlags(a, b uint64, is32Bit bool) (result uint64
 }
 
 // extractConditionFromInstruction extracts condition from instruction encoding or string
-func (e *CompareExecutor) extractConditionFromInstruction(instrStr string, instr *disassemble.Instruction) core.ConditionCode {
+func (e *CompareExecutor) extractConditionFromInstruction(instrStr string, inst *disassemble.Inst) core.ConditionCode {
 	// Prefer structured CONDITION operand if present
-	if instr != nil {
-		for _, op := range instr.Operands {
+	if inst != nil {
+		for i := uint8(0); i < inst.NumOps; i++ {
+			op := inst.Operands[i]
 			if op.Class == disassemble.CONDITION {
 				// Map disassemble.condition to core.ConditionCode
 				switch op.Condition {
@@ -443,8 +444,8 @@ func (e *CompareExecutor) extractConditionFromInstruction(instrStr string, instr
 			}
 		}
 		// Fallback: decode cond from Raw bits [15:12] per ARM encoding for CCMP/CCMN
-		if instr.Raw != 0 {
-			condField := (instr.Raw >> 12) & 0xF
+		if inst.Raw != 0 {
+			condField := (inst.Raw >> 12) & 0xF
 			switch condField {
 			case 0:
 				return core.EQ

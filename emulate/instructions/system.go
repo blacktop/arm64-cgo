@@ -21,8 +21,8 @@ func NewSystemExecutor(mnemonic, description string) *SystemExecutor {
 }
 
 // ValidateInstruction performs validation specific to system instructions
-func (e *SystemExecutor) ValidateInstruction(instr *disassemble.Instruction) error {
-	if instr == nil {
+func (e *SystemExecutor) ValidateInstruction(inst *disassemble.Inst) error {
+	if inst == nil {
 		return core.NewEmulationError(core.ErrInvalidInstruction, 0, e.mnemonic, "nil instruction")
 	}
 
@@ -30,142 +30,142 @@ func (e *SystemExecutor) ValidateInstruction(instr *disassemble.Instruction) err
 	// We support specific operations for each mnemonic
 	switch e.mnemonic {
 	case "NOP":
-		if instr.Operation != disassemble.ARM64_NOP {
-			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		if inst.Operation != disassemble.ARM64_NOP {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, inst.Operation))
 		}
 	case "MRS":
-		if instr.Operation != disassemble.ARM64_MRS {
-			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		if inst.Operation != disassemble.ARM64_MRS {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, inst.Operation))
 		}
 	case "MSR":
-		if instr.Operation != disassemble.ARM64_MSR {
-			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		if inst.Operation != disassemble.ARM64_MSR {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, inst.Operation))
 		}
 	case "HLT":
-		if instr.Operation != disassemble.ARM64_HLT {
-			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		if inst.Operation != disassemble.ARM64_HLT {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, inst.Operation))
 		}
 	case "HINT":
-		if instr.Operation != disassemble.ARM64_HINT {
-			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		if inst.Operation != disassemble.ARM64_HINT {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, inst.Operation))
 		}
 	case "ISB":
-		if instr.Operation != disassemble.ARM64_ISB {
-			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		if inst.Operation != disassemble.ARM64_ISB {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, inst.Operation))
 		}
 	case "DSB":
-		if instr.Operation != disassemble.ARM64_DSB {
-			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		if inst.Operation != disassemble.ARM64_DSB {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, inst.Operation))
 		}
 	case "DMB":
-		if instr.Operation != disassemble.ARM64_DMB {
-			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		if inst.Operation != disassemble.ARM64_DMB {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, inst.Operation))
 		}
 	case "YIELD":
-		if instr.Operation != disassemble.ARM64_YIELD {
-			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		if inst.Operation != disassemble.ARM64_YIELD {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, inst.Operation))
 		}
 	case "WFE":
-		if instr.Operation != disassemble.ARM64_WFE {
-			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		if inst.Operation != disassemble.ARM64_WFE {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, inst.Operation))
 		}
 	case "WFI":
-		if instr.Operation != disassemble.ARM64_WFI {
-			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		if inst.Operation != disassemble.ARM64_WFI {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, inst.Operation))
 		}
 	case "SEV":
-		if instr.Operation != disassemble.ARM64_SEV {
-			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		if inst.Operation != disassemble.ARM64_SEV {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, inst.Operation))
 		}
 	case "SEVL":
-		if instr.Operation != disassemble.ARM64_SEVL {
-			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		if inst.Operation != disassemble.ARM64_SEVL {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, inst.Operation))
 		}
 	case "SYS":
-		if instr.Operation != disassemble.ARM64_SYS {
-			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		if inst.Operation != disassemble.ARM64_SYS {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, inst.Operation))
 		}
 	case "SYSL":
-		if instr.Operation != disassemble.ARM64_SYSL {
-			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		if inst.Operation != disassemble.ARM64_SYSL {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, inst.Operation))
 		}
 	case "XPACLRI":
-		if instr.Operation != disassemble.ARM64_XPACLRI {
-			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		if inst.Operation != disassemble.ARM64_XPACLRI {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, inst.Operation))
 		}
 	case "PACIBSP":
-		if instr.Operation != disassemble.ARM64_PACIBSP {
-			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		if inst.Operation != disassemble.ARM64_PACIBSP {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, inst.Operation))
 		}
 	case "PACIASP":
-		if instr.Operation != disassemble.ARM64_PACIASP {
-			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		if inst.Operation != disassemble.ARM64_PACIASP {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, inst.Operation))
 		}
 	case "PACIAZ":
-		if instr.Operation != disassemble.ARM64_PACIAZ {
-			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		if inst.Operation != disassemble.ARM64_PACIAZ {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, inst.Operation))
 		}
 	case "PACIBZ":
-		if instr.Operation != disassemble.ARM64_PACIBZ {
-			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		if inst.Operation != disassemble.ARM64_PACIBZ {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, inst.Operation))
 		}
 	case "AUTIBSP":
-		if instr.Operation != disassemble.ARM64_AUTIBSP {
-			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		if inst.Operation != disassemble.ARM64_AUTIBSP {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, inst.Operation))
 		}
 	case "BTI":
-		if instr.Operation != disassemble.ARM64_BTI {
-			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		if inst.Operation != disassemble.ARM64_BTI {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, inst.Operation))
 		}
 	case "SB":
-		if instr.Operation != disassemble.ARM64_SB {
-			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		if inst.Operation != disassemble.ARM64_SB {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, inst.Operation))
 		}
 	case "PACDA":
-		if instr.Operation != disassemble.ARM64_PACDA && instr.Operation != disassemble.ARM64_PACDZA {
-			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		if inst.Operation != disassemble.ARM64_PACDA && inst.Operation != disassemble.ARM64_PACDZA {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, inst.Operation))
 		}
 	case "PACIA":
-		if instr.Operation != disassemble.ARM64_PACIA && instr.Operation != disassemble.ARM64_PACIZA {
-			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		if inst.Operation != disassemble.ARM64_PACIA && inst.Operation != disassemble.ARM64_PACIZA {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, inst.Operation))
 		}
 	case "PACDB":
-		if instr.Operation != disassemble.ARM64_PACDB && instr.Operation != disassemble.ARM64_PACDZB {
-			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		if inst.Operation != disassemble.ARM64_PACDB && inst.Operation != disassemble.ARM64_PACDZB {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, inst.Operation))
 		}
 	case "PACIB":
-		if instr.Operation != disassemble.ARM64_PACIB && instr.Operation != disassemble.ARM64_PACIZB {
-			return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
-				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, instr.Operation))
+		if inst.Operation != disassemble.ARM64_PACIB && inst.Operation != disassemble.ARM64_PACIZB {
+			return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
+				fmt.Sprintf("executor %s does not support operation %v", e.mnemonic, inst.Operation))
 		}
 	default:
-		return core.NewEmulationError(core.ErrInvalidInstruction, 0, fmt.Sprintf("%v", instr.Operation),
+		return core.NewEmulationError(core.ErrInvalidInstruction, 0, inst.Operation.String(),
 			fmt.Sprintf("unknown system instruction %s", e.mnemonic))
 	}
 
@@ -173,97 +173,97 @@ func (e *SystemExecutor) ValidateInstruction(instr *disassemble.Instruction) err
 }
 
 // Execute executes system instructions
-func (e *SystemExecutor) Execute(state core.State, instr *disassemble.Instruction) error {
-	if err := e.ValidateInstruction(instr); err != nil {
+func (e *SystemExecutor) Execute(state core.State, inst *disassemble.Inst) error {
+	if err := e.ValidateInstruction(inst); err != nil {
 		return err
 	}
 
 	switch e.mnemonic {
 	case "NOP":
-		return e.executeNOP(state, instr)
+		return e.executeNOP(state, inst)
 	case "MRS":
-		return e.executeMRS(state, instr)
+		return e.executeMRS(state, inst)
 	case "MSR":
-		return e.executeMSR(state, instr)
+		return e.executeMSR(state, inst)
 	case "SYS":
-		return e.executeSYS(state, instr)
+		return e.executeSYS(state, inst)
 	case "SYSL":
-		return e.executeSYSL(state, instr)
+		return e.executeSYSL(state, inst)
 	case "ISB":
-		return e.executeISB(state, instr)
+		return e.executeISB(state, inst)
 	case "DSB":
-		return e.executeDSB(state, instr)
+		return e.executeDSB(state, inst)
 	case "DMB":
-		return e.executeDMB(state, instr)
+		return e.executeDMB(state, inst)
 	case "HINT":
-		return e.executeHINT(state, instr)
+		return e.executeHINT(state, inst)
 	case "YIELD":
-		return e.executeYIELD(state, instr)
+		return e.executeYIELD(state, inst)
 	case "WFE":
-		return e.executeWFE(state, instr)
+		return e.executeWFE(state, inst)
 	case "WFI":
-		return e.executeWFI(state, instr)
+		return e.executeWFI(state, inst)
 	case "SEV":
-		return e.executeSEV(state, instr)
+		return e.executeSEV(state, inst)
 	case "SEVL":
-		return e.executeSEVL(state, instr)
+		return e.executeSEVL(state, inst)
 	case "HLT":
-		return e.executeHLT(state, instr)
+		return e.executeHLT(state, inst)
 	case "XPACLRI":
-		return e.executeXPACLRI(state, instr)
+		return e.executeXPACLRI(state, inst)
 	case "PACIBSP":
-		return e.executePACIBSP(state, instr)
+		return e.executePACIBSP(state, inst)
 	case "PACIASP":
-		return e.executePACIASP(state, instr)
+		return e.executePACIASP(state, inst)
 	case "PACIAZ":
-		return e.executePACIAZ(state, instr)
+		return e.executePACIAZ(state, inst)
 	case "PACIBZ":
-		return e.executePACIBZ(state, instr)
+		return e.executePACIBZ(state, inst)
 	case "AUTIBSP":
-		return e.executeAUTIBSP(state, instr)
+		return e.executeAUTIBSP(state, inst)
 	case "BTI":
-		return e.executeBTI(state, instr)
+		return e.executeBTI(state, inst)
 	case "SB":
-		return e.executeSB(state, instr)
+		return e.executeSB(state, inst)
 	case "PACDA":
-		return e.executePACDA(state, instr)
+		return e.executePACDA(state, inst)
 	case "PACIA":
-		return e.executePACIA(state, instr)
+		return e.executePACIA(state, inst)
 	case "PACDB":
-		return e.executePACDB(state, instr)
+		return e.executePACDB(state, inst)
 	case "PACIB":
-		return e.executePACIB(state, instr)
+		return e.executePACIB(state, inst)
 	default:
 		return core.NewEmulationError(core.ErrUnsupportedFeature, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), fmt.Sprintf("system instruction %s not implemented", e.mnemonic))
+			inst.Operation.String(), fmt.Sprintf("system instruction %s not implemented", e.mnemonic))
 	}
 }
 
 // NOP - No operation
-func (e *SystemExecutor) executeNOP(state core.State, instr *disassemble.Instruction) error {
+func (e *SystemExecutor) executeNOP(state core.State, inst *disassemble.Inst) error {
 	// NOP does nothing, just advance PC
 	return nil
 }
 
 // MRS - Move from system register
-func (e *SystemExecutor) executeMRS(state core.State, instr *disassemble.Instruction) error {
-	ops := instr.Operands
-	if len(ops) < 2 {
+func (e *SystemExecutor) executeMRS(state core.State, inst *disassemble.Inst) error {
+	ops := inst.Operands
+	if int(inst.NumOps) < 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "MRS requires destination register and system register")
+			inst.Operation.String(), "MRS requires destination register and system register")
 	}
 
 	dstReg := core.MapRegister(ops[0].Registers[0])
 	if dstReg == -1 {
 		return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "invalid destination register")
+			inst.Operation.String(), "invalid destination register")
 	}
 
 	// For emulation purposes, we'll return appropriate values for common system registers
 	value := uint64(0)
 
 	// Enhanced system register handling based on legacy implementation
-	instrStr := instr.String()
+	instrStr, _ := inst.Disassemble()
 
 	// Check instruction string first
 	if strings.Contains(instrStr, "tpidr_el0") {
@@ -302,7 +302,7 @@ func (e *SystemExecutor) executeMRS(state core.State, instr *disassemble.Instruc
 	} else {
 		// For testing or when instruction string is not available,
 		// check if this looks like an NZCV access based on the operation
-		if instr.Operation == disassemble.ARM64_MRS {
+		if inst.Operation == disassemble.ARM64_MRS {
 			// For MRS instructions in tests, assume NZCV if no string info
 			value = 0
 			if state.GetN() {
@@ -328,25 +328,25 @@ func (e *SystemExecutor) executeMRS(state core.State, instr *disassemble.Instruc
 }
 
 // MSR - Move to system register
-func (e *SystemExecutor) executeMSR(state core.State, instr *disassemble.Instruction) error {
-	ops := instr.Operands
-	if len(ops) < 2 {
+func (e *SystemExecutor) executeMSR(state core.State, inst *disassemble.Inst) error {
+	ops := inst.Operands
+	if int(inst.NumOps) < 2 {
 		return core.NewEmulationError(core.ErrInvalidInstruction, state.GetPC(),
-			fmt.Sprintf("%v", instr.Operation), "MSR requires system register and source")
+			inst.Operation.String(), "MSR requires system register and source")
 	}
 
 	// For emulation purposes, we'll handle basic system register writes
 	// Check if this is an NZCV write by examining the instruction string
-	instrStr := instr.String()
-	if strings.Contains(instrStr, "nzcv") || instr.Operation == disassemble.ARM64_MSR {
+	instrStr, _ := inst.Disassemble()
+	if strings.Contains(instrStr, "nzcv") || inst.Operation == disassemble.ARM64_MSR {
 		var value uint64
 
 		// Get the source value
-		if len(ops[1].Registers) > 0 {
+		if ops[1].NumRegisters > 0 {
 			srcReg := core.MapRegister(ops[1].Registers[0])
 			if srcReg == -1 {
 				return core.NewEmulationError(core.ErrInvalidRegister, state.GetPC(),
-					fmt.Sprintf("%v", instr.Operation), "invalid source register")
+					inst.Operation.String(), "invalid source register")
 			}
 			value = state.GetX(srcReg)
 		} else if ops[1].Immediate != 0 {
@@ -365,18 +365,18 @@ func (e *SystemExecutor) executeMSR(state core.State, instr *disassemble.Instruc
 }
 
 // SYS - System instruction
-func (e *SystemExecutor) executeSYS(state core.State, instr *disassemble.Instruction) error {
+func (e *SystemExecutor) executeSYS(state core.State, inst *disassemble.Inst) error {
 	// System instructions are typically privileged and do various system operations
 	// For emulation, we'll mostly treat them as NOPs
 	return nil
 }
 
 // SYSL - System instruction with result
-func (e *SystemExecutor) executeSYSL(state core.State, instr *disassemble.Instruction) error {
+func (e *SystemExecutor) executeSYSL(state core.State, inst *disassemble.Inst) error {
 	// Similar to SYS but returns a value
 	// For emulation, treat as NOP but may need to set a destination register to 0
-	ops := instr.Operands
-	if len(ops) > 0 && len(ops[0].Registers) > 0 {
+	ops := inst.Operands
+	if int(inst.NumOps) > 0 && ops[0].NumRegisters > 0 {
 		dstReg := core.MapRegister(ops[0].Registers[0])
 		if dstReg != -1 {
 			state.SetX(dstReg, 0)
@@ -386,70 +386,70 @@ func (e *SystemExecutor) executeSYSL(state core.State, instr *disassemble.Instru
 }
 
 // ISB - Instruction synchronization barrier
-func (e *SystemExecutor) executeISB(state core.State, instr *disassemble.Instruction) error {
+func (e *SystemExecutor) executeISB(state core.State, inst *disassemble.Inst) error {
 	// In emulation, barriers are typically NOPs
 	return nil
 }
 
 // DSB - Data synchronization barrier
-func (e *SystemExecutor) executeDSB(state core.State, instr *disassemble.Instruction) error {
+func (e *SystemExecutor) executeDSB(state core.State, inst *disassemble.Inst) error {
 	// In emulation, barriers are typically NOPs
 	return nil
 }
 
 // DMB - Data memory barrier
-func (e *SystemExecutor) executeDMB(state core.State, instr *disassemble.Instruction) error {
+func (e *SystemExecutor) executeDMB(state core.State, inst *disassemble.Inst) error {
 	// In emulation, barriers are typically NOPs
 	return nil
 }
 
 // HINT - Hint instruction
-func (e *SystemExecutor) executeHINT(state core.State, instr *disassemble.Instruction) error {
+func (e *SystemExecutor) executeHINT(state core.State, inst *disassemble.Inst) error {
 	// Hints are by definition optional and can be treated as NOPs
 	return nil
 }
 
 // YIELD - Yield hint
-func (e *SystemExecutor) executeYIELD(state core.State, instr *disassemble.Instruction) error {
+func (e *SystemExecutor) executeYIELD(state core.State, inst *disassemble.Inst) error {
 	// In emulation, yield is typically a NOP
 	return nil
 }
 
 // WFE - Wait for event
-func (e *SystemExecutor) executeWFE(state core.State, instr *disassemble.Instruction) error {
+func (e *SystemExecutor) executeWFE(state core.State, inst *disassemble.Inst) error {
 	// In emulation, we can't really wait for events, so treat as NOP
 	return nil
 }
 
 // WFI - Wait for interrupt
-func (e *SystemExecutor) executeWFI(state core.State, instr *disassemble.Instruction) error {
+func (e *SystemExecutor) executeWFI(state core.State, inst *disassemble.Inst) error {
 	// In emulation, we can't really wait for interrupts, so treat as NOP
 	return nil
 }
 
 // SEV - Send event
-func (e *SystemExecutor) executeSEV(state core.State, instr *disassemble.Instruction) error {
+func (e *SystemExecutor) executeSEV(state core.State, inst *disassemble.Inst) error {
 	// In emulation, event signaling is typically a NOP
 	return nil
 }
 
 // SEVL - Send event local
-func (e *SystemExecutor) executeSEVL(state core.State, instr *disassemble.Instruction) error {
+func (e *SystemExecutor) executeSEVL(state core.State, inst *disassemble.Inst) error {
 	// In emulation, event signaling is typically a NOP
 	return nil
 }
 
 // HLT - Halt instruction
-func (e *SystemExecutor) executeHLT(state core.State, instr *disassemble.Instruction) error {
+func (e *SystemExecutor) executeHLT(state core.State, inst *disassemble.Inst) error {
 	// HLT causes the processor to halt
 	// In emulation, we can signal this as a special condition
 	// For now, we'll return a specific error to indicate halt
 	return core.NewEmulationError(core.ErrExecutionLimit, state.GetPC(),
-		fmt.Sprintf("%v", instr.Operation), "HLT instruction executed - processor halted")
+		inst.Operation.String(), "HLT instruction executed - processor halted")
 }
 
 // XPACLRI - Strip Pointer Authentication Code from Link Register
-func (e *SystemExecutor) executeXPACLRI(state core.State, instr *disassemble.Instruction) error {
+func (e *SystemExecutor) executeXPACLRI(state core.State, inst *disassemble.Inst) error {
 	// Clear pseudo-PAC in LR by zeroing the top byte
 	lr := state.GetX(30) // X30 is LR
 	lr &= 0x00FFFFFFFFFFFFFF
@@ -467,7 +467,7 @@ func computePseudoPAC(modifier uint64, keyTag uint8) uint8 {
 }
 
 // PACIBSP - Pointer authenticate LR using SP and B-key
-func (e *SystemExecutor) executePACIBSP(state core.State, instr *disassemble.Instruction) error {
+func (e *SystemExecutor) executePACIBSP(state core.State, inst *disassemble.Inst) error {
 	// Pseudo-implement PACIBSP: set top byte of LR using a simple hash of SP and a B-key tag
 	lr := state.GetX(30) // X30 is LR
 	pacByte := computePseudoPAC(state.GetSP(), 0xB3)
@@ -479,7 +479,7 @@ func (e *SystemExecutor) executePACIBSP(state core.State, instr *disassemble.Ins
 }
 
 // PACIASP - Pointer authenticate LR using SP and A-key
-func (e *SystemExecutor) executePACIASP(state core.State, instr *disassemble.Instruction) error {
+func (e *SystemExecutor) executePACIASP(state core.State, inst *disassemble.Inst) error {
 	lr := state.GetX(30) // X30 is LR
 	pacByte := computePseudoPAC(state.GetSP(), 0xA5)
 
@@ -490,7 +490,7 @@ func (e *SystemExecutor) executePACIASP(state core.State, instr *disassemble.Ins
 }
 
 // PACIAZ - Pointer authenticate LR using zero modifier and A-key
-func (e *SystemExecutor) executePACIAZ(state core.State, instr *disassemble.Instruction) error {
+func (e *SystemExecutor) executePACIAZ(state core.State, inst *disassemble.Inst) error {
 	lr := state.GetX(30) // X30 is LR
 
 	// Zero modifier; just use A-key tag
@@ -503,7 +503,7 @@ func (e *SystemExecutor) executePACIAZ(state core.State, instr *disassemble.Inst
 }
 
 // PACIBZ - Pointer authenticate LR using zero modifier and B-key
-func (e *SystemExecutor) executePACIBZ(state core.State, instr *disassemble.Instruction) error {
+func (e *SystemExecutor) executePACIBZ(state core.State, inst *disassemble.Inst) error {
 	lr := state.GetX(30) // X30 is LR
 
 	// Zero modifier; just use B-key tag
@@ -516,7 +516,7 @@ func (e *SystemExecutor) executePACIBZ(state core.State, instr *disassemble.Inst
 }
 
 // AUTIBSP - Authenticate LR using SP and B-key
-func (e *SystemExecutor) executeAUTIBSP(state core.State, instr *disassemble.Instruction) error {
+func (e *SystemExecutor) executeAUTIBSP(state core.State, inst *disassemble.Inst) error {
 	lr := state.GetX(30) // X30 is LR
 	expectedPAC := computePseudoPAC(state.GetSP(), 0xB3)
 	actualPAC := uint8(lr >> 56)
@@ -534,13 +534,13 @@ func (e *SystemExecutor) executeAUTIBSP(state core.State, instr *disassemble.Ins
 }
 
 // BTI - Branch Target Identification
-func (e *SystemExecutor) executeBTI(state core.State, instr *disassemble.Instruction) error {
+func (e *SystemExecutor) executeBTI(state core.State, inst *disassemble.Inst) error {
 	// BTI enforces branch landing pads; emulate as NOP
 	return nil
 }
 
 // SB - Speculation barrier
-func (e *SystemExecutor) executeSB(state core.State, instr *disassemble.Instruction) error {
+func (e *SystemExecutor) executeSB(state core.State, inst *disassemble.Inst) error {
 	// SB is a speculation barrier that prevents speculative execution
 	// In emulation, this is effectively a NOP
 	return nil
@@ -549,7 +549,7 @@ func (e *SystemExecutor) executeSB(state core.State, instr *disassemble.Instruct
 // PACDA - Pointer authenticate using key D (data pointer, A-key)
 // For emulation purposes, we don't actually perform signing - we just pass through
 // The pre-hook in C++ class discovery will capture registers before this executes
-func (e *SystemExecutor) executePACDA(state core.State, instr *disassemble.Instruction) error {
+func (e *SystemExecutor) executePACDA(state core.State, inst *disassemble.Inst) error {
 	// PACDA Xd, Xn - Xd is the pointer to sign, Xn is the modifier
 	// Real hardware would sign the pointer using secret keys and crypto
 	// For emulation, we treat this as a no-op (pointer remains unchanged)
@@ -558,20 +558,20 @@ func (e *SystemExecutor) executePACDA(state core.State, instr *disassemble.Instr
 }
 
 // PACIA - Pointer authenticate using key A (instruction pointer, A-key)
-func (e *SystemExecutor) executePACIA(state core.State, instr *disassemble.Instruction) error {
+func (e *SystemExecutor) executePACIA(state core.State, inst *disassemble.Inst) error {
 	// Same as PACDA but uses A-key instead of D-key
 	// Still a no-op for emulation purposes
 	return nil
 }
 
 // PACDB - Pointer authenticate using key D (data pointer, B-key)
-func (e *SystemExecutor) executePACDB(state core.State, instr *disassemble.Instruction) error {
+func (e *SystemExecutor) executePACDB(state core.State, inst *disassemble.Inst) error {
 	// B-key variant of PACDA
 	return nil
 }
 
 // PACIB - Pointer authenticate using key B (instruction pointer, B-key)
-func (e *SystemExecutor) executePACIB(state core.State, instr *disassemble.Instruction) error {
+func (e *SystemExecutor) executePACIB(state core.State, inst *disassemble.Inst) error {
 	// B-key variant of PACIA
 	return nil
 }

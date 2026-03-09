@@ -173,8 +173,8 @@ func (e *Engine) LoadInstructions(addr uint64, data []byte) error {
 		instrValue := uint32(data[i]) | uint32(data[i+1])<<8 | uint32(data[i+2])<<16 | uint32(data[i+3])<<24
 
 		// Try to decode the instruction to validate it
-		var results [1024]byte
-		_, err := disassemble.Decompose(instrAddr, instrValue, &results)
+		var inst disassemble.Inst
+		err := disassemble.DecomposeInto(instrAddr, instrValue, &inst)
 		if err != nil {
 			return fmt.Errorf("invalid instruction at offset %d (0x%x): %w", i, instrAddr, err)
 		}
@@ -238,33 +238,32 @@ func (e *Engine) GetTrace() []core.InstructionInfo {
 	return e.trace
 }
 
-func (e *Engine) buildInstructionInfo(pc uint64, instr uint32) (core.InstructionInfo, string, error) {
-	var results [1024]byte
-	decodedInstr, err := disassemble.Decompose(pc, instr, &results)
-	if err != nil {
-		return core.InstructionInfo{}, "", err
-	}
+func (e *Engine) hasObservers() bool {
+	return len(e.preHooks) > 0 ||
+		len(e.postHooks) > 0 ||
+		len(e.unimplementedHooks) > 0 ||
+		e.enableTrace
+}
 
-	mnemonicLen := 0
-	for i, b := range results {
-		if b == 0 {
-			mnemonicLen = i
-			break
-		}
-	}
-	if mnemonicLen == 0 {
-		mnemonicLen = len(results)
+func (e *Engine) buildInstructionInfo(pc uint64, instrWord uint32, inst *disassemble.Inst) (core.InstructionInfo, error) {
+	if err := disassemble.DecomposeInto(pc, instrWord, inst); err != nil {
+		return core.InstructionInfo{}, err
 	}
 
 	info := core.InstructionInfo{
-		Address:     pc,
-		Instruction: decodedInstr,
-		Value:       instr,
-		Mnemonic:    string(results[:mnemonicLen]),
+		Address:   pc,
+		Value:     instrWord,
+		Mnemonic:  inst.Operation.String(),
+		Operation: inst.Operation,
 	}
 
-	opName := fmt.Sprintf("%v", decodedInstr.Operation)
-	return info, opName, nil
+	if e.hasObservers() {
+		owned := new(disassemble.Inst)
+		*owned = *inst
+		info.Inst = owned
+	}
+
+	return info, nil
 }
 
 func (e *Engine) dispatchPreHooks(info core.InstructionInfo) core.HookResult {
@@ -309,7 +308,7 @@ func (e *Engine) dispatchUnimplementedHooks(info core.InstructionInfo, err error
 	return result
 }
 
-func (e *Engine) executeDecoded(info core.InstructionInfo, opName string) (bool, core.HookResult, error) {
+func (e *Engine) executeDecoded(info core.InstructionInfo, inst *disassemble.Inst) (bool, core.HookResult, error) {
 	if e.instrCount >= e.maxInstructions {
 		return false, core.HookResult{}, fmt.Errorf("maximum instruction limit reached (%d)", e.maxInstructions)
 	}
@@ -318,9 +317,12 @@ func (e *Engine) executeDecoded(info core.InstructionInfo, opName string) (bool,
 		e.trace = append(e.trace, info)
 	}
 
-	executor, found := e.registry.Get(opName)
+	executor, found := e.registry.GetByOp(info.Operation)
 	if !found {
-		err := fmt.Errorf("unsupported instruction: %s at 0x%x", opName, info.Address)
+		executor, found = e.registry.Get(info.Mnemonic)
+	}
+	if !found {
+		err := fmt.Errorf("unsupported instruction: %s at 0x%x", info.Mnemonic, info.Address)
 		e.LastError = err
 		hookRes := e.dispatchUnimplementedHooks(info, err)
 		if hookRes.Halt {
@@ -334,7 +336,7 @@ func (e *Engine) executeDecoded(info core.InstructionInfo, opName string) (bool,
 		return false, hookRes, err
 	}
 
-	err := executor.Execute(e.state, info.Instruction)
+	err := executor.Execute(e.state, inst)
 	if err != nil {
 		e.LastError = err
 		if errors.Is(err, core.ErrUnsupportedFeature) {
@@ -362,14 +364,15 @@ func (e *Engine) executeDecoded(info core.InstructionInfo, opName string) (bool,
 }
 
 // ExecuteInstruction executes a single instruction using the modular instruction system
-func (e *Engine) ExecuteInstruction(pc uint64, instr uint32) error {
+func (e *Engine) ExecuteInstruction(pc uint64, instrWord uint32) error {
 	if e.instrCount >= e.maxInstructions {
 		return fmt.Errorf("maximum instruction limit reached (%d)", e.maxInstructions)
 	}
 
 	e.state.SetPC(pc)
 
-	info, opName, err := e.buildInstructionInfo(pc, instr)
+	var inst disassemble.Inst
+	info, err := e.buildInstructionInfo(pc, instrWord, &inst)
 	if err != nil {
 		return fmt.Errorf("failed to decode instruction at 0x%x: %w", pc, err)
 	}
@@ -384,7 +387,7 @@ func (e *Engine) ExecuteInstruction(pc uint64, instr uint32) error {
 		return nil
 	}
 
-	executed, hookRes, execErr := e.executeDecoded(info, opName)
+	executed, hookRes, execErr := e.executeDecoded(info, &inst)
 	if execErr != nil {
 		return execErr
 	}
@@ -429,7 +432,8 @@ func (e *Engine) Run() error {
 			break
 		}
 
-		info, opName, err := e.buildInstructionInfo(pc, instr)
+		var inst disassemble.Inst
+		info, err := e.buildInstructionInfo(pc, instr, &inst)
 		if err != nil {
 			return fmt.Errorf("failed to decode instruction at 0x%x: %w", pc, err)
 		}
@@ -447,7 +451,7 @@ func (e *Engine) Run() error {
 			break
 		}
 
-		executed, hookRes, execErr := e.executeDecoded(info, opName)
+		executed, hookRes, execErr := e.executeDecoded(info, &inst)
 		if execErr != nil {
 			return execErr
 		}

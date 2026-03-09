@@ -54,8 +54,9 @@ type State interface {
 
 // InstructionExecutor represents an instruction execution interface
 type InstructionExecutor interface {
-	Execute(state State, instr *disassemble.Instruction) error
+	Execute(state State, inst *disassemble.Inst) error
 	Supports(mnemonic string) bool
+	SupportsOp(op disassemble.Operation) bool
 }
 
 // AddressingMode represents different addressing modes for ARM64
@@ -111,6 +112,7 @@ type FlagManager interface {
 type InstructionRegistry interface {
 	Register(mnemonic string, executor InstructionExecutor) error
 	Get(mnemonic string) (InstructionExecutor, bool)
+	GetByOp(op disassemble.Operation) (InstructionExecutor, bool)
 	List() []string
 	Clear()
 }

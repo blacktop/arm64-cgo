@@ -5,6 +5,8 @@ package disassemble
 */
 import "C"
 
+import "strings"
+
 // Operation wraps the C enum Operation
 type Operation C.enum_Operation
 
@@ -1767,12 +1769,41 @@ const (
 	ARM64_XTN2       = Operation(C.ARM64_XTN2)
 )
 
-// String returns the string representation of an operation
+var opNames []string
+var opByName map[string]Operation
+
+func init() {
+	n := int(C.operation_count())
+	opNames = make([]string, n)
+	opByName = make(map[string]Operation, n)
+	for i := 0; i < n; i++ {
+		cStr := C.operation_to_str(C.enum_Operation(i))
+		if cStr != nil {
+			name := C.GoString(cStr)
+			opNames[i] = name
+			opByName[strings.ToUpper(name)] = Operation(i)
+		}
+	}
+}
+
+// OperationCount returns the number of known operations.
+func OperationCount() int {
+	return len(opNames)
+}
+
+// OperationFromString returns the Operation for a given
+// uppercase mnemonic (e.g. "ADD", "B.EQ"). Returns false
+// if no matching operation exists.
+func OperationFromString(name string) (Operation, bool) {
+	op, ok := opByName[strings.ToUpper(name)]
+	return op, ok
+}
+
+// String returns the string representation of an operation.
 func (o Operation) String() string {
-	// Use the C formatting function
-	cStr := C.operation_to_str(C.enum_Operation(o))
-	if cStr != nil {
-		return C.GoString(cStr)
+	idx := int(o)
+	if idx >= 0 && idx < len(opNames) {
+		return opNames[idx]
 	}
 	return "UNKNOWN"
 }
