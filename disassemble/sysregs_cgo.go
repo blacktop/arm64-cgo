@@ -25,10 +25,16 @@ const (
 
 // String returns the string representation of a system register
 func (s SystemReg) String() string {
+	if s == SYSREG_NONE {
+		return "SYSREG_NONE"
+	}
+
 	// Use the C formatting function
 	cStr := C.get_system_register_name(C.enum_SystemReg(s))
 	if cStr != nil {
-		return C.GoString(cStr)
+		if name := C.GoString(cStr); name != "" {
+			return name
+		}
 	}
 	return "UNKNOWN"
 }

@@ -67,6 +67,25 @@ func CreateBenchmarkEngine(maxInstructions int) *emulate.Engine {
 	return CreateTestEngine(config)
 }
 
+// MapAndWriteMemory seeds a mapped region with caller-provided bytes.
+func MapAndWriteMemory(testState *state.ARM64State, addr uint64, data []byte) {
+	if len(data) == 0 {
+		return
+	}
+
+	testState.MapRegion(addr, len(data))
+	testState.WriteMemory(addr, data)
+}
+
+// AllocateZeroedMemory seeds a mapped region with zeroed bytes of the requested size.
+func AllocateZeroedMemory(testState *state.ARM64State, addr uint64, size int) {
+	if size <= 0 {
+		return
+	}
+
+	MapAndWriteMemory(testState, addr, make([]byte, size))
+}
+
 // CommonInstructions provides frequently used instruction encodings
 var CommonInstructions = struct {
 	AddX0Imm1   []byte // ADD X0, X0, #1

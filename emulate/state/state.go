@@ -483,6 +483,10 @@ func (s *ARM64State) ReadMemory(addr uint64, size int) ([]byte, error) {
 }
 
 func (s *ARM64State) WriteMemory(addr uint64, data []byte) {
+	if len(data) == 0 {
+		return
+	}
+
 	// Check if it's a stack access
 	if addr >= s.stackBase && addr < s.stackBase+uint64(len(s.stack)) {
 		offset := addr - s.stackBase

@@ -122,7 +122,7 @@ func BenchmarkMemoryOperations(b *testing.B) {
 		testState.SetSP(0)
 
 		// Set up memory
-		testState.WriteMemory(0x10000000, make([]byte, 0x1000))
+		AllocateZeroedMemory(testState, 0x10000000, 0x1000)
 
 		// Set initial registers
 		for reg, val := range initialRegs {
@@ -219,7 +219,7 @@ func benchmarkOurEmulator(t *testing.T, test PerformanceTest) time.Duration {
 
 		// Set up memory if needed
 		if test.name == "memory_sequence" {
-			testState.WriteMemory(0x10000000, make([]byte, 0x1000))
+			AllocateZeroedMemory(testState, 0x10000000, 0x1000)
 		}
 
 		// Set initial registers

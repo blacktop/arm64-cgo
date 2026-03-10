@@ -9,6 +9,14 @@ import (
 	"github.com/blacktop/arm64-cgo/emulate/core"
 )
 
+func writeMappedMemory(state *ARM64State, addr uint64, data []byte) {
+	if len(data) == 0 {
+		return
+	}
+	state.MapRegion(addr, len(data))
+	state.WriteMemory(addr, data)
+}
+
 func TestNewState(t *testing.T) {
 	state := NewState()
 
@@ -164,7 +172,7 @@ func TestMemoryOperations(t *testing.T) {
 	testData := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}
 	addr := uint64(0x1000)
 
-	state.WriteMemory(addr, testData)
+	writeMappedMemory(state, addr, testData)
 	readData, err := state.ReadMemory(addr, len(testData))
 	if err != nil {
 		t.Fatalf("Failed to read memory: %v", err)
@@ -229,7 +237,7 @@ func TestStringOperations(t *testing.T) {
 	strData := append([]byte(testStr), 0) // Add null terminator
 	addr := uint64(0x2000)
 
-	state.WriteMemory(addr, strData)
+	writeMappedMemory(state, addr, strData)
 	readStr, err := state.ReadString(addr)
 	if err != nil {
 		t.Fatalf("Failed to read string: %v", err)
@@ -292,7 +300,7 @@ func TestPointerOperations(t *testing.T) {
 	strData := append([]byte(testStr), 0)
 	strAddr := uint64(0x7000)
 
-	state.WriteMemory(strAddr, strData)
+	writeMappedMemory(state, strAddr, strData)
 	state.WriteUint64(ptrAddr, strAddr)
 
 	ptrStr, err := state.ReadStringAtPointer(ptrAddr)
@@ -376,7 +384,7 @@ func TestStateManagement(t *testing.T) {
 	state.SetZ(true)
 
 	testData := []byte{0x01, 0x02, 0x03, 0x04}
-	state.WriteMemory(0x1000, testData)
+	writeMappedMemory(state, 0x1000, testData)
 
 	// Test cloning
 	cloned := state.Clone().(*ARM64State)
@@ -508,7 +516,7 @@ func TestMultiBlockMemoryOperations(t *testing.T) {
 		data[i] = byte(i + 1)
 	}
 
-	state.WriteMemory(addr, data)
+	writeMappedMemory(state, addr, data)
 
 	// Read back the data
 	readData, err := state.ReadMemory(addr, len(data))

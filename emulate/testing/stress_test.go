@@ -155,7 +155,7 @@ func TestMemoryIntensiveOperations(t *testing.T) {
 
 	// Allocate memory region
 	baseAddr := uint64(0x10000000)
-	testState.WriteMemory(baseAddr, make([]byte, memorySize))
+	AllocateZeroedMemory(testState, baseAddr, memorySize)
 
 	// Set initial registers
 	testState.SetX(0, baseAddr)   // Base address
@@ -274,11 +274,12 @@ func TestLongRunningExecution(t *testing.T) {
 
 	const testDurationSeconds = 5
 	const checkInterval = time.Second
+	const maxInstructions = 100_000_000
 
 	t.Logf("Running sustained execution test for %d seconds", testDurationSeconds)
 
 	config := emulate.DefaultEngineConfig()
-	config.MaxInstructions = 10000000 // Large limit for long running test - enough for 5 seconds
+	config.MaxInstructions = maxInstructions // Keep the safety rail well above current sustained throughput.
 	engine := emulate.NewEngineWithConfig(config)
 	testState := state.NewState()
 	testState.SetSP(0)
@@ -352,7 +353,7 @@ func TestMemoryPressure(t *testing.T) {
 		testState.SetX(0, uint64(i))
 
 		// Add some memory to each state
-		testState.WriteMemory(0x10000000, make([]byte, 4096)) // 4KB per engine
+		AllocateZeroedMemory(testState, 0x10000000, 4096) // 4KB per engine
 
 		engine.SetState(testState)
 		engines[i] = engine

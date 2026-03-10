@@ -12,7 +12,8 @@ func TestStateInterfaceCompliance(t *testing.T) {
 	var _ core.State = (*ARM64State)(nil)
 
 	// Create a state instance and verify it can be used as core.State
-	var state core.State = NewState()
+	armState := NewState()
+	var state core.State = armState
 
 	// Test basic interface methods
 	state.SetX(0, 0x123456789abcdef0)
@@ -32,7 +33,7 @@ func TestStateInterfaceCompliance(t *testing.T) {
 
 	// Test memory operations through interface
 	testData := []byte{0x01, 0x02, 0x03, 0x04}
-	state.WriteMemory(0x1000, testData)
+	writeMappedMemory(armState, 0x1000, testData)
 
 	readData, err := state.ReadMemory(0x1000, len(testData))
 	if err != nil {
@@ -208,7 +209,7 @@ func TestStatePerformance(t *testing.T) {
 
 	for i := range 1000 {
 		addr := uint64(0x100000 + i*1024)
-		state.WriteMemory(addr, testData)
+		writeMappedMemory(state, addr, testData)
 		_, err := state.ReadMemory(addr, len(testData))
 		if err != nil {
 			t.Fatalf("Memory operation failed at iteration %d: %v", i, err)
