@@ -6,9 +6,15 @@ package disassemble
 #cgo CFLAGS: -I${SRCDIR}
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "decode.h"
 #include "format.h"
+
+static inline void zero_instruction(Instruction *instr)
+{
+	memset(instr, 0, sizeof(*instr));
+}
 
 int disassemble(uint64_t addr, uint32_t instrValue, int len, char *result)
 {
@@ -775,16 +781,21 @@ func fillInst(cInstr *C.Instruction, inst *Inst) {
 }
 
 // DecomposeInto decodes a single instruction into a caller-provided
-// Inst, with zero heap allocations. This is the recommended API for
-// hot paths.
-func DecomposeInto(
+// Inst. This convenience wrapper creates a short-lived Decoder.
+func DecomposeInto(addr uint64, instrValue uint32, inst *Inst) error {
+	var decoder Decoder
+	return decoder.DecomposeInto(addr, instrValue, inst)
+}
+
+// DecomposeInto decodes a single instruction into a caller-provided
+// Inst using reusable cgo-side decode buffers.
+func (d *Decoder) DecomposeInto(
 	addr uint64, instrValue uint32, inst *Inst,
 ) error {
-	var cInstr C.Instruction
-
+	C.zero_instruction(&d.cInstr)
 	rc := C.aarch64_decompose(
 		C.uint32_t(instrValue),
-		&cInstr,
+		&d.cInstr,
 		C.uint64_t(addr),
 	)
 	if returnCode(rc) != SUCCESS_OK {
@@ -792,14 +803,25 @@ func DecomposeInto(
 	}
 
 	inst.Address = addr
-	fillInst(&cInstr, inst)
+	fillInst(&d.cInstr, inst)
 	return nil
 }
 
 // DecomposeBatch decodes multiple instructions with a single cgo
-// crossing. addrs, words, and out must have the same length.
-// Returns the number of successfully decoded instructions.
+// crossing. This convenience wrapper creates a short-lived Decoder.
+// addrs, words, and out must have the same length.
 func DecomposeBatch(
+	addrs []uint64, words []uint32, out []Inst,
+) (int, error) {
+	var decoder Decoder
+	return decoder.DecomposeBatch(addrs, words, out)
+}
+
+// DecomposeBatch decodes multiple instructions with a single cgo
+// crossing using reusable cgo-side decode buffers. addrs, words, and
+// out must have the same length. Returns the number of successfully
+// decoded instructions.
+func (d *Decoder) DecomposeBatch(
 	addrs []uint64, words []uint32, out []Inst,
 ) (int, error) {
 	n := len(words)
@@ -810,20 +832,18 @@ func DecomposeBatch(
 		return 0, nil
 	}
 
-	cInstrs := make([]C.Instruction, n)
+	d.ensureBatch(n)
 
 	C.aarch64_decompose_batch(
 		(*C.uint32_t)(unsafe.Pointer(&words[0])),
 		(*C.uint64_t)(unsafe.Pointer(&addrs[0])),
-		&cInstrs[0],
+		&d.batch[0],
 		C.int(n),
 	)
 
-	decoded := 0
 	for idx := 0; idx < n; idx++ {
 		out[idx].Address = addrs[idx]
-		fillInst(&cInstrs[idx], &out[idx])
-		decoded++
+		fillInst(&d.batch[idx], &out[idx])
 	}
-	return decoded, nil
+	return n, nil
 }

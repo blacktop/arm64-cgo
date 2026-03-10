@@ -14,6 +14,7 @@ import (
 type Engine struct {
 	state              core.State
 	registry           core.InstructionRegistry
+	decoder            disassemble.Decoder
 	maxInstructions    int
 	instrCount         int
 	enableTrace        bool
@@ -174,7 +175,7 @@ func (e *Engine) LoadInstructions(addr uint64, data []byte) error {
 
 		// Try to decode the instruction to validate it
 		var inst disassemble.Inst
-		err := disassemble.DecomposeInto(instrAddr, instrValue, &inst)
+		err := e.decoder.DecomposeInto(instrAddr, instrValue, &inst)
 		if err != nil {
 			return fmt.Errorf("invalid instruction at offset %d (0x%x): %w", i, instrAddr, err)
 		}
@@ -246,7 +247,7 @@ func (e *Engine) hasObservers() bool {
 }
 
 func (e *Engine) buildInstructionInfo(pc uint64, instrWord uint32, inst *disassemble.Inst) (core.InstructionInfo, error) {
-	if err := disassemble.DecomposeInto(pc, instrWord, inst); err != nil {
+	if err := e.decoder.DecomposeInto(pc, instrWord, inst); err != nil {
 		return core.InstructionInfo{}, err
 	}
 

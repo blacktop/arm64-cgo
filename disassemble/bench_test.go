@@ -5,6 +5,36 @@ import (
 	"testing"
 )
 
+func newBenchAddrs() []uint64 {
+	addrs := make([]uint64, len(benchWords))
+	for i := range addrs {
+		addrs[i] = 0x1000 + uint64(i)*4
+	}
+	return addrs
+}
+
+func assertBatchDecoded(
+	t *testing.T, decoded int, addrs []uint64, out []Inst,
+) {
+	t.Helper()
+
+	want := len(addrs)
+	if decoded != want {
+		t.Fatalf("decoded %d, want %d", decoded, want)
+	}
+
+	for i, inst := range out[:decoded] {
+		if inst.Address != addrs[i] {
+			t.Errorf("[%d] address mismatch: %#x vs %#x",
+				i, inst.Address, addrs[i])
+		}
+		if inst.Operation == ARM64_ERROR {
+			t.Errorf("[%d] operation is ERROR for word %#x",
+				i, benchWords[i])
+		}
+	}
+}
+
 func TestDecomposeIntoEquivalence(t *testing.T) {
 	var results [1024]byte
 	for _, word := range benchWords {
@@ -52,31 +82,55 @@ func TestDecomposeIntoEquivalence(t *testing.T) {
 }
 
 func TestDecomposeBatch(t *testing.T) {
-	n := len(benchWords)
-	addrs := make([]uint64, n)
-	for i := range addrs {
-		addrs[i] = 0x1000 + uint64(i)*4
-	}
-	out := make([]Inst, n)
+	addrs := newBenchAddrs()
+	out := make([]Inst, len(benchWords))
 
 	decoded, err := DecomposeBatch(addrs, benchWords, out)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if decoded != n {
-		t.Fatalf("decoded %d, want %d", decoded, n)
-	}
+	assertBatchDecoded(t, decoded, addrs, out)
+}
 
-	for i, inst := range out[:decoded] {
-		if inst.Address != addrs[i] {
-			t.Errorf("[%d] address mismatch: %#x vs %#x",
-				i, inst.Address, addrs[i])
+func TestDecoderDecomposeIntoEquivalence(t *testing.T) {
+	var results [1024]byte
+	decoder := NewDecoder(0)
+	for _, word := range benchWords {
+		old, err := Decompose(0x1000, word, &results)
+		if err != nil {
+			t.Fatalf("Decompose(%#x) failed: %v", word, err)
 		}
-		if inst.Operation == ARM64_ERROR {
-			t.Errorf("[%d] operation is ERROR for word %#x",
-				i, benchWords[i])
+
+		var inst Inst
+		if err := decoder.DecomposeInto(0x1000, word, &inst); err != nil {
+			t.Fatalf("decoder.DecomposeInto(%#x) failed: %v", word, err)
+		}
+
+		if inst.Operation != old.Operation {
+			t.Errorf("word %#x: Operation mismatch: %v vs %v",
+				word, inst.Operation, old.Operation)
+		}
+		if inst.Raw != old.Raw {
+			t.Errorf("word %#x: Raw mismatch: %#x vs %#x",
+				word, inst.Raw, old.Raw)
+		}
+		if int(inst.NumOps) != len(old.Operands) {
+			t.Errorf("word %#x: operand count mismatch: %d vs %d",
+				word, inst.NumOps, len(old.Operands))
 		}
 	}
+}
+
+func TestDecoderDecomposeBatch(t *testing.T) {
+	addrs := newBenchAddrs()
+	out := make([]Inst, len(benchWords))
+	decoder := NewDecoder(len(benchWords))
+
+	decoded, err := decoder.DecomposeBatch(addrs, benchWords, out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertBatchDecoded(t, decoded, addrs, out)
 }
 
 // Representative instruction words for benchmarks
@@ -148,14 +202,31 @@ func BenchmarkOperationString(b *testing.B) {
 }
 
 func BenchmarkDecomposeBatch(b *testing.B) {
-	n := len(benchWords)
-	addrs := make([]uint64, n)
-	for i := range addrs {
-		addrs[i] = 0x1000 + uint64(i)*4
-	}
-	out := make([]Inst, n)
+	addrs := newBenchAddrs()
+	out := make([]Inst, len(benchWords))
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		_, _ = DecomposeBatch(addrs, benchWords, out)
+	}
+}
+
+func BenchmarkDecoderDecomposeInto(b *testing.B) {
+	var inst Inst
+	decoder := NewDecoder(0)
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		for _, word := range benchWords {
+			_ = decoder.DecomposeInto(0x1000, word, &inst)
+		}
+	}
+}
+
+func BenchmarkDecoderDecomposeBatch(b *testing.B) {
+	addrs := newBenchAddrs()
+	out := make([]Inst, len(benchWords))
+	decoder := NewDecoder(len(benchWords))
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		_, _ = decoder.DecomposeBatch(addrs, benchWords, out)
 	}
 }
