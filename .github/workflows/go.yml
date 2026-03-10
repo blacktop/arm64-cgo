@@ -5,29 +5,28 @@ name: Go
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
     paths-ignore:
       - "*.md"
       - "*.tape"
       - ".github/workflows/goreleaser.yml"
 
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: "stable"
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "stable"
 
-    - name: Build
-      run: go build -v ./...
+      - name: Build
+        run: go build -v ./...
 
-    - name: Test
-      run: go test -v ./...
+      - name: Test
+        run: go test -v ./...
