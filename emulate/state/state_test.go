@@ -438,7 +438,7 @@ func TestUtilityMethods(t *testing.T) {
 	state.SetupFunctionCallWithArgs(returnAddr, args...)
 
 	// Check first 8 args are in X0-X7
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		if state.GetX(i) != args[i] {
 			t.Errorf("Expected X%d to be %x, got %x", i, args[i], state.GetX(i))
 		}
@@ -462,7 +462,7 @@ func TestUtilityMethods(t *testing.T) {
 
 	// Test ClearRegisters
 	state.ClearRegisters()
-	for i := 0; i < 31; i++ {
+	for i := range 31 {
 		if state.GetX(i) != 0 {
 			t.Errorf("Expected X%d to be 0 after clear, got %x", i, state.GetX(i))
 		}

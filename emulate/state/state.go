@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"maps"
 	"strings"
 
 	"github.com/blacktop/arm64-cgo/emulate/core"
@@ -596,7 +597,7 @@ func (s *ARM64State) ReadString(addr uint64) (string, error) {
 
 	// Read string byte by byte until null terminator
 	var result strings.Builder
-	for i := 0; i < 1024; i++ { // Limit to prevent infinite loops
+	for i := range 1024 { // Limit to prevent infinite loops
 		data, err := s.ReadMemory(addr+uint64(i), 1)
 		if err != nil {
 			return "", fmt.Errorf("failed to read string at 0x%x: %w", addr, err)
@@ -643,7 +644,7 @@ func (s *ARM64State) ResolvePointer(addr uint64) (uint64, error) {
 
 func (s *ARM64State) FollowPointerChain(addr uint64, maxDepth int) (uint64, error) {
 	current := addr
-	for depth := 0; depth < maxDepth; depth++ {
+	for depth := range maxDepth {
 		next, err := s.ResolvePointer(current)
 		if err != nil {
 			// If we can't resolve further, return the current address
@@ -728,9 +729,7 @@ func (s *ARM64State) Clone() core.State {
 	}
 
 	// Deep copy mapped regions
-	for addr, mapped := range s.mapped {
-		clone.mapped[addr] = mapped
-	}
+	maps.Copy(clone.mapped, s.mapped)
 
 	return clone
 }
@@ -904,7 +903,7 @@ func (s *ARM64State) DumpRegisterState() string {
 func (s *ARM64State) ValidateInternalState() error {
 	// Check register validity consistency
 	if s.valid != 0 {
-		for i := uint8(0); i < 31; i++ {
+		for i := range uint8(31) {
 			if s.IsRegisterValid(i) && s.GetX(int(i)) == 0 {
 				// This might be valid (register can contain 0), but worth noting
 				continue
@@ -914,7 +913,7 @@ func (s *ARM64State) ValidateInternalState() error {
 
 	// Check Q register validity consistency
 	if s.qvalid != 0 {
-		for i := uint8(0); i < 32; i++ {
+		for i := range uint8(32) {
 			if s.IsQRegisterValid(i) {
 				q := s.GetQ(i)
 				if q[0] == 0 && q[1] == 0 {
@@ -965,14 +964,14 @@ func (s *ARM64State) CompareState(other *ARM64State) []string {
 	}
 
 	// Compare registers
-	for i := 0; i < 31; i++ {
+	for i := range 31 {
 		if s.x[i] != other.x[i] {
 			diffs = append(diffs, fmt.Sprintf("X%d: 0x%x vs 0x%x", i, s.x[i], other.x[i]))
 		}
 	}
 
 	// Compare Q registers
-	for i := 0; i < 32; i++ {
+	for i := range 32 {
 		if s.q[i] != other.q[i] {
 			diffs = append(diffs, fmt.Sprintf("Q%d: [0x%x,0x%x] vs [0x%x,0x%x]",
 				i, s.q[i][0], s.q[i][1], other.q[i][0], other.q[i][1]))

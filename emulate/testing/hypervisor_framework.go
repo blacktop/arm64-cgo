@@ -56,9 +56,9 @@ type CPUState struct {
 
 // HypervisorResponse represents the JSON response from hv execute
 type HypervisorResponse struct {
-	State    CPUState               `json:"state"`
-	ExitInfo map[string]interface{} `json:"exit_info"`
-	Memory   map[string]string      `json:"memory"`
+	State    CPUState          `json:"state"`
+	ExitInfo map[string]any    `json:"exit_info"`
+	Memory   map[string]string `json:"memory"`
 }
 
 // ExecuteResult represents the result of instruction execution
@@ -398,7 +398,7 @@ func (hf *HypervisorFramework) ExecuteSequenceAndCompare(instructions [][]byte, 
 	// Get our final state
 	ourFinalState := hf.ourEngine.GetState()
 	ourRegisters := make(map[int]uint64)
-	for i := 0; i < 32; i++ {
+	for i := range 32 {
 		if i == 31 {
 			ourRegisters[i] = ourFinalState.GetSP()
 		} else {

@@ -218,7 +218,7 @@ func TestRegistryThreadSafety(t *testing.T) {
 	go func() {
 		defer func() { done <- true }()
 
-		for i := 0; i < 100; i++ {
+		for range 100 {
 			executor := NewExecutorFunc("TEST", func(state core.State, instr *disassemble.Inst) error {
 				return nil
 			})
@@ -230,7 +230,7 @@ func TestRegistryThreadSafety(t *testing.T) {
 	go func() {
 		defer func() { done <- true }()
 
-		for i := 0; i < 100; i++ {
+		for range 100 {
 			registry.Get("TEST")
 			registry.List()
 			registry.Count()

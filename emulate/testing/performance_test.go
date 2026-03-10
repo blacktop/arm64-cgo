@@ -307,8 +307,8 @@ func TestMemoryEfficiency(t *testing.T) {
 	instrBytes := []byte{0x00, 0x04, 0x00, 0x91} // ADD X0, X0, #1
 	instrValue := binary.LittleEndian.Uint32(instrBytes)
 
-	for i := 0; i < iterations; i++ {
-		for j := 0; j < 10; j++ {
+	for range iterations {
+		for range 10 {
 			err := engine.ExecuteInstruction(0x10000000, instrValue)
 			if err != nil {
 				t.Fatalf("Instruction execution failed: %v", err)

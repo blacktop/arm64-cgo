@@ -186,7 +186,7 @@ func CompareStates(our, expected *state.ARM64State) *StateComparison {
 	}
 
 	// Compare general purpose registers X0-X30
-	for i := 0; i < 31; i++ {
+	for i := range 31 {
 		ourReg := our.GetX(i)
 		expectedReg := expected.GetX(i)
 		if ourReg != expectedReg {
@@ -245,12 +245,13 @@ func (sc *StateComparison) String() string {
 		return "No differences found"
 	}
 
-	result := fmt.Sprintf("Found %d differences:\n", len(sc.Differences))
+	var result strings.Builder
+	result.WriteString(fmt.Sprintf("Found %d differences:\n", len(sc.Differences)))
 	for _, diff := range sc.Differences {
-		result += fmt.Sprintf("  %s %s: our=%v, expected=%v\n",
-			diff.Type, diff.Name, diff.OurValue, diff.HypervisorValue)
+		result.WriteString(fmt.Sprintf("  %s %s: our=%v, expected=%v\n",
+			diff.Type, diff.Name, diff.OurValue, diff.HypervisorValue))
 	}
-	return result
+	return result.String()
 }
 
 // PerformanceHelper provides utilities for performance testing

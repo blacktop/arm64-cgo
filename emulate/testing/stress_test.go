@@ -39,7 +39,7 @@ func TestLargeInstructionSequences(t *testing.T) {
 				}
 
 				instrs := make([][]byte, count)
-				for i := 0; i < count; i++ {
+				for i := range count {
 					instrs[i] = pattern[i%4]
 				}
 				return instrs
@@ -52,7 +52,7 @@ func TestLargeInstructionSequences(t *testing.T) {
 			name: "register_intensive_sequence",
 			instructionGen: func(count int) [][]byte {
 				instrs := make([][]byte, count)
-				for i := 0; i < count; i++ {
+				for i := range count {
 					// Cycle through different register combinations
 					src := i % 30
 					dst := (i + 1) % 30
@@ -345,7 +345,7 @@ func TestMemoryPressure(t *testing.T) {
 	engines := make([]*emulate.Engine, engineCount)
 
 	// Create many engine instances
-	for i := 0; i < engineCount; i++ {
+	for i := range engineCount {
 		engine := emulate.NewEngine()
 		testState := state.NewState()
 		testState.SetSP(0)
@@ -362,7 +362,7 @@ func TestMemoryPressure(t *testing.T) {
 	instrValue := uint32(0x91000400) // ADD X0, X0, #1
 
 	for _, engine := range engines {
-		for j := 0; j < instructionsPerEngine; j++ {
+		for j := range instructionsPerEngine {
 			pc := uint64(0x10000000 + j*4)
 			err := engine.ExecuteInstruction(pc, instrValue)
 			if err != nil {

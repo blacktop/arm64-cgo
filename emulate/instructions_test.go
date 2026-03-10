@@ -598,7 +598,7 @@ func BenchmarkIsBL(b *testing.B) {
 func BenchmarkScanInstructionPattern(b *testing.B) {
 	// Create test data with 1000 instructions
 	data := make([]byte, 4000)
-	for i := 0; i < 1000; i++ {
+	for i := range 1000 {
 		// Mix of BL and ADD instructions
 		var instr uint32
 		if i%2 == 0 {

@@ -76,7 +76,7 @@ func (s *MockState) UpdateFlags(result uint64, isNegative bool) {
 // Memory operations
 func (s *MockState) ReadMemory(addr uint64, size int) ([]byte, error) {
 	data := make([]byte, size)
-	for i := 0; i < size; i++ {
+	for i := range size {
 		if mem, exists := s.memory[addr+uint64(i)]; exists && len(mem) > 0 {
 			data[i] = mem[0]
 		}

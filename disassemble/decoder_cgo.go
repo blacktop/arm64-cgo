@@ -3,21 +3,12 @@ package disassemble
 /*
 #cgo CFLAGS: -I${SRCDIR}
 
-#include <string.h>
 #include "decode.h"
-
-static inline void zero_instruction(Instruction *instr)
-{
-	memset(instr, 0, sizeof(*instr));
-}
 */
 import "C"
 
-// Decoder reuses cgo-side decode buffers across calls.
-//
-// Note: C.Instruction is still heap-allocated because of cgo pointer
-// rules. The performance win comes from reusing these buffers instead
-// of allocating fresh ones on every decode.
+// Decoder reuses cgo-side decode buffers across calls so that the
+// per-decode heap allocation is paid once, not on every call.
 //
 // Decoder is not safe for concurrent use by multiple goroutines.
 // The zero value is ready to use.

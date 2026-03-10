@@ -14,7 +14,8 @@ func newBenchAddrs() []uint64 {
 }
 
 func assertBatchDecoded(
-	t *testing.T, decoded int, addrs []uint64, out []Inst,
+	t *testing.T, decoded int,
+	addrs []uint64, words []uint32, out []Inst,
 ) {
 	t.Helper()
 
@@ -30,7 +31,43 @@ func assertBatchDecoded(
 		}
 		if inst.Operation == ARM64_ERROR {
 			t.Errorf("[%d] operation is ERROR for word %#x",
-				i, benchWords[i])
+				i, words[i])
+		}
+	}
+}
+
+// assertInstEquivalence checks that an Inst matches the legacy
+// *Instruction output for the same word, including operand fields.
+func assertInstEquivalence(
+	t *testing.T, word uint32, inst *Inst, old *Instruction,
+) {
+	t.Helper()
+	if inst.Operation != old.Operation {
+		t.Errorf("word %#x: Operation mismatch: %v vs %v",
+			word, inst.Operation, old.Operation)
+	}
+	if inst.Raw != old.Raw {
+		t.Errorf("word %#x: Raw mismatch: %#x vs %#x",
+			word, inst.Raw, old.Raw)
+	}
+	if int(inst.NumOps) != len(old.Operands) {
+		t.Errorf("word %#x: operand count mismatch: %d vs %d",
+			word, inst.NumOps, len(old.Operands))
+		return
+	}
+	for i := uint8(0); i < inst.NumOps; i++ {
+		if inst.Operands[i].Class != old.Operands[i].Class {
+			t.Errorf("word %#x op[%d]: Class mismatch", word, i)
+		}
+		if inst.Operands[i].Immediate != old.Operands[i].Immediate {
+			t.Errorf("word %#x op[%d]: Immediate mismatch", word, i)
+		}
+		if int(inst.Operands[i].NumRegisters) !=
+			len(old.Operands[i].Registers) {
+			t.Errorf("word %#x op[%d]: register count mismatch: %d vs %d",
+				word, i,
+				inst.Operands[i].NumRegisters,
+				len(old.Operands[i].Registers))
 		}
 	}
 }
@@ -42,42 +79,11 @@ func TestDecomposeIntoEquivalence(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Decompose(%#x) failed: %v", word, err)
 		}
-
 		var inst Inst
 		if err := DecomposeInto(0x1000, word, &inst); err != nil {
 			t.Fatalf("DecomposeInto(%#x) failed: %v", word, err)
 		}
-
-		if inst.Operation != old.Operation {
-			t.Errorf("word %#x: Operation mismatch: %v vs %v",
-				word, inst.Operation, old.Operation)
-		}
-		if inst.Raw != old.Raw {
-			t.Errorf("word %#x: Raw mismatch: %#x vs %#x",
-				word, inst.Raw, old.Raw)
-		}
-		if int(inst.NumOps) != len(old.Operands) {
-			t.Errorf("word %#x: operand count mismatch: %d vs %d",
-				word, inst.NumOps, len(old.Operands))
-			continue
-		}
-		for i := uint8(0); i < inst.NumOps; i++ {
-			if inst.Operands[i].Class != old.Operands[i].Class {
-				t.Errorf("word %#x op[%d]: Class mismatch",
-					word, i)
-			}
-			if inst.Operands[i].Immediate != old.Operands[i].Immediate {
-				t.Errorf("word %#x op[%d]: Immediate mismatch",
-					word, i)
-			}
-			if int(inst.Operands[i].NumRegisters) !=
-				len(old.Operands[i].Registers) {
-				t.Errorf("word %#x op[%d]: register count mismatch: %d vs %d",
-					word, i,
-					inst.Operands[i].NumRegisters,
-					len(old.Operands[i].Registers))
-			}
-		}
+		assertInstEquivalence(t, word, &inst, old)
 	}
 }
 
@@ -89,7 +95,7 @@ func TestDecomposeBatch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assertBatchDecoded(t, decoded, addrs, out)
+	assertBatchDecoded(t, decoded, addrs, benchWords, out)
 }
 
 func TestDecoderDecomposeIntoEquivalence(t *testing.T) {
@@ -100,24 +106,11 @@ func TestDecoderDecomposeIntoEquivalence(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Decompose(%#x) failed: %v", word, err)
 		}
-
 		var inst Inst
 		if err := decoder.DecomposeInto(0x1000, word, &inst); err != nil {
 			t.Fatalf("decoder.DecomposeInto(%#x) failed: %v", word, err)
 		}
-
-		if inst.Operation != old.Operation {
-			t.Errorf("word %#x: Operation mismatch: %v vs %v",
-				word, inst.Operation, old.Operation)
-		}
-		if inst.Raw != old.Raw {
-			t.Errorf("word %#x: Raw mismatch: %#x vs %#x",
-				word, inst.Raw, old.Raw)
-		}
-		if int(inst.NumOps) != len(old.Operands) {
-			t.Errorf("word %#x: operand count mismatch: %d vs %d",
-				word, inst.NumOps, len(old.Operands))
-		}
+		assertInstEquivalence(t, word, &inst, old)
 	}
 }
 
@@ -130,7 +123,7 @@ func TestDecoderDecomposeBatch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assertBatchDecoded(t, decoded, addrs, out)
+	assertBatchDecoded(t, decoded, addrs, benchWords, out)
 }
 
 // Representative instruction words for benchmarks

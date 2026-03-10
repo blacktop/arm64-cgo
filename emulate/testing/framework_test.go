@@ -275,7 +275,7 @@ func TestFrameworkIntegrity(t *testing.T) {
 	t.Run("register_mapping", func(t *testing.T) {
 		// Test register mapping patterns
 		regs := make(map[int]uint64)
-		for i := 0; i < 32; i++ {
+		for i := range 32 {
 			regs[i] = uint64(i * 10)
 		}
 

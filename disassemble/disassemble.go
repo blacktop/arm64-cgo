@@ -11,17 +11,17 @@ package disassemble
 #include "decode.h"
 #include "format.h"
 
-static inline void zero_instruction(Instruction *instr)
+static inline int aarch64_decompose_zeroed(
+	uint32_t instrValue, Instruction *instr, uint64_t addr)
 {
 	memset(instr, 0, sizeof(*instr));
+	return aarch64_decompose(instrValue, instr, addr);
 }
 
 int disassemble(uint64_t addr, uint32_t instrValue, int len, char *result)
 {
 	Instruction instr;
-	memset(&instr, 0, sizeof(instr));
-
-	int rc = aarch64_decompose(instrValue, &instr, addr);
+	int rc = aarch64_decompose_zeroed(instrValue, &instr, addr);
 	if(rc != DECODE_STATUS_OK)
 		return rc;
 
@@ -33,8 +33,7 @@ void aarch64_decompose_batch(
 	Instruction *out, int count)
 {
 	for (int i = 0; i < count; i++) {
-		memset(&out[i], 0, sizeof(out[i]));
-		aarch64_decompose(words[i], &out[i], addrs[i]);
+		aarch64_decompose_zeroed(words[i], &out[i], addrs[i]);
 	}
 }
 
@@ -778,6 +777,12 @@ func fillInst(cInstr *C.Instruction, inst *Inst) {
 
 		inst.NumOps++
 	}
+
+	// Zero trailing operand slots so reused Inst structs don't
+	// carry stale data from a previous decode.
+	for i := inst.NumOps; i < MAX_OPERANDS; i++ {
+		inst.Operands[i] = Op{}
+	}
 }
 
 // DecomposeInto decodes a single instruction into a caller-provided
@@ -792,8 +797,7 @@ func DecomposeInto(addr uint64, instrValue uint32, inst *Inst) error {
 func (d *Decoder) DecomposeInto(
 	addr uint64, instrValue uint32, inst *Inst,
 ) error {
-	C.zero_instruction(&d.cInstr)
-	rc := C.aarch64_decompose(
+	rc := C.aarch64_decompose_zeroed(
 		C.uint32_t(instrValue),
 		&d.cInstr,
 		C.uint64_t(addr),

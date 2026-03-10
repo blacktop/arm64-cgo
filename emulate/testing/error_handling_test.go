@@ -266,7 +266,7 @@ func TestConcurrentAccess(t *testing.T) {
 	done := make(chan bool, goroutines)
 	errors := make(chan error, goroutines*iterations)
 
-	for g := 0; g < goroutines; g++ {
+	for g := range goroutines {
 		go func(goroutineID int) {
 			defer func() { done <- true }()
 

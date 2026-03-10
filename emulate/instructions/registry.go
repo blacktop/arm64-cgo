@@ -2,6 +2,7 @@ package instructions
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -536,12 +537,7 @@ func isBranchInstruction(mnemonic string) bool {
 	}
 
 	branchInstructions := []string{"B", "BL", "BR", "BLR", "RET", "CBZ", "CBNZ", "TBZ", "TBNZ"}
-	for _, instr := range branchInstructions {
-		if mnemonic == instr {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(branchInstructions, mnemonic)
 }
 
 func isMoveInstruction(mnemonic string) bool {

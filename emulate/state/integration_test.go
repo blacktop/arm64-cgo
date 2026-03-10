@@ -206,7 +206,7 @@ func TestStatePerformance(t *testing.T) {
 		testData[i] = byte(i)
 	}
 
-	for i := 0; i < 1000; i++ {
+	for i := range 1000 {
 		addr := uint64(0x100000 + i*1024)
 		state.WriteMemory(addr, testData)
 		_, err := state.ReadMemory(addr, len(testData))
