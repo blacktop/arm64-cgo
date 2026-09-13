@@ -27,7 +27,7 @@ type BoundsGuard struct {
 	strict   bool  // if true, halt when depth==0 and PC is outside [start,end)
 	maxDepth int64 // clamp depth to this maximum (saturation)
 
-	depth int64 // call depth relative to the starting frame (atomic)
+	depth atomic.Int64 // call depth relative to the starting frame (atomic)
 }
 
 // BoundOption configures a BoundsGuard.
@@ -69,13 +69,13 @@ func (g *BoundsGuard) Strict() bool { return g.strict }
 func (g *BoundsGuard) MaxDepth() int64 { return g.maxDepth }
 
 // Reset clears the tracked depth back to 0.
-func (g *BoundsGuard) Reset() { atomic.StoreInt64(&g.depth, 0) }
+func (g *BoundsGuard) Reset() { g.depth.Store(0) }
 
 // Pre is intended for Engine HookPreInstruction.
 // It halts when we are back at depth 0 and PC has reached the end (or left the range if Strict).
 func (g *BoundsGuard) Pre(state core.State, _ core.InstructionInfo) core.HookResult {
 	pc := state.GetPC()
-	if atomic.LoadInt64(&g.depth) == 0 {
+	if g.depth.Load() == 0 {
 		if g.strict {
 			if pc < g.start || pc >= g.end {
 				return core.HookResult{Halt: true}
@@ -97,24 +97,26 @@ func (g *BoundsGuard) Post(state core.State, info core.InstructionInfo) core.Hoo
 		disassemble.ARM64_BLRAB, disassemble.ARM64_BLRABZ:
 		// depth++ with saturation at MaxDepth
 		for {
-			d := atomic.LoadInt64(&g.depth)
+			d := g.depth.Load()
 			if d >= g.maxDepth {
 				break
 			}
-			if atomic.CompareAndSwapInt64(&g.depth, d, d+1) {
+			if g.depth.CompareAndSwap(d, d+1) {
 				break
 			}
 		}
 
 	case disassemble.ARM64_RET, disassemble.ARM64_RETAA, disassemble.ARM64_RETAB,
+		disassemble.ARM64_RETAASPPC, disassemble.ARM64_RETABSPPC,
+		disassemble.ARM64_RETAASPPCR, disassemble.ARM64_RETABSPPCR,
 		disassemble.ARM64_ERET, disassemble.ARM64_ERETAA, disassemble.ARM64_ERETAB:
 		// depth-- with floor at 0
 		for {
-			d := atomic.LoadInt64(&g.depth)
+			d := g.depth.Load()
 			if d == 0 {
 				break
 			}
-			if atomic.CompareAndSwapInt64(&g.depth, d, d-1) {
+			if g.depth.CompareAndSwap(d, d-1) {
 				break
 			}
 		}
@@ -127,11 +129,11 @@ func (g *BoundsGuard) Post(state core.State, info core.InstructionInfo) core.Hoo
 			// Handle both mapped and direct enum checks for robustness.
 			if mapped == 30 || reg == disassemble.REG_X30 {
 				for {
-					d := atomic.LoadInt64(&g.depth)
+					d := g.depth.Load()
 					if d == 0 {
 						break
 					}
-					if atomic.CompareAndSwapInt64(&g.depth, d, d-1) {
+					if g.depth.CompareAndSwap(d, d-1) {
 						break
 					}
 				}
@@ -141,17 +143,17 @@ func (g *BoundsGuard) Post(state core.State, info core.InstructionInfo) core.Hoo
 
 	// Optional immediate halt after this instruction if we’re out of range at depth 0
 	// (covers tail calls like B/BR out of range without waiting for next fetch)
-	if atomic.LoadInt64(&g.depth) == 0 {
+	if g.depth.Load() == 0 {
 		pc := state.GetPC()
 		if g.strict {
 			if pc < g.start || pc >= g.end {
 				// Re-check depth to avoid a rare race if depth changed concurrently
-				if atomic.LoadInt64(&g.depth) == 0 {
+				if g.depth.Load() == 0 {
 					return core.HookResult{Halt: true}
 				}
 			}
 		} else if pc >= g.end {
-			if atomic.LoadInt64(&g.depth) == 0 {
+			if g.depth.Load() == 0 {
 				return core.HookResult{Halt: true}
 			}
 		}

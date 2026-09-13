@@ -275,6 +275,7 @@ func DefaultRegistry() *Registry {
 	RegisterCompareInstructions(registry)
 	RegisterConditionalInstructions(registry)
 	RegisterSystemInstructions(registry)
+	RegisterPAuthLRInstructions(registry)
 
 	// Register additional aliases for common instruction variants
 	registerCommonAliases(registry)
@@ -536,8 +537,8 @@ func isBranchInstruction(mnemonic string) bool {
 		return true
 	}
 
-	branchInstructions := []string{"B", "BL", "BR", "BLR", "RET", "CBZ", "CBNZ", "TBZ", "TBNZ"}
-	return slices.Contains(branchInstructions, mnemonic)
+	branchInstructions := []string{"B", "BL", "BR", "BLR", "CBZ", "CBNZ", "TBZ", "TBNZ"}
+	return slices.Contains(branchInstructions, mnemonic) || IsReturnMnemonic(mnemonic)
 }
 
 func isMoveInstruction(mnemonic string) bool {
@@ -584,7 +585,7 @@ func isConditionalInstruction(mnemonic string) bool {
 
 func isSystemInstruction(mnemonic string) bool {
 	systemInstructions := []string{"NOP", "MRS", "MSR", "SYS", "SYSL", "ISB", "DSB", "DMB",
-		"HINT", "YIELD", "WFE", "WFI", "HLT", "SEV", "SEVL", "PAC"}
+		"HINT", "YIELD", "WFE", "WFI", "HLT", "SEV", "SEVL", "PAC", "AUT"}
 	for _, instr := range systemInstructions {
 		if strings.HasPrefix(mnemonic, instr) {
 			return true
@@ -602,6 +603,10 @@ func IsPACInstruction(op disassemble.Operation) bool {
 		disassemble.ARM64_PACIA171615,
 		disassemble.ARM64_PACIASP,
 		disassemble.ARM64_PACIASPPC,
+		disassemble.ARM64_PACIB171615,
+		disassemble.ARM64_PACIBSPPC,
+		disassemble.ARM64_PACNBIASPPC,
+		disassemble.ARM64_PACNBIBSPPC,
 		disassemble.ARM64_PACIAZ,
 		disassemble.ARM64_PACDB,
 		disassemble.ARM64_PACDZA,

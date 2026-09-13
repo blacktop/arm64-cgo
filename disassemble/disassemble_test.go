@@ -28806,3 +28806,78 @@ func Test_decompose_basic(t *testing.T) {
 		})
 	}
 }
+
+// FEAT_CPA (Checked Pointer Arithmetic): integer forms plus the SVE forms.
+func Test_decompose_CPA(t *testing.T) {
+	var results [1024]byte
+	tests := []struct {
+		name  string
+		bytes []byte
+		want  string
+	}{
+		{"ADDPT_64_addsub_pt shifted", []byte{0x68, 0x33, 0x15, 0x9a}, "addpt\tx8, x27, x21, lsl #0x4"},
+		{"ADDPT_64_addsub_pt", []byte{0x68, 0x23, 0x15, 0x9a}, "addpt\tx8, x27, x21"},
+		{"ADDPT_64_addsub_pt Rn==31 is SP", []byte{0xe8, 0x23, 0x05, 0x9a}, "addpt\tx8, sp, x5"},
+		{"ADDPT_64_addsub_pt Rm==31 is XZR", []byte{0x41, 0x20, 0x1f, 0x9a}, "addpt\tx1, x2, xzr"},
+		{"SUBPT_64_addsub_pt shifted", []byte{0xb1, 0x3d, 0x03, 0xda}, "subpt\tx17, x13, x3, lsl #0x7"},
+		{"SUBPT_64_addsub_pt Rd==31 is SP", []byte{0xff, 0x23, 0x05, 0xda}, "subpt\tsp, sp, x5"},
+		{"MADDPT_64A_dp_3src", []byte{0x43, 0x10, 0x61, 0x9b}, "maddpt\tx3, x2, x1, x4"},
+		{"MSUBPT_64A_dp_3src", []byte{0x43, 0x90, 0x61, 0x9b}, "msubpt\tx3, x2, x1, x4"},
+		{"addpt_z_zz_", []byte{0x43, 0x08, 0xe1, 0x04}, "addpt\tz3.d, z2.d, z1.d"},
+		{"subpt_z_p_zz_", []byte{0x43, 0x04, 0xc5, 0x04}, "subpt\tz3.d, p1/m, z3.d, z2.d"},
+		{"madpt_z_zzz_", []byte{0x83, 0xd8, 0xc2, 0x44}, "madpt\tz3.d, z2.d, z4.d"},
+		{"mlapt_z_zzz_", []byte{0x43, 0xd0, 0xc1, 0x44}, "mlapt\tz3.d, z2.d, z1.d"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Decompose(0, binary.LittleEndian.Uint32(tt.bytes), &results)
+			if err != nil {
+				t.Fatalf("Decompose() error = %v", err)
+			}
+			if got.Disassembly != tt.want {
+				t.Errorf("Disassembly = %q, want %q", got.Disassembly, tt.want)
+			}
+		})
+	}
+}
+
+// FEAT_PAuth_LR (PC-relative pointer authentication). Encodings verified with llvm-mc.
+func Test_decompose_PAuth_LR(t *testing.T) {
+	var results [1024]byte
+	tests := []struct {
+		name  string
+		bytes []byte
+		want  string
+	}{
+		{"PACM_HI_hints", []byte{0xff, 0x24, 0x03, 0xd5}, "pacm"},
+		{"PACIASPPC_64LR_dp_1src", []byte{0xfe, 0xa3, 0xc1, 0xda}, "paciasppc"},
+		{"PACIBSPPC_64LR_dp_1src", []byte{0xfe, 0xa7, 0xc1, 0xda}, "pacibsppc"},
+		{"PACNBIASPPC_64LR_dp_1src", []byte{0xfe, 0x83, 0xc1, 0xda}, "pacnbiasppc"},
+		{"PACNBIBSPPC_64LR_dp_1src", []byte{0xfe, 0x87, 0xc1, 0xda}, "pacnbibsppc"},
+		{"PACIA171615_64LR_dp_1src", []byte{0xfe, 0x8b, 0xc1, 0xda}, "pacia171615"},
+		{"PACIB171615_64LR_dp_1src", []byte{0xfe, 0x8f, 0xc1, 0xda}, "pacib171615"},
+		{"AUTIA171615_64LR_dp_1src", []byte{0xfe, 0xbb, 0xc1, 0xda}, "autia171615"},
+		{"AUTIB171615_64LR_dp_1src", []byte{0xfe, 0xbf, 0xc1, 0xda}, "autib171615"},
+		{"AUTIASPPCR_64LRR_dp_1src", []byte{0x7e, 0x90, 0xc1, 0xda}, "autiasppcr\tx3"},
+		{"AUTIASPPCR_64LRR_dp_1src Rn==31 is XZR", []byte{0xfe, 0x93, 0xc1, 0xda}, "autiasppcr\txzr"},
+		{"AUTIBSPPCR_64LRR_dp_1src", []byte{0x7e, 0x94, 0xc1, 0xda}, "autibsppcr\tx3"},
+		{"RETAASPPCR_64M_branch_reg", []byte{0xe3, 0x0b, 0x5f, 0xd6}, "retaasppcr\tx3"},
+		{"RETABSPPCR_64M_branch_reg", []byte{0xe3, 0x0f, 0x5f, 0xd6}, "retabsppcr\tx3"},
+		{"AUTIASPPC_only_dp_1src_imm #-8", []byte{0x5f, 0x00, 0x80, 0xf3}, "autiasppc\t0xff8"},
+		{"AUTIASPPC_only_dp_1src_imm #-1024", []byte{0x1f, 0x20, 0x80, 0xf3}, "autiasppc\t0xc00"},
+		{"AUTIBSPPC_only_dp_1src_imm #-8", []byte{0x5f, 0x00, 0xa0, 0xf3}, "autibsppc\t0xff8"},
+		{"RETAASPPC_only_miscbranch #-8", []byte{0x5f, 0x00, 0x00, 0x55}, "retaasppc\t0xff8"},
+		{"RETABSPPC_only_miscbranch #-8", []byte{0x5f, 0x00, 0x20, 0x55}, "retabsppc\t0xff8"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Decompose(0x1000, binary.LittleEndian.Uint32(tt.bytes), &results)
+			if err != nil {
+				t.Fatalf("Decompose() error = %v", err)
+			}
+			if got.Disassembly != tt.want {
+				t.Errorf("Disassembly = %q, want %q", got.Disassembly, tt.want)
+			}
+		})
+	}
+}

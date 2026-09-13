@@ -60,6 +60,13 @@ This document compares the instructions checked by `iometa/src/a64emu.c:is_linea
 | SUBS (imm) | ✓ | ✅ | Subtract with flags (immediate) |
 | SUBS (reg) | ✓ | ✅ | Subtract with flags (register) |
 | MADD | ✓ | ✅ | Multiply-add |
+| ADDPT/SUBPT | | ✅ | FEAT_CPA checked pointer add/sub, executed as unchecked ADD/SUB |
+| MADDPT/MSUBPT | | ✅ | FEAT_CPA checked multiply-add/sub, executed as unchecked MADD/MSUB |
+| PACIBSPPC / PACIASPPC / PACNB* | | ✅ | FEAT_PAuth_LR: sign LR with SP and PC (pseudo-PAC); iOS 27 SDK ARM64_STACK_PROLOG_ENH |
+| RETABSPPC / RETAASPPC (label, R) | | ✅ | FEAT_PAuth_LR: authenticate LR with SP and label/register, then return; ARM64_STACK_EPILOG_ENH |
+| AUTIASPPC / AUTIBSPPC (label, R) | | ✅ | FEAT_PAuth_LR: authenticate LR with SP and label/register |
+| PACIA171615 / AUTIA171615 (A/B) | | ✅ | FEAT_PAuth_LR: sign/authenticate X17 with X16 and X15 |
+| PACM | | ✅ | FEAT_PAuth_LR modifier hint, executed as NOP |
 | LDUR | ✓ | ✅ | Load register (unscaled) |
 | STUR | ✓ | ✅ | Store register (unscaled) |
 | LDRSB (uoff) | ✓ | ✅ | Load signed byte |

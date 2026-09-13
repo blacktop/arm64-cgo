@@ -524,22 +524,22 @@ func RegisterBranchInstructions(registry *Registry) {
 // IsBranchInstruction checks if a mnemonic is a branch instruction
 func IsBranchInstruction(mnemonic string) bool {
 	switch mnemonic {
-	case "B", "BL", "BLR", "BR", "RET", "CBZ", "CBNZ", "TBZ", "TBNZ":
+	case "B", "BL", "BLR", "BR", "CBZ", "CBNZ", "TBZ", "TBNZ":
 		return true
 	default:
-		return strings.HasPrefix(mnemonic, "B.")
+		return strings.HasPrefix(mnemonic, "B.") || IsReturnMnemonic(mnemonic)
 	}
 }
 
 // IsUnconditionalBranch checks if a branch is unconditional
 func IsUnconditionalBranch(mnemonic string) bool {
 	switch mnemonic {
-	case "B", "BL", "BLR", "BR", "RET":
+	case "B", "BL", "BLR", "BR":
 		return true
 	case "B.AL":
 		return true
 	default:
-		return false
+		return IsReturnMnemonic(mnemonic)
 	}
 }
 
@@ -562,13 +562,15 @@ func IsLinkBranch(mnemonic string) bool {
 	}
 }
 
-// IsRegisterBranch checks if a branch uses a register for the target
+// IsRegisterBranch checks if a branch uses a register for the target. Every return form
+// qualifies: the target is X30 (or ELR for ERET) even when the authentication modifier is
+// PC-relative.
 func IsRegisterBranch(mnemonic string) bool {
 	switch mnemonic {
-	case "BLR", "BR", "RET":
+	case "BLR", "BR":
 		return true
 	default:
-		return false
+		return IsReturnMnemonic(mnemonic)
 	}
 }
 
@@ -581,6 +583,8 @@ func IsReturnOp(inst *disassemble.Inst) bool {
 	}
 	switch inst.Operation {
 	case disassemble.ARM64_RET, disassemble.ARM64_RETAA, disassemble.ARM64_RETAB,
+		disassemble.ARM64_RETAASPPC, disassemble.ARM64_RETABSPPC,
+		disassemble.ARM64_RETAASPPCR, disassemble.ARM64_RETABSPPCR,
 		disassemble.ARM64_ERET, disassemble.ARM64_ERETAA, disassemble.ARM64_ERETAB:
 		return true
 	default:
@@ -591,7 +595,8 @@ func IsReturnOp(inst *disassemble.Inst) bool {
 // IsReturnMnemonic returns true if the mnemonic corresponds to a return-like instruction.
 func IsReturnMnemonic(mnemonic string) bool {
 	switch strings.ToUpper(mnemonic) {
-	case "RET", "RETAA", "RETAB", "ERET", "ERETAA", "ERETAB":
+	case "RET", "RETAA", "RETAB", "RETAASPPC", "RETABSPPC", "RETAASPPCR", "RETABSPPCR",
+		"ERET", "ERETAA", "ERETAB":
 		return true
 	default:
 		return false

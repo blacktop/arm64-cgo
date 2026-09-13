@@ -870,6 +870,19 @@ func TestBranchHelperFunctions(t *testing.T) {
 		{"BLR is register branch", "BLR", true, IsRegisterBranch},
 		{"RET is register branch", "RET", true, IsRegisterBranch},
 		{"B is not register branch", "B", false, IsRegisterBranch},
+
+		{"RETAA is branch", "RETAA", true, IsBranchInstruction},
+		{"RETAASPPC is branch", "RETAASPPC", true, IsBranchInstruction},
+		{"RETABSPPCR is branch", "RETABSPPCR", true, IsBranchInstruction},
+		{"ERETAB is branch", "ERETAB", true, IsBranchInstruction},
+		{"RETAB is unconditional", "RETAB", true, IsUnconditionalBranch},
+		{"RETABSPPC is unconditional", "RETABSPPC", true, IsUnconditionalBranch},
+		{"RETAASPPCR is unconditional", "RETAASPPCR", true, IsUnconditionalBranch},
+		{"RETAASPPC is not conditional", "RETAASPPC", false, IsConditionalBranch},
+		{"RETAA is register branch", "RETAA", true, IsRegisterBranch},
+		{"RETAASPPC is register branch", "RETAASPPC", true, IsRegisterBranch},
+		{"RETABSPPCR is register branch", "RETABSPPCR", true, IsRegisterBranch},
+		{"RETAASPPC is not link branch", "RETAASPPC", false, IsLinkBranch},
 	}
 
 	for _, tt := range tests {

@@ -450,86 +450,37 @@ func (e *SystemExecutor) executeHLT(state core.State, inst *disassemble.Inst) er
 
 // XPACLRI - Strip Pointer Authentication Code from Link Register
 func (e *SystemExecutor) executeXPACLRI(state core.State, inst *disassemble.Inst) error {
-	// Clear pseudo-PAC in LR by zeroing the top byte
-	lr := state.GetX(30) // X30 is LR
-	lr &= 0x00FFFFFFFFFFFFFF
-	state.SetX(30, lr)
+	state.SetX(linkRegister, canonicalPointer(state.GetX(linkRegister)))
 	return nil
-}
-
-// computePseudoPAC folds the modifier value into a single byte and mixes in a key tag.
-func computePseudoPAC(modifier uint64, keyTag uint8) uint8 {
-	var pacByte uint8
-	for shift := 0; shift < 64; shift += 8 {
-		pacByte ^= uint8(modifier >> shift)
-	}
-	return pacByte ^ keyTag
 }
 
 // PACIBSP - Pointer authenticate LR using SP and B-key
 func (e *SystemExecutor) executePACIBSP(state core.State, inst *disassemble.Inst) error {
-	// Pseudo-implement PACIBSP: set top byte of LR using a simple hash of SP and a B-key tag
-	lr := state.GetX(30) // X30 is LR
-	pacByte := computePseudoPAC(state.GetSP(), 0xB3)
-
-	// Write pseudo PAC into the top byte of LR
-	lr = (lr & 0x00FFFFFFFFFFFFFF) | (uint64(pacByte) << 56)
-	state.SetX(30, lr)
+	signRegister(state, linkRegister, state.GetSP(), pseudoPACKeyB)
 	return nil
 }
 
 // PACIASP - Pointer authenticate LR using SP and A-key
 func (e *SystemExecutor) executePACIASP(state core.State, inst *disassemble.Inst) error {
-	lr := state.GetX(30) // X30 is LR
-	pacByte := computePseudoPAC(state.GetSP(), 0xA5)
-
-	// Write pseudo PAC into the top byte of LR
-	lr = (lr & 0x00FFFFFFFFFFFFFF) | (uint64(pacByte) << 56)
-	state.SetX(30, lr)
+	signRegister(state, linkRegister, state.GetSP(), pseudoPACKeyA)
 	return nil
 }
 
 // PACIAZ - Pointer authenticate LR using zero modifier and A-key
 func (e *SystemExecutor) executePACIAZ(state core.State, inst *disassemble.Inst) error {
-	lr := state.GetX(30) // X30 is LR
-
-	// Zero modifier; just use A-key tag
-	var pacByte uint8
-	pacByte ^= 0xA5 // A-key tag
-
-	lr = (lr & 0x00FFFFFFFFFFFFFF) | (uint64(pacByte) << 56)
-	state.SetX(30, lr)
+	signRegister(state, linkRegister, 0, pseudoPACKeyA)
 	return nil
 }
 
 // PACIBZ - Pointer authenticate LR using zero modifier and B-key
 func (e *SystemExecutor) executePACIBZ(state core.State, inst *disassemble.Inst) error {
-	lr := state.GetX(30) // X30 is LR
-
-	// Zero modifier; just use B-key tag
-	var pacByte uint8
-	pacByte ^= 0xB3 // B-key tag
-
-	lr = (lr & 0x00FFFFFFFFFFFFFF) | (uint64(pacByte) << 56)
-	state.SetX(30, lr)
+	signRegister(state, linkRegister, 0, pseudoPACKeyB)
 	return nil
 }
 
 // AUTIBSP - Authenticate LR using SP and B-key
 func (e *SystemExecutor) executeAUTIBSP(state core.State, inst *disassemble.Inst) error {
-	lr := state.GetX(30) // X30 is LR
-	expectedPAC := computePseudoPAC(state.GetSP(), 0xB3)
-	actualPAC := uint8(lr >> 56)
-
-	if actualPAC == expectedPAC {
-		// Successful authentication: strip the pseudo-PAC
-		lr &= 0x00FFFFFFFFFFFFFF
-	} else {
-		// Authentication failed: poison LR so future use is obvious
-		lr = 0
-	}
-
-	state.SetX(30, lr)
+	authenticateRegister(state, linkRegister, state.GetSP(), pseudoPACKeyB)
 	return nil
 }
 

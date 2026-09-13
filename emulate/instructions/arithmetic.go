@@ -24,6 +24,9 @@ func (e *ArithmeticExecutor) Execute(state core.State, inst *disassemble.Inst) e
 	if err := e.ValidateInstruction(inst); err != nil {
 		return err
 	}
+	if err := rejectSVEForm(state, inst); err != nil {
+		return err
+	}
 
 	switch e.mnemonic {
 	case "ADD":
@@ -45,6 +48,14 @@ func (e *ArithmeticExecutor) Execute(state core.State, inst *disassemble.Inst) e
 	case "MADD":
 		return e.executeMADD(state, inst)
 	case "MSUB":
+		return e.executeMSUB(state, inst)
+	case "ADDPT":
+		return e.executeADD(state, inst)
+	case "SUBPT":
+		return e.executeSUB(state, inst)
+	case "MADDPT":
+		return e.executeMADD(state, inst)
+	case "MSUBPT":
 		return e.executeMSUB(state, inst)
 	case "SMULL":
 		return e.executeSMULL(state, inst)
@@ -994,6 +1005,22 @@ func (e *ArithmeticExecutor) executeADDG(state core.State, inst *disassemble.Ins
 	return e.executeADD(state, inst)
 }
 
+// rejectSVEForm reports ErrUnsupportedFeature when the destination is an SVE register.
+// Some operations (for example ADDPT and SUBPT) share one Operation across scalar and SVE
+// encodings; only the scalar forms are executed, and the SVE forms must surface as
+// unsupported so the engine routes them to HookUnimplementedInstruction.
+func rejectSVEForm(state core.State, inst *disassemble.Inst) error {
+	if inst.NumOps == 0 || inst.Operands[0].NumRegisters == 0 {
+		return nil
+	}
+	dst := inst.Operands[0].Registers[0]
+	if dst < disassemble.REG_Z0 || dst > disassemble.REG_P15 {
+		return nil
+	}
+	return core.NewEmulationError(core.ErrUnsupportedFeature, state.GetPC(),
+		inst.Operation.String(), "SVE form is not supported by the scalar executor")
+}
+
 // RegisterArithmeticInstructions registers all arithmetic instructions
 func RegisterArithmeticInstructions(registry *Registry) {
 	// Basic arithmetic
@@ -1011,6 +1038,14 @@ func RegisterArithmeticInstructions(registry *Registry) {
 	// Multiply-accumulate
 	registry.Register("MADD", NewArithmeticExecutor("MADD", "Multiply-add"))
 	registry.Register("MSUB", NewArithmeticExecutor("MSUB", "Multiply-subtract"))
+
+	// FEAT_CPA checked pointer arithmetic only rewrites bits 63:54 of the result, and only
+	// when the arithmetic escapes the address bits with SCTLR2_ELx.CPTA/CPTM enabled. The
+	// scalar forms execute as the unchecked operations; SVE forms are rejected as unsupported.
+	registry.Register("ADDPT", NewArithmeticExecutor("ADDPT", "Checked pointer add (executed unchecked)"))
+	registry.Register("SUBPT", NewArithmeticExecutor("SUBPT", "Checked pointer subtract (executed unchecked)"))
+	registry.Register("MADDPT", NewArithmeticExecutor("MADDPT", "Checked pointer multiply-add (executed unchecked)"))
+	registry.Register("MSUBPT", NewArithmeticExecutor("MSUBPT", "Checked pointer multiply-subtract (executed unchecked)"))
 
 	// Long multiply
 	registry.Register("SMULL", NewArithmeticExecutor("SMULL", "Signed multiply long"))

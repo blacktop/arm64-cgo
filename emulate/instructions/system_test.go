@@ -538,6 +538,58 @@ func TestSystemExecutor_AUTIBSP(t *testing.T) {
 	}
 }
 
+func TestSystemExecutor_PACPreservesKernelAddressesAndDetectsTampering(t *testing.T) {
+	const kernelLR uint64 = 0xffff_fe00_1234_5678
+	pac := NewSystemExecutor("PACIBSP", "Pointer authenticate LR using SP")
+	aut := NewSystemExecutor("AUTIBSP", "Authenticate LR using SP (B-key)")
+	strip := NewSystemExecutor("XPACLRI", "Strip Pointer Authentication Code from Link Register")
+	noOps := [disassemble.MAX_OPERANDS]disassemble.Op{}
+
+	t.Run("round trip keeps bits 63:56 of a kernel address", func(t *testing.T) {
+		state := NewMockSystemState()
+		state.SetSP(0x7fff1234000)
+		state.SetX(30, kernelLR)
+		if err := pac.Execute(state, createMockSystemInstruction("PACIBSP", 0, noOps)); err != nil {
+			t.Fatalf("PACIBSP failed: %v", err)
+		}
+		if err := aut.Execute(state, createMockSystemInstruction("AUTIBSP", 0, noOps)); err != nil {
+			t.Fatalf("AUTIBSP failed: %v", err)
+		}
+		if got := state.GetX(30); got != kernelLR {
+			t.Errorf("LR = %#x, want %#x", got, kernelLR)
+		}
+	})
+	t.Run("xpaclri restores bits 63:56 of a kernel address", func(t *testing.T) {
+		state := NewMockSystemState()
+		state.SetSP(0x7fff1234000)
+		state.SetX(30, kernelLR)
+		if err := pac.Execute(state, createMockSystemInstruction("PACIBSP", 0, noOps)); err != nil {
+			t.Fatalf("PACIBSP failed: %v", err)
+		}
+		if err := strip.Execute(state, createMockSystemInstruction("XPACLRI", 0, noOps)); err != nil {
+			t.Fatalf("XPACLRI failed: %v", err)
+		}
+		if got := state.GetX(30); got != kernelLR {
+			t.Errorf("LR = %#x, want %#x", got, kernelLR)
+		}
+	})
+	t.Run("modified payload with intact tag is poisoned", func(t *testing.T) {
+		state := NewMockSystemState()
+		state.SetSP(0x7fff1234000)
+		state.SetX(30, 0x0000000100002222)
+		if err := pac.Execute(state, createMockSystemInstruction("PACIBSP", 0, noOps)); err != nil {
+			t.Fatalf("PACIBSP failed: %v", err)
+		}
+		state.SetX(30, state.GetX(30)^0x10)
+		if err := aut.Execute(state, createMockSystemInstruction("AUTIBSP", 0, noOps)); err != nil {
+			t.Fatalf("AUTIBSP failed: %v", err)
+		}
+		if got := state.GetX(30); got != 0 {
+			t.Errorf("LR = %#x, want 0 (poisoned)", got)
+		}
+	})
+}
+
 func TestSystemExecutor_UnsupportedInstruction(t *testing.T) {
 	executor := NewSystemExecutor("NOP", "No operation")
 	state := NewMockSystemState()
