@@ -5,8 +5,8 @@ go 1.26
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/apex/log v1.9.0
-	github.com/blacktop/arm64-cgo v1.0.70
-	github.com/blacktop/go-macho v1.1.263
+	github.com/blacktop/arm64-cgo v1.0.72
+	github.com/blacktop/go-macho v1.1.283
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 )
