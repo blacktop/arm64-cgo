@@ -22,13 +22,13 @@ jobs:
       - name: Set up Zig
         uses: mlugg/setup-zig@v2
         with:
-          zig-version: "0.15.0"
+          version: "0.16.0"
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
           go-version: "stable"
       - name: Add Go bin to PATH
-        run: echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+        run: echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
       - name: Install stringer
         run: go install golang.org/x/tools/cmd/stringer@latest
       - name: Run GoReleaser
