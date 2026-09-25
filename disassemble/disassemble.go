@@ -719,6 +719,10 @@ func fillInst(cInstr *C.Instruction, inst *Inst) {
 		}
 
 		op := &inst.Operands[inst.NumOps]
+		// A reused Inst may hold a previous decode in this slot; fields
+		// below are only written when present (registers, name bytes,
+		// impl spec, tile), so start from the zero value.
+		*op = Op{}
 		op.Class = operandClass(cop.operandClass)
 		op.ArrSpec = arrangementSpec(cop.arrSpec)
 		op.Condition = condition(cop.cond)

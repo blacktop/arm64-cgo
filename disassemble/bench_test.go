@@ -2,6 +2,7 @@ package disassemble
 
 import (
 	"encoding/binary"
+	"reflect"
 	"testing"
 )
 
@@ -84,6 +85,30 @@ func TestDecomposeIntoEquivalence(t *testing.T) {
 			t.Fatalf("DecomposeInto(%#x) failed: %v", word, err)
 		}
 		assertInstEquivalence(t, word, &inst, old)
+	}
+}
+
+// TestDecomposeIntoResetsReusedInst decodes into an Inst that holds a
+// previous decode with more registers per operand.
+func TestDecomposeIntoResetsReusedInst(t *testing.T) {
+	var decoder Decoder
+	for _, pair := range [][2]uint32{
+		{benchWords[1], benchWords[4]}, // ADD X0, X0, #16 then BL
+		{benchWords[7], 0xd503201f},    // STP X29, X30, [SP, #-16]! then NOP
+	} {
+		var reused, fresh Inst
+		if err := decoder.DecomposeInto(0x1000, pair[0], &reused); err != nil {
+			t.Fatal(err)
+		}
+		if err := decoder.DecomposeInto(0x1004, pair[1], &reused); err != nil {
+			t.Fatal(err)
+		}
+		if err := decoder.DecomposeInto(0x1004, pair[1], &fresh); err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(reused, fresh) {
+			t.Errorf("decoding %#x into an Inst that held %#x left stale fields", pair[1], pair[0])
+		}
 	}
 }
 
