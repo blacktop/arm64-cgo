@@ -15,6 +15,7 @@ import "C"
 type Decoder struct {
 	cInstr C.Instruction
 	batch  []C.Instruction
+	status []DecodeStatus
 }
 
 // NewDecoder creates a reusable decoder. If batchCap is greater than 0,

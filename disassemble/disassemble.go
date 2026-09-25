@@ -28,12 +28,14 @@ int disassemble(uint64_t addr, uint32_t instrValue, int len, char *result)
 	return aarch64_disassemble(&instr, result, 1024);
 }
 
+// Decodes every word, recording each aarch64_decompose return code
+// (DECODE_STATUS_*, -9..0) in status.
 void aarch64_decompose_batch(
 	uint32_t *words, uint64_t *addrs,
-	Instruction *out, int count)
+	Instruction *out, int8_t *status, int count)
 {
 	for (int i = 0; i < count; i++) {
-		aarch64_decompose_zeroed(words[i], &out[i], addrs[i]);
+		status[i] = (int8_t)aarch64_decompose_zeroed(words[i], &out[i], addrs[i]);
 	}
 }
 
@@ -48,6 +50,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"strings"
 	"unsafe"
 )
@@ -55,6 +58,40 @@ import (
 var errBatchLenMismatch = errors.New(
 	"DecomposeBatch: addrs, words, and out must have equal length",
 )
+
+var errBatchStatusLenMismatch = errors.New(
+	"DecomposeBatchStatus: addrs, words, out, and status must have equal length",
+)
+
+var errBatchTooLarge = errors.New(
+	"DecomposeBatch: batch length exceeds the C int range",
+)
+
+// DecodeStatus is the decoder's result for one instruction of a batch.
+type DecodeStatus int8
+
+// OK reports whether the instruction decoded successfully.
+func (s DecodeStatus) OK() bool { return returnCode(s) == SUCCESS_OK }
+
+// String names the status, e.g. "DECODE_STATUS_UNDEFINED".
+func (s DecodeStatus) String() string { return returnCode(s).String() }
+
+// Err returns nil for a successful decode, or the error DecomposeInto
+// returns when it fails to decode word.
+func (s DecodeStatus) Err(word uint32) error {
+	if s.OK() {
+		return nil
+	}
+	return decomposeError(word, returnCode(s))
+}
+
+// checkBatchLen rejects batches whose length does not fit the C int count.
+func checkBatchLen(n int) error {
+	if n > math.MaxInt32 {
+		return errBatchTooLarge
+	}
+	return nil
+}
 
 func decomposeError(instrValue uint32, rc returnCode) error {
 	return fmt.Errorf(
@@ -827,8 +864,10 @@ func DecomposeBatch(
 
 // DecomposeBatch decodes multiple instructions with a single cgo
 // crossing using reusable cgo-side decode buffers. addrs, words, and
-// out must have the same length. Returns the number of successfully
-// decoded instructions.
+// out must have the same length. Every instruction is attempted; it
+// returns the number that decoded successfully. An instruction that
+// fails to decode leaves Inst{Address: addrs[i]} in out[i]. Use
+// DecomposeBatchStatus to learn which instructions failed and why.
 func (d *Decoder) DecomposeBatch(
 	addrs []uint64, words []uint32, out []Inst,
 ) (int, error) {
@@ -836,8 +875,49 @@ func (d *Decoder) DecomposeBatch(
 	if len(addrs) != n || len(out) != n {
 		return 0, errBatchLenMismatch
 	}
+	if cap(d.status) < n {
+		d.status = make([]DecodeStatus, n)
+	}
+	return d.decomposeBatch(addrs, words, out, d.status[:n])
+}
+
+// DecomposeBatchStatus decodes multiple instructions with a single cgo
+// crossing. This convenience wrapper creates a short-lived Decoder.
+// addrs, words, out, and status must have the same length.
+func DecomposeBatchStatus(
+	addrs []uint64, words []uint32, out []Inst, status []DecodeStatus,
+) (int, error) {
+	var decoder Decoder
+	return decoder.DecomposeBatchStatus(addrs, words, out, status)
+}
+
+// DecomposeBatchStatus decodes multiple instructions with a single cgo
+// crossing, recording each instruction's decoder status in status: the
+// same result DecomposeInto reports for that word alone. Every
+// instruction is attempted; it returns the number that decoded
+// successfully. A failed instruction leaves Inst{Address: addrs[i]} in
+// out[i], never a partial decode. addrs, words, out, and status must
+// have the same length.
+func (d *Decoder) DecomposeBatchStatus(
+	addrs []uint64, words []uint32, out []Inst, status []DecodeStatus,
+) (int, error) {
+	n := len(words)
+	if len(addrs) != n || len(out) != n || len(status) != n {
+		return 0, errBatchStatusLenMismatch
+	}
+	return d.decomposeBatch(addrs, words, out, status)
+}
+
+// decomposeBatch decodes words with slices of equal length.
+func (d *Decoder) decomposeBatch(
+	addrs []uint64, words []uint32, out []Inst, status []DecodeStatus,
+) (int, error) {
+	n := len(words)
 	if n == 0 {
 		return 0, nil
+	}
+	if err := checkBatchLen(n); err != nil {
+		return 0, err
 	}
 
 	d.ensureBatch(n)
@@ -846,12 +926,19 @@ func (d *Decoder) DecomposeBatch(
 		(*C.uint32_t)(unsafe.Pointer(&words[0])),
 		(*C.uint64_t)(unsafe.Pointer(&addrs[0])),
 		&d.batch[0],
+		(*C.int8_t)(unsafe.Pointer(&status[0])),
 		C.int(n),
 	)
 
+	decoded := 0
 	for idx := 0; idx < n; idx++ {
+		if !status[idx].OK() {
+			out[idx] = Inst{Address: addrs[idx]}
+			continue
+		}
 		out[idx].Address = addrs[idx]
 		fillInst(&d.batch[idx], &out[idx])
+		decoded++
 	}
-	return n, nil
+	return decoded, nil
 }
