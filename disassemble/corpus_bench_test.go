@@ -195,7 +195,7 @@ func TestCorpusTemplateEncodings(t *testing.T) {
 	r := rand.New(rand.NewPCG(3, 4))
 	var inst Inst
 	for _, tmpl := range corpusTemplates {
-		for n := 0; n < 1024; n++ {
+		for n := range 1024 {
 			word := tmpl.base
 			if n > 0 {
 				word |= r.Uint32() & tmpl.mask
