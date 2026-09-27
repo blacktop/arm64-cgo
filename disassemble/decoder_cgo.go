@@ -7,6 +7,13 @@ package disassemble
 */
 import "C"
 
+import "sync"
+
+// singleDecoders backs the one-shot DecomposeInto and Decompose wrappers,
+// so each call reuses a C.Instruction instead of allocating one. Only
+// cInstr is used, so pooled Decoders never hold batch buffers.
+var singleDecoders = sync.Pool{New: func() any { return new(Decoder) }}
+
 // Decoder reuses cgo-side decode buffers across calls so that the
 // per-decode heap allocation is paid once, not on every call.
 //

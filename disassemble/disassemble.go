@@ -28,6 +28,18 @@ int disassemble(uint64_t addr, uint32_t instrValue, int len, char *result)
 	return aarch64_disassemble(&instr, result, 1024);
 }
 
+// Decodes once into instr and formats the text from it. Returns a
+// DECODE_STATUS_* (<= 0) if decoding fails, else the FailureCode (>= 0)
+// from formatting.
+int decompose_disassemble(uint64_t addr, uint32_t instrValue,
+	Instruction *instr, char *result)
+{
+	int rc = aarch64_decompose_zeroed(instrValue, instr, addr);
+	if (rc != DECODE_STATUS_OK)
+		return rc;
+	return aarch64_disassemble(instr, result, 1024);
+}
+
 // Decodes every word, recording each aarch64_decompose return code
 // (DECODE_STATUS_*, -9..0) in status.
 void aarch64_decompose_batch(
@@ -649,19 +661,27 @@ func Disassemble(addr uint64, instructionValue uint32, results *[1024]byte) (str
 
 // Decompose decomposes an instruction
 func Decompose(addr uint64, instructionValue uint32, results *[1024]byte) (*Instruction, error) {
+	d := singleDecoders.Get().(*Decoder)
+	defer singleDecoders.Put(d)
+	rc := C.decompose_disassemble(
+		C.uint64_t(addr),
+		C.uint32_t(instructionValue),
+		&d.cInstr,
+		(*C.char)(unsafe.Pointer(results)),
+	)
+	if rc < 0 {
+		return nil, decomposeError(instructionValue, returnCode(rc))
+	}
+	if rc > 0 {
+		return nil, fmt.Errorf("failed to disassemble instruction %#x: %s",
+			instructionValue, returnCode(rc).String())
+	}
+
 	var inst Inst
-	if err := DecomposeInto(addr, instructionValue, &inst); err != nil {
-		return nil, err
-	}
-
+	inst.Address = addr
+	fillInst(&d.cInstr, &inst)
 	i := inst.ToInstruction()
-
-	var err error
-	i.Disassembly, err = Disassemble(addr, instructionValue, results)
-	if err != nil {
-		return nil, err
-	}
-
+	i.Disassembly = C.GoString((*C.char)(unsafe.Pointer(results)))
 	return i, nil
 }
 
@@ -820,8 +840,8 @@ func fillInst(cInstr *C.Instruction, inst *Inst) {
 
 		// Copy registers
 		op.NumRegisters = 0
-		for _, reg := range cop.reg {
-			if reg != C.Register(REG_NONE) {
+		for k := range cop.reg {
+			if reg := cop.reg[k]; reg != C.Register(REG_NONE) {
 				op.Registers[op.NumRegisters] = Register(reg)
 				op.NumRegisters++
 			}
@@ -829,15 +849,15 @@ func fillInst(cInstr *C.Instruction, inst *Inst) {
 
 		// Copy impl spec
 		op.HasImplSpec = false
-		for _, v := range cop.implspec {
-			if v != 0 {
+		for k := range cop.implspec {
+			if cop.implspec[k] != 0 {
 				op.HasImplSpec = true
 				break
 			}
 		}
 		if op.HasImplSpec {
-			for k, v := range cop.implspec {
-				op.ImplSpec[k] = byte(v)
+			for k := range cop.implspec {
+				op.ImplSpec[k] = byte(cop.implspec[k])
 			}
 		}
 
@@ -852,10 +872,11 @@ func fillInst(cInstr *C.Instruction, inst *Inst) {
 }
 
 // DecomposeInto decodes a single instruction into a caller-provided
-// Inst. This convenience wrapper creates a short-lived Decoder.
+// Inst. This convenience wrapper borrows a pooled Decoder.
 func DecomposeInto(addr uint64, instrValue uint32, inst *Inst) error {
-	var decoder Decoder
-	return decoder.DecomposeInto(addr, instrValue, inst)
+	d := singleDecoders.Get().(*Decoder)
+	defer singleDecoders.Put(d)
+	return d.DecomposeInto(addr, instrValue, inst)
 }
 
 // DecomposeInto decodes a single instruction into a caller-provided

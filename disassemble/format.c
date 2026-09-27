@@ -171,6 +171,44 @@ static inline uint32_t get_shifted_register(
 	return DISASM_SUCCESS;
 }
 
+/* Appends src at buf[*len], keeping buf NUL-terminated. Returns -1 (after
+ * truncating, like snprintf) if src does not fit, else 0. */
+static int append_str(char *buf, size_t buf_sz, size_t *len, const char *src)
+{
+	size_t n = strlen(src);
+	if (*len + n >= buf_sz)
+	{
+		n = buf_sz - 1 - *len;
+		memcpy(buf + *len, src, n);
+		*len += n;
+		buf[*len] = '\0';
+		return -1;
+	}
+	memcpy(buf + *len, src, n + 1);
+	*len += n;
+	return 0;
+}
+
+/* Appends v in lowercase hex like printf's "%#llx" ("0" for zero, else
+ * "0x..."), or like "0x%llx" when always_prefix is set. */
+static int append_hex(char *buf, size_t buf_sz, size_t *len, uint64_t v, int always_prefix)
+{
+	char digits[16], out[19];
+	size_t n = 0, o = 0;
+	if (v == 0 && !always_prefix)
+		return append_str(buf, buf_sz, len, "0");
+	do {
+		digits[n++] = "0123456789abcdef"[v & 0xf];
+		v >>= 4;
+	} while (v);
+	out[o++] = '0';
+	out[o++] = 'x';
+	while (n)
+		out[o++] = digits[--n];
+	out[o] = '\0';
+	return append_str(buf, buf_sz, len, out);
+}
+
 uint32_t get_memory_operand(
 	const InstructionOperand *operand,
 	char *outBuffer,
@@ -178,7 +216,6 @@ uint32_t get_memory_operand(
 {
 	char immBuff[64]= {0};
 	char extendBuff[48] = {0};
-	char paramBuff[32] = {0};
 
 	char reg0[16]={'\0'}, reg1[16]={'\0'};
 	if(get_register_full(operand->reg[0], operand, reg0))
@@ -192,15 +229,25 @@ uint32_t get_memory_operand(
 		imm = -imm;
 	}
 
+	size_t len = 0;
 	switch (operand->operandClass)
 	{
-		case MEM_REG:
-			if (snprintf(outBuffer, outBufferSize, "[%s]", reg0) >= outBufferSize)
+		case MEM_REG: // [<reg>]
+			outBuffer[0] = '\0';
+			if (append_str(outBuffer, outBufferSize, &len, "[") ||
+				append_str(outBuffer, outBufferSize, &len, reg0) ||
+				append_str(outBuffer, outBufferSize, &len, "]"))
 				return FAILED_TO_DISASSEMBLE_OPERAND;
 			break;
 
-		case MEM_PRE_IDX:
-			if (snprintf(outBuffer, outBufferSize, "[%s, #%s%#" PRIx64 "]!", reg0, sign, (uint64_t)imm) >= outBufferSize)
+		case MEM_PRE_IDX: // [<reg>, #<imm>]!
+			outBuffer[0] = '\0';
+			if (append_str(outBuffer, outBufferSize, &len, "[") ||
+				append_str(outBuffer, outBufferSize, &len, reg0) ||
+				append_str(outBuffer, outBufferSize, &len, ", #") ||
+				append_str(outBuffer, outBufferSize, &len, sign) ||
+				append_hex(outBuffer, outBufferSize, &len, (uint64_t)imm, 0) ||
+				append_str(outBuffer, outBufferSize, &len, "]!"))
 				return FAILED_TO_DISASSEMBLE_OPERAND;
 			break;
 
@@ -208,26 +255,35 @@ uint32_t get_memory_operand(
 			if (operand->reg[1] != REG_NONE) {
 				if(get_register_full((Register)operand->reg[1], operand, reg1))
 					return FAILED_TO_DISASSEMBLE_REGISTER;
-
-				snprintf(paramBuff, sizeof(paramBuff), ", %s", reg1);
 			}
-			else if (snprintf(paramBuff, sizeof(paramBuff), ", #%s%#" PRIx64, sign, (uint64_t)imm) >= sizeof(paramBuff))
+			outBuffer[0] = '\0';
+			if (append_str(outBuffer, outBufferSize, &len, "[") ||
+				append_str(outBuffer, outBufferSize, &len, reg0) ||
+				append_str(outBuffer, outBufferSize, &len, "], "))
 				return FAILED_TO_DISASSEMBLE_OPERAND;
-
-			if (snprintf(outBuffer, outBufferSize, "[%s]%s", reg0, paramBuff) >= outBufferSize)
+			if (operand->reg[1] != REG_NONE) {
+				if (append_str(outBuffer, outBufferSize, &len, reg1))
+					return FAILED_TO_DISASSEMBLE_OPERAND;
+			}
+			else if (append_str(outBuffer, outBufferSize, &len, "#") ||
+				append_str(outBuffer, outBufferSize, &len, sign) ||
+				append_hex(outBuffer, outBufferSize, &len, (uint64_t)imm, 0))
 				return FAILED_TO_DISASSEMBLE_OPERAND;
-
 			break;
 
 		case MEM_OFFSET: // [<reg> optional(imm)]
+			outBuffer[0] = '\0';
+			if (append_str(outBuffer, outBufferSize, &len, "[") ||
+				append_str(outBuffer, outBufferSize, &len, reg0))
+				return FAILED_TO_DISASSEMBLE_OPERAND;
 			if (operand->immediate != 0) {
-				const char *mul_vl = operand->mul_vl ? ", mul vl" : "";
-				if(snprintf(immBuff, sizeof(immBuff), ", #%s%#" PRIx64 "%s", sign, (uint64_t)imm, mul_vl) >= sizeof(immBuff)) {
+				if (append_str(outBuffer, outBufferSize, &len, ", #") ||
+					append_str(outBuffer, outBufferSize, &len, sign) ||
+					append_hex(outBuffer, outBufferSize, &len, (uint64_t)imm, 0) ||
+					append_str(outBuffer, outBufferSize, &len, operand->mul_vl ? ", mul vl" : ""))
 					return FAILED_TO_DISASSEMBLE_OPERAND;
-				}
 			}
-
-			if (snprintf(outBuffer, outBufferSize, "[%s%s]", reg0, immBuff) >= outBufferSize)
+			if (append_str(outBuffer, outBufferSize, &len, "]"))
 				return FAILED_TO_DISASSEMBLE_OPERAND;
 			break;
 
@@ -298,9 +354,17 @@ uint32_t get_register(const InstructionOperand *operand, uint32_t registerNumber
 	}
 
 	/* 4) handle other registers */
+	if(!(operand->operandClass == REG && operand->laneUsed))
+	{
+		size_t len = 0;
+		outBuffer[0] = '\0';
+		if (append_str(outBuffer, outBufferSize, &len, reg_buf))
+			return FAILED_TO_DISASSEMBLE_REGISTER;
+		return 0;
+	}
+
 	char index[32] = {0};
-	if(operand->operandClass == REG && operand->laneUsed)
-		snprintf(index, sizeof(index), "[%u]", operand->lane);
+	snprintf(index, sizeof(index), "[%u]", operand->lane);
 
 	if(snprintf(outBuffer, outBufferSize, "%s%s", reg_buf, index) >= outBufferSize)
 		return FAILED_TO_DISASSEMBLE_REGISTER;
@@ -361,6 +425,23 @@ uint32_t get_shifted_immediate(const InstructionOperand *instructionOperand, cha
 	{
 		sign = "-";
 		imm = -(int64_t)imm;
+	}
+	if (instructionOperand->shiftType == ShiftType_NONE &&
+		(type == IMM32 || type == IMM64 || type == LABEL))
+	{
+		size_t len = 0;
+		outBuffer[0] = '\0';
+		if (type == LABEL)
+		{
+			if (append_hex(outBuffer, outBufferSize, &len, imm, 1))
+				return FAILED_TO_DISASSEMBLE_OPERAND;
+			return DISASM_SUCCESS;
+		}
+		if (append_str(outBuffer, outBufferSize, &len, "#") ||
+			append_str(outBuffer, outBufferSize, &len, sign) ||
+			append_hex(outBuffer, outBufferSize, &len, type == IMM32 ? (uint32_t)imm : imm, 0))
+			return FAILED_TO_DISASSEMBLE_OPERAND;
+		return DISASM_SUCCESS;
 	}
 	if (instructionOperand->shiftType != ShiftType_NONE)
 	{
@@ -476,19 +557,19 @@ uint32_t get_accum_array(const InstructionOperand *operand, char *outBuffer, uin
 
 int aarch64_disassemble(Instruction *instruction, char *buf, size_t buf_sz)
 {
-	char operandStrings[MAX_OPERANDS][130];
 	char tmpOperandString[128];
 	const char *operand = tmpOperandString;
+	size_t len = 0;
 	if (instruction == NULL || buf_sz == 0 || buf == NULL)
 		return INVALID_ARGUMENTS;
 
-	memset(operandStrings, 0, sizeof(operandStrings));
 	const char *operation = get_operation(instruction);
 	if (operation == NULL)
 		return FAILED_TO_DISASSEMBLE_OPERATION;
 
-	for(int i=0; i<MAX_OPERANDS; i++)
-		memset(&(operandStrings[i][0]), 0, 128);
+	buf[0] = '\0';
+	if (append_str(buf, buf_sz, &len, operation))
+		return OUTPUT_BUFFER_TOO_SMALL;
 
 	for(int i=0; i<MAX_OPERANDS && instruction->operands[i].operandClass != NONE; i++)
 	{
@@ -595,17 +676,10 @@ int aarch64_disassemble(Instruction *instruction, char *buf, size_t buf_sz)
 			case NONE:
 				break;
 		}
-		snprintf(operandStrings[i], sizeof(operandStrings[i]), i==0?"\t%s":", %s", operand);
+		if (append_str(buf, buf_sz, &len, i == 0 ? "\t" : ", ") ||
+			append_str(buf, buf_sz, &len, operand))
+			return OUTPUT_BUFFER_TOO_SMALL;
 	}
-	memset(buf, 0, buf_sz);
-	if (snprintf(buf, buf_sz, "%s%s%s%s%s%s",
-				get_operation(instruction),
-				operandStrings[0],
-				operandStrings[1],
-				operandStrings[2],
-				operandStrings[3],
-				operandStrings[4]) >= buf_sz)
-		return OUTPUT_BUFFER_TOO_SMALL;
 	return DISASM_SUCCESS;
 }
 
