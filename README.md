@@ -230,6 +230,6 @@ disass hello-mte --symbol _main --json | jq .
 
 ## License
 
-MIT Copyright (c) 2021-2025 blacktop
+[MIT](LICENSE).
 
 Apache License, Version 2.0 Copyright 2020-2021 Vector 35 Inc.
