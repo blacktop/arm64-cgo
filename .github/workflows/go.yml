@@ -25,6 +25,12 @@ jobs:
         with:
           go-version: "stable"
 
+      - name: Check generated wrappers are up to date
+        run: |
+          python3 scripts/generate_cgo_wrappers.py
+          git add --intent-to-add -- disassemble/
+          git diff --exit-code -- disassemble/
+
       - name: Build
         run: go build -v ./...
 

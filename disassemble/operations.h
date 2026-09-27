@@ -1725,6 +1725,10 @@ enum Operation {
 	ARM64_MUL53HI,
 	ARM64_MUL53LO,
 	ARM64_SDSB,
+	ARM64_TENTER,
+	ARM64_TEXIT,
+	ARM64_TCHANGEF,
+	ARM64_TCHANGEB,
 
 };
 const char *operation_to_str(enum Operation oper);

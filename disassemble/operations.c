@@ -1723,6 +1723,10 @@ static const char* const names[] = {
 	"mul53hi",
 	"mul53lo",
 	"sdsb",
+	"tenter",
+	"texit",
+	"tchangef",
+	"tchangeb",
 };
 
 

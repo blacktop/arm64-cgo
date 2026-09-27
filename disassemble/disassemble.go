@@ -51,7 +51,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"strings"
 	"unsafe"
 )
 
@@ -694,20 +693,46 @@ func GetInstructions(startAddr uint64, data []byte) (Instructions, error) {
 	return intrs, nil
 }
 
-// Blocks returns an array of instruction blocks
+// transfersControl reports whether op is a branch, return or exception return,
+// after which execution does not simply continue with the next instruction.
+func transfersControl(op Operation) bool {
+	switch op {
+	case ARM64_B, ARM64_BR, ARM64_BRAA, ARM64_BRAAZ, ARM64_BRAB, ARM64_BRABZ,
+		ARM64_RET, ARM64_RETAA, ARM64_RETAB, ARM64_RETAASPPC, ARM64_RETABSPPC,
+		ARM64_RETAASPPCR, ARM64_RETABSPPCR,
+		ARM64_ERET, ARM64_ERETAA, ARM64_ERETAB, ARM64_DRPS, ARM64_TEXIT, ARM64_GEXIT,
+		ARM64_CBZ, ARM64_CBNZ, ARM64_TBZ, ARM64_TBNZ,
+		ARM64_B_AL, ARM64_B_CC, ARM64_B_CS, ARM64_B_EQ, ARM64_B_GE, ARM64_B_GT,
+		ARM64_B_HI, ARM64_B_LE, ARM64_B_LS, ARM64_B_LT, ARM64_B_MI, ARM64_B_NE,
+		ARM64_B_NV, ARM64_B_PL, ARM64_B_VC, ARM64_B_VS:
+		return true
+	default:
+		return false
+	}
+}
+
+func isCall(op Operation) bool {
+	switch op {
+	case ARM64_BL, ARM64_BLR, ARM64_BLRAA, ARM64_BLRAAZ, ARM64_BLRAB, ARM64_BLRABZ:
+		return true
+	default:
+		return false
+	}
+}
+
+// Blocks splits the instructions into blocks. A block ends after every branch,
+// return and exception return (including TEXIT and GEXIT), and after a call
+// unless the next instruction is a CBNZ checking the call's result.
 func (intrs Instructions) Blocks() []Instructions {
 	var block Instructions
 	var blocks []Instructions
 
 	for idx, i := range intrs {
-		// TODO: this ignores blocks with returning calls that shouldn't end at `bl`
-		// check if instruction is a branch type and if next instruction checks the result of a call
-		if strings.Contains(i.Encoding.String(), "branch") && (len(intrs)-1 >= idx+1 && intrs[idx+1].Operation != ARM64_CBNZ) {
-			block = append(block, i)
+		block = append(block, i)
+		checksCallResult := idx+1 < len(intrs) && intrs[idx+1].Operation == ARM64_CBNZ
+		if transfersControl(i.Operation) || (isCall(i.Operation) && !checksCallResult) {
 			blocks = append(blocks, block)
-			block = Instructions{} // zero out block
-		} else {
-			block = append(block, i)
+			block = Instructions{}
 		}
 	}
 	if len(block) > 0 {

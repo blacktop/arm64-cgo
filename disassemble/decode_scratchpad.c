@@ -1121,6 +1121,10 @@ static const char* const reg_lookup_c[16] = {"c0", "c1", "c2", "c3", "c4", "c5",
 	strcpy(instr->operands[i].name, VALUE); \
 	i++;
 
+/* optional not-balanced indicator of FEAT_S1POE2/FEAT_TEV instructions */
+#define ADD_OPERAND_OPT_NB \
+	if (ctx->imm1) { ADD_OPERAND_NAME("nb") }
+
 /* multi reg stuff, like {v0.b, v1.b} */
 #define ADD_OPERAND_MULTIREG_1(REG_BASE, ARR_SPEC, REGNUM) \
 	; \
@@ -11338,9 +11342,9 @@ int decode_scratchpad(context* ctx, Instruction* instr)
 	case ENC_WKDMC:
 	case ENC_WKDMD:
 	{
-		// <Xt>, <Xn> (may need adjustment based on actual format)
-		ADD_OPERAND_XT;
-		ADD_OPERAND_XN;
+		// <Xs>, <Xd>
+		ADD_OPERAND_XS;
+		ADD_OPERAND_XD;
 		break;
 	}
 
@@ -11361,6 +11365,33 @@ int decode_scratchpad(context* ctx, Instruction* instr)
 		// No operands (barrier instruction)
 		break;
 	}
+
+	/* FEAT_TEV */
+	case ENC_TENTER_EX_EXCEPTION:
+		// #<imm>{, NB}
+		ADD_OPERAND_IMM32(ctx->imm7, 0);
+		ADD_OPERAND_OPT_NB;
+		break;
+	case ENC_TEXIT_64E_BRANCH_REG:
+		// {NB}
+		ADD_OPERAND_OPT_NB;
+		break;
+
+	/* FEAT_S1POE2 */
+	case ENC_TCHANGEF_REG:
+	case ENC_TCHANGEB_REG:
+		// <Xd>, <Xn>{, NB}
+		ADD_OPERAND_XD;
+		ADD_OPERAND_XN;
+		ADD_OPERAND_OPT_NB;
+		break;
+	case ENC_TCHANGEF_IMM:
+	case ENC_TCHANGEB_IMM:
+		// <Xd>, #<imm>{, NB}
+		ADD_OPERAND_XD;
+		ADD_OPERAND_IMM32(ctx->imm7, 0);
+		ADD_OPERAND_OPT_NB;
+		break;
 
 	default:
 		instr->operation = ARM64_ERROR;

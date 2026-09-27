@@ -17,41 +17,70 @@ func TestAppleInstructions(t *testing.T) {
 		// AMX Load/Store instructions
 		{
 			name:       "AMX LDX X0",
-			opcode:     0x00102000,
+			opcode:     0x00201000,
 			wantOp:     disassemble.ARM64_AMX_LDX,
-			wantDisasm: "ldx x0",
+			wantDisasm: "ldx\tx0",
 		},
 		{
 			name:       "AMX LDY X0",
-			opcode:     0x00102020,
+			opcode:     0x00201020,
 			wantOp:     disassemble.ARM64_AMX_LDY,
-			wantDisasm: "ldy x0",
+			wantDisasm: "ldy\tx0",
 		},
 		{
 			name:       "AMX STX X0",
-			opcode:     0x00102040,
+			opcode:     0x00201040,
 			wantOp:     disassemble.ARM64_AMX_STX,
-			wantDisasm: "stx x0",
+			wantDisasm: "stx\tx0",
 		},
 		{
 			name:       "AMX LDZ X0",
-			opcode:     0x00102080,
+			opcode:     0x00201080,
 			wantOp:     disassemble.ARM64_AMX_LDZ,
-			wantDisasm: "ldz x0",
+			wantDisasm: "ldz\tx0",
 		},
 
 		// AMX FMA instructions
 		{
 			name:       "AMX FMA64 X0",
-			opcode:     0x00112040,
+			opcode:     0x00201140,
 			wantOp:     disassemble.ARM64_AMX_FMA64,
-			wantDisasm: "fma64 x0",
+			wantDisasm: "fma64\tx0",
 		},
 		{
 			name:       "AMX FMA32 X0",
-			opcode:     0x00112080,
+			opcode:     0x00201180,
 			wantOp:     disassemble.ARM64_AMX_FMA32,
-			wantDisasm: "fma32 x0",
+			wantDisasm: "fma32\tx0",
+		},
+
+		{
+			name:       "AMX GENLUT X5",
+			opcode:     0x002012c5,
+			wantOp:     disassemble.ARM64_AMX_GENLUT,
+			wantDisasm: "genlut\tx5",
+		},
+		{
+			name:       "AMX SET",
+			opcode:     0x00201220,
+			wantOp:     disassemble.ARM64_AMX_SET,
+			wantDisasm: "set",
+		},
+		{
+			name:       "AMX CLR",
+			opcode:     0x00201221,
+			wantOp:     disassemble.ARM64_AMX_CLR,
+			wantDisasm: "clr",
+		},
+		{
+			name:    "AMX op 17 with operand > 1",
+			opcode:  0x00201222,
+			wantErr: true,
+		},
+		{
+			name:    "AMX op 23 is unallocated",
+			opcode:  0x002012e0,
+			wantErr: true,
 		},
 
 		// Guarded execution
@@ -73,13 +102,26 @@ func TestAppleInstructions(t *testing.T) {
 			name:       "WKDMC",
 			opcode:     0x00200822,
 			wantOp:     disassemble.ARM64_WKDMC,
-			wantDisasm: "wkdmc",
+			wantDisasm: "wkdmc\tx2, x1",
+		},
+		{
+			name:       "WKDMC x2, x3",
+			opcode:     0x00200862,
+			wantOp:     disassemble.ARM64_WKDMC,
+			wantDisasm: "wkdmc\tx2, x3",
 		},
 		{
 			name:       "WKDMD",
-			opcode:     0x00200862,
+			opcode:     0x00200c22,
 			wantOp:     disassemble.ARM64_WKDMD,
-			wantDisasm: "wkdmd",
+			wantDisasm: "wkdmd\tx2, x1",
+		},
+
+		// Words outside Apple's 0x0020xxxx space are not Apple instructions
+		{
+			name:    "reserved 0x00102000",
+			opcode:  0x00102000,
+			wantErr: true,
 		},
 	}
 
@@ -99,13 +141,9 @@ func TestAppleInstructions(t *testing.T) {
 						instr.Operation, instr.Operation.String(), tt.wantOp)
 				}
 
-				// Check if the operation string is correct
-				opStr := instr.Operation.String()
-				if opStr == "" || opStr == "error" {
-					t.Errorf("Operation string is empty or error for %v", tt.wantOp)
+				if instr.Disassembly != tt.wantDisasm {
+					t.Errorf("Disassembly = %q, want %q", instr.Disassembly, tt.wantDisasm)
 				}
-
-				t.Logf("Decoded: %s (op: %s)", instr.Disassembly, instr.Operation.String())
 			}
 		})
 	}

@@ -6419,6 +6419,16 @@ enum Operation enc_to_oper(enum ENCODING enc)
 			return ARM64_MUL53LO;
 		case ENC_SDSB:
 			return ARM64_SDSB;
+		case ENC_TENTER_EX_EXCEPTION:
+			return ARM64_TENTER;
+		case ENC_TEXIT_64E_BRANCH_REG:
+			return ARM64_TEXIT;
+		case ENC_TCHANGEF_REG:
+		case ENC_TCHANGEF_IMM:
+			return ARM64_TCHANGEF;
+		case ENC_TCHANGEB_REG:
+		case ENC_TCHANGEB_IMM:
+			return ARM64_TCHANGEB;
 		default:
 			return ARM64_ERROR;
 	}

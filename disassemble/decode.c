@@ -4,6 +4,7 @@
 int decode_spec(context* ctx, Instruction* dec);        // from decode0.cpp
 int decode_scratchpad(context* ctx, Instruction* dec);  // from decode_scratchpad.c
 int decode_apple_instruction(uint32_t opcode, context* ctx, Instruction* instr); // from decode_apple.c
+int decode_poe2(uint32_t opcode, context* ctx, Instruction* instr);              // from decode_poe2.c
 
 int aarch64_decompose(uint32_t instructionValue, Instruction* instr, uint64_t address)
 {
@@ -21,6 +22,10 @@ int aarch64_decompose(uint32_t instructionValue, Instruction* instr, uint64_t ad
 		/* Apple instruction decoded successfully */
 		return decode_scratchpad(&ctx, instr);
 	}
+
+	/* FEAT_S1POE2/FEAT_TEV instructions are newer than the spec the generated decoder uses */
+	if (decode_poe2(instructionValue, &ctx, instr) == DECODE_STATUS_OK)
+		return decode_scratchpad(&ctx, instr);
 
 	/* have the spec-generated code populate all the pcode variables */
 	rc = decode_spec(&ctx, instr);

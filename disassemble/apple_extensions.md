@@ -1,88 +1,47 @@
-# Apple ARM64 Extensions
+# Instructions Beyond the Generated Decoder
 
-This document describes Apple-specific ARM64 instructions and system registers that need to be added to the disassembler.
+The instructions below are not produced by the generated decoder (`decode0.c`), either because
+they are Apple proprietary or because they postdate its spec data. They are matched by hand
+before the generated decoder runs (`decode.c`).
 
-## Instructions
+## Apple Proprietary Instructions (`decode_apple.c`)
 
-Based on Asahi Linux documentation and Capstone implementation:
+Apple instructions live in the `0x0020xxxx` range and fault unless the kernel enables them.
 
-### AMX (Apple Matrix Extension) Instructions
+| Instruction | Encoding | Syntax |
+| --- | --- | --- |
+| AMX | `0x00201000 \| op << 5 \| Xn`, op 0..22 (`0x00201000`–`0x002012df`) | `ldx x0`, `fma64 x0`, ... |
+| AMX SET/CLR | `0x00201220` / `0x00201221` (op 17) | `set` / `clr` |
+| WKDMC | `0x00200800 \| rD << 5 \| rS` | `wkdmc xS, xD` |
+| WKDMD | `0x00200c00 \| rD << 5 \| rS` | `wkdmd xS, xD` |
+| GEXIT | `0x00201400` | `gexit` |
+| GENTER | `0x00201420 \| imm5` | `genter #imm` |
 
-The AMX instructions use implementation-specific encodings in the `0x0020xxxx` range. These need to be enabled via system registers before use.
+AMX op numbers: 0 ldx, 1 ldy, 2 stx, 3 sty, 4 ldz, 5 stz, 6 ldzi, 7 stzi, 8 extrx, 9 extry,
+10 fma64, 11 fms64, 12 fma32, 13 fms32, 14 mac16, 15 fma16, 16 fms16, 17 set/clr, 18 vecint,
+19 vecfp, 20 matint, 21 matfp, 22 genlut.
 
-- **AMX configuration/state management** (exact encodings TBD)
-- These instructions trap by default and require kernel support
+Not decoded yet: MUL53 (`0x00200000`–`0x002007ff`), `at_as1elx` (`0x00201440 | Xa`) and
+SDSB (`0x00201460`–`0x00201463`). `ENC_MUL53HI`, `ENC_MUL53LO` and `ENC_SDSB` exist but
+nothing produces them.
 
-### Guarded Execution Mode
+## Arm Future Architecture Technologies (`decode_poe2.c`)
 
-- **GENTER** - Enter guarded execution mode
-  - Encoding: Implementation-specific (likely HINT-space)
-  - Faults by default without kernel support
+ArmvFAT.0 instructions used by macOS 27 (the Mac18,5 kernelcache and TXM call into
+guarded code with `tenter` instead of `genter`). Encodings follow binutils.
 
-- **GEXIT** - Exit guarded execution mode
-  - Encoding: Implementation-specific (likely HINT-space)
-  - Faults by default without kernel support
-
-### Memory Compression
-
-- **WKDMC** - Compress memory page
-  - Encoding: Implementation-specific
-
-- **WKDMD** - Decompress memory page
-  - Encoding: Implementation-specific
-
-### Other Apple Extensions
-
-- **MUL53** - 53-bit multiply
-  - Encoding: Implementation-specific
-
-- **AT AS1ELx** - Address translation variants
-  - Encoding: System instruction space
-
-- **SDSB** variants (osh, nsh, ish, sy) - Speculative data synchronization barrier
-  - Encoding: Barrier instruction space
-
-## System Registers (Already Present)
-
-The following Apple AMX system registers are already defined in `sysregs_gen.h`:
-
-- `AMX_STATE_T_EL1` (S3_4_c15_c1_3)
-- `AMX_CONFIG_EL1` (S3_4_c15_c1_4)
-- `AMX_STATE_EL1` (S3_4_c15_c3_0)
-- `AMX_STATUS_EL1` (S3_4_c15_c3_6)
-- `AMX_CONFIG_EL12` (S3_4_c15_c4_6)
-- `AMX_CONFIG_EL2` (S3_4_c15_c4_7)
-- `AMXIDR_EL1` (S3_6_c15_c2_7)
-
-## Implementation Notes
-
-1. Many of these instructions use implementation-specific encodings that may be in:
-   - HINT space (for NOP-compatible instructions)
-   - System instruction space (SYS/SYSL encodings)
-   - Implementation-specific regions (0x0020xxxx)
-
-2. These instructions typically:
-   - Fault by default (need kernel enablement)
-   - Require specific CPU features/models
-   - May be gated by system registers
-
-3. To add support:
-   - Need exact opcode encodings for each instruction
-   - May need to handle as special cases in decode.c
-   - Should add feature detection flags
+| Instruction | Feature | Encoding | Syntax |
+| --- | --- | --- | --- |
+| TENTER | FEAT_TEV | `0xd4e00000 \| NB << 17 \| imm7 << 5` | `tenter #imm{, nb}` |
+| TEXIT | FEAT_TEV | `0xd6ff03e0 \| NB << 10` | `texit{ nb}` |
+| TCHANGEF (register) | FEAT_S1POE2 | `0xd5800000 \| NB << 17 \| Xn << 5 \| Xd` | `tchangef xd, xn{, nb}` |
+| TCHANGEF (immediate) | FEAT_S1POE2 | `0xd5900000 \| NB << 17 \| imm7 << 5 \| Xd` | `tchangef xd, #imm{, nb}` |
+| TCHANGEB (register) | FEAT_S1POE2 | `0xd5840000 \| NB << 17 \| Xn << 5 \| Xd` | `tchangeb xd, xn{, nb}` |
+| TCHANGEB (immediate) | FEAT_S1POE2 | `0xd5940000 \| NB << 17 \| imm7 << 5 \| Xd` | `tchangeb xd, #imm{, nb}` |
 
 ## References
 
 - [Asahi Linux Apple Instructions Documentation](https://github.com/AsahiLinux/docs/blob/main/docs/hw/cpu/apple-instructions.md)
-- [Capstone PR #2692](https://github.com/capstone-engine/capstone/pull/2692)
-- [Dougall's ARM64 Documentation](https://dougallj.github.io/applecpu/firestorm-int.html)
-
-## TODO
-
-To fully implement Apple instruction support:
-
-1. Obtain exact opcode encodings for each instruction
-2. Add instruction enum entries to operations.h
-3. Update decode logic to recognize these encodings
-4. Add formatting support in format.c
-5. Test on Apple Silicon hardware
+- [Dougall Johnson's AMX notes](https://gist.github.com/dougallj/7a75a3be1ec69ca550e7c36dc75e0d6f)
+- [Arm feature names: Future Architecture Technologies](https://support.arm.com/documentation/109697/2026_06/Feature-descriptions/Future-Architecture-Technologies)
+- binutils "aarch64: Add support for POE2 instructions" and "aarch64: Add support for TEV instructions"

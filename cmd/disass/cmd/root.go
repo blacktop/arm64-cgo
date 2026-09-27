@@ -47,87 +47,6 @@ import (
 
 var cfgFile string
 
-type opName uint32
-
-const (
-	AMXLDX opName = iota
-	AMXLDY
-	AMXSTX
-	AMXSTY
-	AMXLDZ
-	AMXSTZ
-	AMXLDZI
-	AMXSTZI
-	AMXEXTRX // amxextrx?
-	AMXEXTRY // amxextry?
-	AMXFMA64
-	AMXFMS64
-	AMXFMA32
-	AMXFMS32
-	AMXMAC16
-	AMXFMA16
-	AMXFMS16
-	AMX17 // amxset / amxclr
-	AMXVECINT
-	AMXVECFP
-	AMXMATINT
-	AMXMATFP
-	AMXGENLUT
-)
-
-func (o opName) String() string {
-	switch o {
-	case AMXLDX:
-		return "amx_ldx"
-	case AMXLDY:
-		return "amx_ldy"
-	case AMXSTX:
-		return "amx_stx"
-	case AMXSTY:
-		return "amx_sty"
-	case AMXLDZ:
-		return "amx_ldz"
-	case AMXSTZ:
-		return "amx_stz"
-	case AMXLDZI:
-		return "amx_ldzi"
-	case AMXSTZI:
-		return "amx_stzi"
-	case AMXEXTRX:
-		return "amx_extrx"
-	case AMXEXTRY:
-		return "amx_extry"
-	case AMXFMA64:
-		return "amx_fma64"
-	case AMXFMS64:
-		return "amx_fms64"
-	case AMXFMA32:
-		return "amx_fma32"
-	case AMXFMS32:
-		return "amx_fms32"
-	case AMXMAC16:
-		return "amx_mac16"
-	case AMXFMA16:
-		return "amx_fma16"
-	case AMXFMS16:
-		return "amx_fms16"
-	case AMX17:
-		return "amx_op17"
-	case AMXVECINT:
-		return "amx_vecint"
-	case AMXVECFP:
-		return "amx_vecfp"
-	case AMXMATINT:
-		return "amx_matint"
-	case AMXMATFP:
-		return "amx_matfp"
-	case AMXGENLUT:
-		return "amx_genlut"
-	default:
-		return "unk"
-	}
-}
-
 func init() {
 	log.SetHandler(clihander.Default)
 	cobra.OnInitialize(initConfig)
@@ -393,12 +312,6 @@ var rootCmd = &cobra.Command{
 						if instrValue == 0xfeedfacf {
 							fmt.Printf("%#08x:  %s\t.long\t%#x ; (possible embedded MachO)\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue), instrValue)
 							break
-						} else if instrValue == 0x201420 {
-							fmt.Printf("%#08x:  %s\tgenter\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue))
-							continue
-						} else if instrValue == 0x00201400 {
-							fmt.Printf("%#08x:  %s\tgexit\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue))
-							continue
 						} else if instrValue == 0xe7ffdefe || instrValue == 0xe7ffdeff {
 							fmt.Printf("%#08x:  %s\ttrap\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue))
 							continue
@@ -407,19 +320,6 @@ var rootCmd = &cobra.Command{
 							break
 						} else if prevInstr != nil && strings.Contains(prevInstr.Operation.String(), "braa") {
 							break
-						} else if (instrValue & 0xfffffC00) == 0x00201000 {
-							Xr := disassemble.Register((instrValue & 0x1F) + 34)
-							m := (instrValue >> 5) & 0x1F
-							if m == 17 {
-								if instrValue&0x1F == 0 {
-									fmt.Printf("%#08x:  %s\tamxset\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue))
-								} else {
-									fmt.Printf("%#08x:  %s\tamxclr\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue))
-								}
-							} else {
-								fmt.Printf("%#08x:  %s\t%s\t%s\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue), opName(m), Xr.String())
-							}
-							continue
 						} else if instrValue>>21 == 1 {
 							fmt.Printf("%#08x:  %s\t.long\t%#x ; (possible unknown Apple instruction)\n", uint64(symAddr), disassemble.GetOpCodeByteString(instrValue), instrValue)
 							continue
