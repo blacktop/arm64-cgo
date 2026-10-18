@@ -339,15 +339,18 @@ func TestExtractADRPTarget(t *testing.T) {
 		desc     string
 	}{
 		{0x90000000, 0x1000, 0x1000, "ADRP x0, #0"},
-		{0x90000001, 0x1234, 0x5000, "ADRP x0, #1 page"},
-		{0xB0000000, 0x1000, 0x100001000, "ADRP with immlo bits"},
+		{0x90000001, 0x1234, 0x1000, "ADRP x1, #0"},
+		{0xB0000000, 0x1000, 0x2000, "ADRP with immlo bits"},
+		{0x90000020, 0x1000, 0x5000, "ADRP with immhi bits"},
+		{0x90400000, 0xfffffe0007000000, 0xfffffe0087000000, "ADRP x0, #0x80000000"},
+		{0x90800000, 0xfffffe0007000000, 0xfffffdff07000000, "ADRP x0, #-0x100000000"},
 		{0x94000000, 0x1000, 0x0000, "BL (not ADRP, should return 0)"},
 	}
 
 	for _, tc := range testCases {
 		result := ExtractADRPTarget(tc.instr, tc.pc)
 		if result != tc.expected && tc.instr != 0x94000000 { // Skip the non-ADRP test for now
-			t.Logf("ExtractADRPTarget(0x%08X, 0x%X) = 0x%X, expected 0x%X (%s)",
+			t.Errorf("ExtractADRPTarget(0x%08X, 0x%X) = 0x%X, expected 0x%X (%s)",
 				tc.instr, tc.pc, result, tc.expected, tc.desc)
 		}
 	}
@@ -361,15 +364,17 @@ func TestExtractADRTarget(t *testing.T) {
 		desc     string
 	}{
 		{0x10000000, 0x1000, 0x1000, "ADR x0, #0"},
-		{0x10000001, 0x1000, 0x1001, "ADR x0, #1"},
-		{0x10000002, 0x1000, 0x1002, "ADR x0, #2"},
+		{0x10000001, 0x1000, 0x1000, "ADR x1, #0"},
+		{0x30000000, 0x1000, 0x1001, "ADR x0, #1"},
+		{0x10000080, 0x1000, 0x1010, "ADR x0, #0x10"},
+		{0x10FFFFE0, 0x1000, 0x0FFC, "ADR x0, #-4"},
 		{0x94000000, 0x1000, 0x0000, "BL (not ADR, should return 0)"},
 	}
 
 	for _, tc := range testCases {
 		result := ExtractADRTarget(tc.instr, tc.pc)
 		if result != tc.expected && tc.instr != 0x94000000 { // Skip the non-ADR test for now
-			t.Logf("ExtractADRTarget(0x%08X, 0x%X) = 0x%X, expected 0x%X (%s)",
+			t.Errorf("ExtractADRTarget(0x%08X, 0x%X) = 0x%X, expected 0x%X (%s)",
 				tc.instr, tc.pc, result, tc.expected, tc.desc)
 		}
 	}
@@ -413,13 +418,15 @@ func TestExtractImmediate(t *testing.T) {
 		{0x91400400, 4096, "ADD x0, x0, #1, lsl #12"},
 		{0xF9000400, 8, "STR x0, [x0, #8]"},
 		{0xF9000800, 16, "STR x0, [x0, #16]"},
+		{0xB94A512A, 0xA50, "LDR w10, [x9, #0xa50]"},
+		{0xB90A5128, 0xA50, "STR w8, [x9, #0xa50]"},
 		{0x94000000, 0, "BL (no immediate extraction implemented)"},
 	}
 
 	for _, tc := range testCases {
 		result := ExtractImmediate(tc.instr)
 		if result != tc.expected {
-			t.Logf("ExtractImmediate(0x%08X) = %d, expected %d (%s)",
+			t.Errorf("ExtractImmediate(0x%08X) = %d, expected %d (%s)",
 				tc.instr, result, tc.expected, tc.desc)
 		}
 	}
