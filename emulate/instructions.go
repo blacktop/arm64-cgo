@@ -172,8 +172,8 @@ func ExtractADRPTarget(instr uint32, pc uint64) uint64 {
 	immhi := (instr >> 5) & 0x7FFFF // 19 bits
 	immlo := (instr >> 29) & 0x3    // 2 bits
 
-	// Combine: immlo:immhi (21 bits total)
-	imm21 := (immlo << 19) | immhi
+	// Combine: immhi:immlo (21 bits total)
+	imm21 := (immhi << 2) | immlo
 
 	// Sign extend from 21 bits
 	var offset int32
@@ -187,7 +187,7 @@ func ExtractADRPTarget(instr uint32, pc uint64) uint64 {
 
 	// ADRP: Add to page-aligned PC (PC & ~0xFFF), shift by 12
 	pagePC := pc & ^uint64(0xFFF)
-	return pagePC + uint64(offset<<12)
+	return pagePC + uint64(int64(offset)<<12)
 }
 
 // ExtractADRTarget extracts the target address from ADR instruction
@@ -200,8 +200,8 @@ func ExtractADRTarget(instr uint32, pc uint64) uint64 {
 	immhi := (instr >> 5) & 0x7FFFF // 19 bits
 	immlo := (instr >> 29) & 0x3    // 2 bits
 
-	// Combine: immlo:immhi (21 bits total)
-	imm21 := (immlo << 19) | immhi
+	// Combine: immhi:immlo (21 bits total)
+	imm21 := (immhi << 2) | immlo
 
 	// Sign extend from 21 bits
 	var offset int32
@@ -247,13 +247,30 @@ func ExtractImmediate(instr uint32) int64 {
 		return int64(imm12)
 	}
 
-	// For LDR/STR immediate: various immediate encodings depending on addressing mode
-	if IsLDR(instr) || IsSTR(instr) {
-		// Unsigned immediate (bits 21-10): imm12 * 8 for 64-bit loads/stores
-		if ((instr & 0xFFC00000) == 0xF9000000) || ((instr & 0xFFC00000) == 0xF9400000) {
-			imm12 := (instr >> 10) & 0xFFF
-			return int64(imm12 * 8) // scale by 8 for 64-bit
+	// LDR/STR unsigned immediate (bits 21-10), scaled by the access size.
+	// The mask covers integer and SIMD&FP forms of all access widths.
+	if (instr & 0x3B000000) == 0x39000000 {
+		imm12 := int64((instr >> 10) & 0xFFF)
+		var scale int64
+		switch instr & 0xC0000000 {
+		case 0x00000000:
+			if (instr & 0x04800000) == 0x04800000 {
+				scale = 16 // 128-bit SIMD&FP access
+			} else {
+				scale = 1
+			}
+		case 0x40000000:
+			scale = 2
+		case 0x80000000:
+			scale = 4
+		case 0xC0000000:
+			scale = 8
 		}
+		return imm12 * scale
+	}
+
+	// For LDR/STR signed pre/post-index addressing modes.
+	if IsLDR(instr) || IsSTR(instr) {
 		// Signed immediate (bits 20-12): 9-bit signed for pre/post-index
 		if ((instr & 0xFFC00000) == 0xF8000000) || ((instr & 0xFFC00000) == 0xF8400000) {
 			imm9 := (instr >> 12) & 0x1FF
